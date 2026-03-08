@@ -84,27 +84,25 @@
     transition: none;
   }
 
-  /* Mobile responsive */
+  /* ─── Scale-to-fit wrapper ─── */
+  #app {
+    width: 820px;
+    transform-origin: top center;
+  }
+
+  /* Mobile responsive — scale, don't scroll */
   @media (pointer: coarse) {
     .hint-desktop { display: none; }
     .hint-mobile { display: block; }
-    body { overflow: auto; justify-content: flex-start; padding-top: 20px; }
-    .screen { padding: 10px 16px 30px; }
-    #game-screen { padding-bottom: 200px; }
-    #over-screen { padding-bottom: 40px; }
-    #menu-screen { padding-bottom: 40px; }
   }
   @media (max-width: 850px) {
-    h1.title { font-size: 32px; }
-    .subtitle { font-size: 12px; letter-spacing: 2px; }
-    .desc { font-size: 12px; max-width: 300px; }
-    .btn { font-size: 18px; padding: 12px 36px; }
-    .turtle-svg { width: 60px; height: 60px; }
-    .final-score { font-size: 24px; }
+    body { justify-content: flex-start; }
   }
 </style>
 </head>
 <body>
+
+<div id="app">
 
 <!-- ═══ MENU SCREEN ═══ -->
 <div id="menu-screen" class="screen active">
@@ -143,12 +141,6 @@
   <p class="hint hint-mobile">Use the joystick below to move &bull; Collect treats &bull; Dodge the litter!</p>
 </div>
 
-<!-- ═══ VIRTUAL JOYSTICK ═══ -->
-<div id="joystick-zone">
-  <div id="joystick-base"></div>
-  <div id="joystick-knob"></div>
-</div>
-
 <!-- ═══ GAME OVER SCREEN ═══ -->
 <div id="over-screen" class="screen">
   <div id="over-icon"></div>
@@ -159,6 +151,14 @@
   <p id="over-oldbest" class="old-best" style="display:none"></p>
   <br><button class="btn btn-retry" onclick="startGame()">PLAY AGAIN</button>
   <div id="over-scoreboard"></div>
+</div>
+
+</div> <!-- end #app -->
+
+<!-- ═══ VIRTUAL JOYSTICK (fixed, outside scaled container) ═══ -->
+<div id="joystick-zone">
+  <div id="joystick-base"></div>
+  <div id="joystick-knob"></div>
 </div>
 
 <script>
@@ -596,6 +596,32 @@ showScreen = function(id) {
 
 // ═══ INIT ═══
 refreshMenu();
+
+// ═══ SCALE-TO-FIT ═══
+const appEl = document.getElementById("app");
+function resizeApp() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const designW = 820;
+  // Measure the actual content height so we scale both axes
+  // Reset scale first to measure natural height
+  appEl.style.transform = "none";
+  const naturalH = appEl.scrollHeight;
+  const scaleX = vw / designW;
+  const scaleY = vh / naturalH;
+  const scale = Math.min(scaleX, scaleY, 1); // never scale UP past 1
+  appEl.style.transform = `scale(${scale})`;
+  // Set body height to the scaled height so it doesn't overflow
+  document.body.style.height = (naturalH * scale) + "px";
+}
+resizeApp();
+window.addEventListener("resize", resizeApp);
+// Re-scale when screens change (content height differs)
+const origShowScreen2 = showScreen;
+showScreen = function(id) {
+  origShowScreen2(id);
+  requestAnimationFrame(resizeApp);
+};
 </script>
 </body>
 </html>
