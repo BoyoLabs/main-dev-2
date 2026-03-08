@@ -68,16 +68,16 @@
 
   /* ─── Virtual Joystick ─── */
   #joystick-zone {
-    display: none; position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
-    width: 150px; height: 150px; z-index: 100; touch-action: none;
+    display: none; position: fixed; bottom: 24px; left: 24px;
+    width: 140px; height: 140px; z-index: 100; touch-action: none;
   }
   #joystick-base {
-    position: absolute; top: 0; left: 0; width: 150px; height: 150px;
+    position: absolute; top: 0; left: 0; width: 140px; height: 140px;
     border-radius: 50%; background: rgba(103,232,249,0.12);
     border: 2px solid rgba(103,232,249,0.25);
   }
   #joystick-knob {
-    position: absolute; top: 50px; left: 50px; width: 50px; height: 50px;
+    position: absolute; top: 45px; left: 45px; width: 50px; height: 50px;
     border-radius: 50%;
     background: radial-gradient(circle at 40% 38%, rgba(103,232,249,0.5), rgba(34,211,238,0.3));
     border: 2px solid rgba(103,232,249,0.5);
@@ -88,13 +88,19 @@
   @media (pointer: coarse) {
     .hint-desktop { display: none; }
     .hint-mobile { display: block; }
-    body { overflow: auto; }
-    #game-screen { padding-bottom: 180px; }
+    body { overflow: auto; justify-content: flex-start; padding-top: 20px; }
+    .screen { padding: 10px 16px 30px; }
+    #game-screen { padding-bottom: 200px; }
+    #over-screen { padding-bottom: 40px; }
+    #menu-screen { padding-bottom: 40px; }
   }
   @media (max-width: 850px) {
-    h1.title { font-size: 36px; }
-    .desc { font-size: 13px; max-width: 320px; }
+    h1.title { font-size: 32px; }
+    .subtitle { font-size: 12px; letter-spacing: 2px; }
+    .desc { font-size: 12px; max-width: 300px; }
     .btn { font-size: 18px; padding: 12px 36px; }
+    .turtle-svg { width: 60px; height: 60px; }
+    .final-score { font-size: 24px; }
   }
 </style>
 </head>
@@ -518,7 +524,7 @@ let touchDX = 0, touchDY = 0;
 const joystickZone = document.getElementById("joystick-zone");
 const joystickKnob = document.getElementById("joystick-knob");
 const joystickBase = document.getElementById("joystick-base");
-const KNOB_MAX = 50; // max pixel displacement from center
+const KNOB_MAX = 45; // max pixel displacement from center
 let joystickActive = false;
 let joystickTouchId = null;
 
@@ -533,16 +539,16 @@ function handleJoystickMove(clientX, clientY) {
   let dy = clientY - center.y;
   const len = Math.hypot(dx, dy);
   if (len > KNOB_MAX) { dx = (dx / len) * KNOB_MAX; dy = (dy / len) * KNOB_MAX; }
-  joystickKnob.style.left = (50 + dx) + "px";
-  joystickKnob.style.top = (50 + dy) + "px";
+  joystickKnob.style.left = (45 + dx) + "px";
+  joystickKnob.style.top = (45 + dy) + "px";
   // Normalize to -1..1
   touchDX = dx / KNOB_MAX;
   touchDY = dy / KNOB_MAX;
 }
 
 function resetJoystick() {
-  joystickKnob.style.left = "50px";
-  joystickKnob.style.top = "50px";
+  joystickKnob.style.left = "45px";
+  joystickKnob.style.top = "45px";
   touchDX = 0; touchDY = 0;
   joystickActive = false;
   joystickTouchId = null;
