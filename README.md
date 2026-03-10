@@ -5,7 +5,7 @@ Note: just because something is in prod does not mean it is working necessarily,
 
 ## hanky.html
 * a cute little story about a cute little dog
-*github.io link: https://boyolabs.github.io/prod-2/hanky.html
+* github.io link: https://boyolabs.github.io/prod-2/hanky.html
 
 ## TurboTurtle.html
 * dodge trash and eat bugs and leaves!
