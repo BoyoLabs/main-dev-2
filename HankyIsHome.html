@@ -3,950 +3,1287 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Find Me Home</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,800;1,9..144,400&family=Crimson+Pro:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+<title>Hanky is Home</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,800;1,9..144,400;1,9..144,700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;overflow:hidden;background:#1a0a04;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
-body{display:flex;align-items:center;justify-content:center}
-#wrap{
-  width:100vw;max-width:430px;height:100vh;max-height:932px;
-  display:flex;flex-direction:column;overflow:hidden;position:relative;
-  font-family:'Crimson Pro',Georgia,serif;background:#1a0a04;
+:root{
+  --bg:#1a0a04;--bg2:#2e1a0a;--cream:#FBF4E4;--amber:#C8720A;--gold:#E8921A;
+  --brown:#3A1F0E;--tan:#7A4520;--light-tan:#B07040;--soft:#FEFAF2;
+  --text-dim:rgba(251,244,228,.58);--text-mid:rgba(251,244,228,.78);--text-hi:rgba(251,244,228,.92);
 }
+html{height:100%;background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+body{
+  min-height:100%;display:flex;align-items:center;justify-content:center;
+  font-family:'Crimson Pro',Georgia,serif;color:var(--cream);
+  user-select:none;-webkit-user-select:none;touch-action:manipulation;
+}
+button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+
+/* ── MAIN WRAPPER ── */
+#app{
+  width:100%;max-width:520px;min-height:100vh;min-height:100dvh;
+  display:flex;flex-direction:column;position:relative;overflow:hidden;
+}
+
 /* ── SCREENS ── */
-.scr{position:absolute;inset:0;display:none;flex-direction:column}
-.scr.on{display:flex}
-/* ── TITLE ── */
-#s-title{background:linear-gradient(160deg,#1a1008 0%,#3d2210 100%)}
-#t-sky{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
-.t-card{background:#FBF4E4;border-radius:28px 28px 0 0;padding:26px 28px 46px;display:flex;flex-direction:column;align-items:center;gap:13px;text-align:center}
-.t-title{font-family:'Fraunces',serif;font-size:40px;font-weight:800;color:#3A1F0E;font-style:italic;line-height:1.05}
-.t-sub{font-size:15px;color:#7A4520;line-height:1.55}
-.t-hint{font-size:12px;color:#B07040;font-style:italic}
-#btn-start{background:#C8720A;color:#FEFAF2;border:none;border-radius:50px;padding:15px 40px;font-family:'Fraunces',serif;font-size:19px;font-weight:700;cursor:pointer;width:100%;max-width:260px;box-shadow:0 4px 18px rgba(200,114,10,.4)}
-#resume-lbl{font-size:13px;color:#B07040;font-style:italic;display:none}
-.sdot{position:absolute;background:#fff;border-radius:50%;animation:twinkle 3s ease-in-out infinite}
-@keyframes twinkle{0%,100%{opacity:.15}50%{opacity:.95}}
-@keyframes bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-9px) rotate(2deg)}}
-/* ── GAME ── */
-#s-game{background:#000}
-#hud{background:#140702;padding:5px 14px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;height:30px;z-index:5}
-#hud-ch{font-family:'Fraunces',serif;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#E8921A}
-#hud-goal{font-size:11px;color:rgba(251,244,228,.58);font-style:italic;text-align:right;max-width:200px}
-.pbar{height:3px;background:#0d0502;flex-shrink:0;z-index:5}
-.pfill{height:100%;background:linear-gradient(90deg,#C8720A,#E8921A);transition:width .7s ease}
-#cv-wrap{flex:1;position:relative;overflow:hidden;min-height:0}
-canvas{display:block;position:absolute;top:0;left:0}
-/* ── CONTROLS ── */
-#ctrl{display:flex;justify-content:space-between;align-items:center;padding:8px 18px 14px;background:#111;flex-shrink:0;height:88px;touch-action:none}
-.ctrl-l{display:flex;gap:8px}
-.cbtn{background:rgba(255,255,255,.08);border:2px solid rgba(255,255,255,.16);border-radius:14px;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent;transition:background .08s}
-.cbtn.held{background:rgba(200,114,10,.4);border-color:#C8720A}
-#bl,#br{width:62px;height:56px}
-#ba{width:96px;height:66px;font-family:'Fraunces',serif;font-size:13px;font-weight:700;flex-direction:column;gap:3px;background:rgba(200,114,10,.18);border-color:rgba(200,114,10,.45)}
-#ba .ai{font-size:20px;line-height:1}
-#ba.sniff{background:rgba(200,114,10,.5);border-color:#E8921A}
-/* ── OVERLAYS ── */
-.ov{position:absolute;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
-.ov.on{opacity:1;pointer-events:all}
-/* intro */
-#ov-intro{background:rgba(10,4,1,.92)}
-.in-box{text-align:center;padding:0 36px}
-.in-num{font-family:'Fraunces',serif;font-size:11px;letter-spacing:3px;text-transform:uppercase;color:#E8921A;margin-bottom:8px}
-.in-name{font-family:'Fraunces',serif;font-size:34px;font-weight:800;color:#FBF4E4;font-style:italic;line-height:1.1;margin-bottom:10px}
-.in-sub{font-size:15px;color:rgba(251,244,228,.72);line-height:1.7}
-/* beat */
-#ov-beat{background:rgba(8,3,1,.93)}
-.bt-box{padding:26px 30px;max-width:370px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px}
-.bt-em{font-size:56px;display:block;animation:bob 3s ease-in-out infinite}
-.bt-txt{font-size:17px;line-height:1.82;color:rgba(251,244,228,.88)}
-.bt-txt em{color:#E8921A}
-.btn-next{background:#C8720A;color:#fff;border:none;border-radius:40px;padding:13px 34px;font-family:'Fraunces',serif;font-size:16px;cursor:pointer}
-/* speech */
-#ov-speech{background:rgba(8,3,1,.72);align-items:flex-end}
-.sp-box{background:#FEFAF2;border-top:3px solid #C8720A;width:100%;padding:16px 18px 18px;animation:slideUp .2s ease}
-.sp-who{font-family:'Fraunces',serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#C8720A;margin-bottom:5px}
-#sp-txt{font-size:16px;line-height:1.72;color:#7A4520;margin-bottom:12px}
-#sp-txt em{color:#3A1F0E;font-style:italic}
-#sp-btn{display:block;margin:0 auto;background:#C8720A;color:#fff;border:none;border-radius:40px;padding:9px 26px;font-family:'Fraunces',serif;font-size:15px;cursor:pointer}
-/* minigame */
-#ov-mg{background:rgba(6,2,1,.97)}
-#mg-inner{display:flex;flex-direction:column;align-items:center;gap:10px;padding:18px 22px;width:100%;max-width:340px}
-.mg-h{font-family:'Fraunces',serif;font-size:26px;font-weight:800;color:#FBF4E4;font-style:italic;text-align:center;line-height:1.1}
-.mg-d{font-size:14px;color:rgba(251,244,228,.58);text-align:center;line-height:1.5}
-.mg-em{font-size:64px;display:block;text-align:center;line-height:1.1}
-.mg-track{width:100%;max-width:280px;height:10px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
-.mg-fill{height:100%;width:0%;background:linear-gradient(90deg,#C8720A,#E8921A);border-radius:5px;transition:width .08s}
-.mg-cnt{font-family:'Fraunces',serif;font-size:12px;color:#E8921A;letter-spacing:1px}
-.mg-tap{background:#C8720A;color:#fff;border:none;border-radius:50px;padding:17px 44px;font-family:'Fraunces',serif;font-size:20px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(200,114,10,.45);touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.arena{width:100%;max-width:280px;height:110px;border:2px solid rgba(255,255,255,.07);border-radius:12px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;background:rgba(255,255,255,.02)}
-.bwave{position:absolute;left:50%;top:50%;border:2px solid #E8921A;border-radius:50%;animation:bwave .5s ease-out forwards;pointer-events:none}
-@keyframes bwave{0%{width:20px;height:20px;opacity:.9;transform:translate(-50%,-50%)}100%{width:150px;height:150px;opacity:0;transform:translate(-50%,-50%)}}
-/* dig hole visual */
-.dig-scene{width:100%;max-width:280px;height:110px;border-radius:12px;position:relative;overflow:hidden;cursor:pointer;touch-action:none}
-.dig-ground{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(180deg,#6B3C1C,#3A1F0E);transition:top .3s ease}
-.dig-hole{position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:#1a0a04;border-radius:50% 50% 0 0;transition:all .25s ease}
-.dig-hank{position:absolute;font-size:32px;transition:bottom .25s ease;left:50%;transform:translateX(-50%);text-align:center}
-.dirt-piece{position:absolute;font-size:18px;animation:dirtFly .6s ease-out forwards;pointer-events:none}
-@keyframes dirtFly{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3)}}
-/* choice */
-.crow{display:flex;gap:10px;width:100%}
-.cbtm{flex:1;border:2px solid;border-radius:12px;padding:14px 8px;font-family:'Fraunces',serif;font-size:16px;cursor:pointer;text-align:center;background:transparent;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
-.cbtm.yes{border-color:#C8720A;color:#E8921A}
-.cbtm.no{border-color:rgba(255,255,255,.2);color:rgba(255,255,255,.5)}
-.cbtm:disabled{opacity:.35}
-.mg-note{font-style:italic;color:#E8921A;font-size:15px;text-align:center;min-height:20px;line-height:1.5}
-/* end */
-#s-end{background:linear-gradient(160deg,#1a1008,#3d2210);overflow:hidden}
-.end-sky{position:absolute;inset:0;pointer-events:none}
-.end-mid{flex:1;display:flex;align-items:center;justify-content:center;position:relative;z-index:2}
-.end-card{background:#FBF4E4;border-radius:28px 28px 0 0;padding:26px 28px 52px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;position:relative;z-index:2;width:100%}
-.end-h{font-family:'Fraunces',serif;font-size:33px;font-weight:800;color:#3A1F0E;font-style:italic}
-.end-p{font-size:15px;color:#7A4520;line-height:1.82;max-width:300px}
-#btn-restart{background:transparent;border:2px solid #C8720A;color:#C8720A;border-radius:40px;padding:11px 30px;font-family:'Fraunces',serif;font-size:16px;cursor:pointer}
-@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.12)}28%{transform:scale(1)}42%{transform:scale(1.18)}70%{transform:scale(1)}}
+.screen{display:none;flex-direction:column;flex:1;min-height:0}
+.screen.active{display:flex}
+
+/* ── PROGRESS BAR ── */
+.progress-bar{height:3px;background:var(--bg);flex-shrink:0;position:relative;z-index:5}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--gold));transition:width .8s ease;width:0%}
+
+/* ── HUD ── */
+.hud{
+  background:rgba(20,7,2,.9);padding:8px 16px;display:flex;justify-content:space-between;
+  align-items:center;flex-shrink:0;z-index:5;backdrop-filter:blur(4px);
+}
+.hud-chapter{
+  font-family:'Fraunces',serif;font-size:11px;font-weight:700;
+  letter-spacing:1.8px;text-transform:uppercase;color:var(--gold);
+}
+.hud-goal{font-size:12px;color:var(--text-dim);font-style:italic}
+
+/* ── SCROLLABLE STORY AREA ── */
+.story-area{
+  flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;padding:0 0 120px;
+}
+.story-area::-webkit-scrollbar{width:3px}
+.story-area::-webkit-scrollbar-track{background:transparent}
+.story-area::-webkit-scrollbar-thumb{background:rgba(200,114,10,.3);border-radius:3px}
+
+/* ── TITLE SCREEN ── */
+.title-screen{
+  background:linear-gradient(160deg,#1a1008 0%,#3d2210 60%,#1a0a04 100%);
+  align-items:center;justify-content:center;text-align:center;
+  padding:40px 28px;gap:0;position:relative;overflow:hidden;
+}
+.title-stars{position:absolute;inset:0;pointer-events:none}
+.star{
+  position:absolute;background:#fff;border-radius:50%;
+  animation:twinkle 3s ease-in-out infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.85}}
+.title-hero{
+  font-size:min(28vw,120px);line-height:1;
+  animation:float 4s ease-in-out infinite;
+  filter:drop-shadow(0 8px 24px rgba(200,114,10,.35));
+  position:relative;z-index:2;
+}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
+.title-paws{font-size:16px;letter-spacing:12px;margin-top:32px;opacity:.7}
+.title-name{
+  font-family:'Fraunces',serif;font-size:clamp(36px,10vw,52px);font-weight:800;
+  color:var(--brown);font-style:italic;line-height:1.05;
+}
+.title-card{
+  background:var(--soft);border-radius:28px 28px 0 0;padding:28px 28px 48px;
+  display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
+  width:calc(100% + 56px);margin:32px -28px -40px;position:relative;z-index:2;
+}
+.title-sub{font-size:16px;color:var(--tan);line-height:1.6}
+.title-hint{font-size:12px;color:var(--light-tan);font-style:italic;opacity:.7}
+.btn-start{
+  background:var(--amber);color:var(--soft);border:none;border-radius:50px;
+  padding:16px 44px;font-family:'Fraunces',serif;font-size:19px;font-weight:700;
+  cursor:pointer;width:100%;max-width:260px;
+  box-shadow:0 4px 20px rgba(200,114,10,.45);
+  transition:transform .15s,box-shadow .15s;
+}
+.btn-start:active{transform:scale(.96);box-shadow:0 2px 10px rgba(200,114,10,.3)}
+
+/* ── CHAPTER INTRO OVERLAY ── */
+.chapter-intro{
+  position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;
+  background:rgba(10,4,1,.94);text-align:center;padding:24px;
+  opacity:0;pointer-events:none;transition:opacity .5s ease;
+}
+.chapter-intro.active{opacity:1;pointer-events:all}
+.ch-intro-num{
+  font-family:'Fraunces',serif;font-size:11px;letter-spacing:3.5px;
+  text-transform:uppercase;color:var(--gold);margin-bottom:10px;
+}
+.ch-intro-name{
+  font-family:'Fraunces',serif;font-size:clamp(28px,8vw,38px);font-weight:800;
+  color:var(--cream);font-style:italic;line-height:1.1;margin-bottom:14px;
+}
+.ch-intro-sub{font-size:15px;color:var(--text-mid);line-height:1.8}
+
+/* ── STORY CONTENT BLOCKS ── */
+.scene-block{
+  padding:20px 22px;animation:fadeUp .5s ease both;
+  border-bottom:1px solid rgba(200,114,10,.08);
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+.scene-emoji{
+  font-size:52px;text-align:center;display:block;margin:8px 0 12px;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));
+}
+.scene-label{
+  font-family:'Fraunces',serif;font-size:11px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--gold);text-align:center;
+  margin-bottom:6px;
+}
+.scene-text{
+  font-size:16px;line-height:1.8;color:var(--text-mid);text-align:center;
+}
+.scene-text em{color:var(--gold);font-style:italic}
+
+/* ── LOCATION ITEMS ── */
+.location-list{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+
+.location-item{
+  background:rgba(255,255,255,.04);border:1.5px solid rgba(200,114,10,.18);
+  border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:all .2s ease;position:relative;overflow:hidden;
+}
+.location-item:active{transform:scale(.97)}
+.location-item:hover{border-color:rgba(200,114,10,.4);background:rgba(255,255,255,.06)}
+.location-item.visited{
+  opacity:.4;border-color:rgba(255,255,255,.06);pointer-events:none;
+  background:rgba(255,255,255,.02);
+}
+.location-item .loc-emoji{font-size:32px;flex-shrink:0}
+.location-item .loc-info{flex:1;min-width:0}
+.location-item .loc-name{
+  font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--cream);
+}
+.location-item .loc-hint{font-size:12px;color:var(--text-dim);margin-top:2px}
+.location-item .loc-badge{
+  font-size:9px;background:var(--amber);color:#fff;padding:3px 8px;border-radius:20px;
+  font-family:'Fraunces',serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  flex-shrink:0;
+}
+.location-item.visited .loc-badge{display:none}
+.location-item.key-item{border-color:rgba(232,146,26,.35)}
+.location-item.key-item .loc-badge{background:var(--gold);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.location-item.key-locked{
+  display:none;
+}
+.location-item.key-revealed{
+  display:flex;
+  animation:keyReveal .6s ease both;
+}
+@keyframes keyReveal{
+  from{opacity:0;transform:translateY(12px) scale(.95);border-color:var(--gold)}
+  60%{border-color:var(--gold);box-shadow:0 0 20px rgba(232,146,26,.3)}
+  to{opacity:1;transform:translateY(0) scale(1);border-color:rgba(232,146,26,.35);box-shadow:none}
+}
+
+/* ── DISCOVERY PANEL ── */
+.discovery-panel{
+  background:var(--soft);border-top:3px solid var(--amber);
+  padding:18px 20px 20px;margin:0 12px 12px;border-radius:0 0 16px 16px;
+  animation:slideReveal .3s ease both;
+}
+@keyframes slideReveal{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.disc-who{
+  font-family:'Fraunces',serif;font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--amber);margin-bottom:6px;
+}
+.disc-text{font-size:15px;line-height:1.75;color:var(--tan)}
+.disc-text em{color:var(--brown);font-style:italic}
+
+/* ── ACTION BUTTONS ── */
+.action-row{display:flex;gap:10px;margin-top:14px;justify-content:center}
+.btn-action{
+  background:var(--amber);color:#fff;border:none;border-radius:40px;
+  padding:11px 28px;font-family:'Fraunces',serif;font-size:15px;cursor:pointer;
+  transition:transform .12s;
+}
+.btn-action:active{transform:scale(.95)}
+.btn-action.secondary{
+  background:transparent;border:1.5px solid rgba(200,114,10,.4);color:var(--gold);
+}
+
+/* ── MINIGAME AREA ── */
+.minigame-panel{
+  padding:24px 20px;text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:12px;animation:fadeUp .4s ease both;
+}
+.mg-title{
+  font-family:'Fraunces',serif;font-size:clamp(22px,6vw,28px);font-weight:800;
+  color:var(--cream);font-style:italic;line-height:1.1;
+}
+.mg-desc{font-size:14px;color:var(--text-dim);line-height:1.6}
+.mg-emoji{
+  font-size:56px;display:block;transition:transform .15s ease;
+  filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));
+}
+.mg-track{
+  width:100%;max-width:260px;height:10px;background:rgba(255,255,255,.08);
+  border-radius:5px;overflow:hidden;
+}
+.mg-fill{
+  height:100%;width:0%;background:linear-gradient(90deg,var(--amber),var(--gold));
+  border-radius:5px;transition:width .1s ease;
+}
+.mg-counter{font-family:'Fraunces',serif;font-size:12px;color:var(--gold);letter-spacing:1px}
+.mg-tap-btn{
+  background:var(--amber);color:#fff;border:none;border-radius:50px;
+  padding:16px 40px;font-family:'Fraunces',serif;font-size:18px;font-weight:700;
+  cursor:pointer;box-shadow:0 4px 16px rgba(200,114,10,.45);
+  touch-action:manipulation;-webkit-tap-highlight-color:transparent;
+  transition:transform .08s;
+}
+.mg-tap-btn:active:not(:disabled){transform:scale(.93)}
+.mg-tap-btn:disabled{opacity:.5}
+.mg-note{
+  font-style:italic;color:var(--gold);font-size:14px;min-height:20px;line-height:1.6;
+}
+
+/* ── CHOICE BUTTONS ── */
+.choice-row{display:flex;gap:10px;width:100%;max-width:300px}
+.choice-btn{
+  flex:1;border:2px solid;border-radius:12px;padding:14px 10px;
+  font-family:'Fraunces',serif;font-size:15px;cursor:pointer;
+  text-align:center;background:transparent;touch-action:manipulation;
+  transition:transform .12s;
+}
+.choice-btn:active{transform:scale(.95)}
+.choice-btn.yes{border-color:var(--amber);color:var(--gold)}
+.choice-btn.no{border-color:rgba(255,255,255,.15);color:rgba(255,255,255,.45)}
+.choice-btn:disabled{opacity:.3;pointer-events:none}
+
+/* ── APPROACH MINIGAME ── */
+.approach-scene{
+  width:100%;max-width:280px;text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+}
+.approach-humans{font-size:44px;transition:all .4s ease}
+.approach-hank{font-size:40px;display:block;transition:all .4s ease}
+
+/* ── BEAT / TRANSITION PANEL ── */
+.beat-panel{
+  padding:28px 24px;text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:16px;animation:fadeUp .5s ease both;
+}
+.beat-emoji{
+  font-size:60px;display:block;
+  animation:float 3s ease-in-out infinite;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.3));
+}
+.beat-text{font-size:16px;line-height:1.85;color:var(--text-mid);max-width:340px}
+.beat-text em{color:var(--gold);font-style:italic}
+
+/* ── END SCREEN ── */
+.end-screen{
+  background:linear-gradient(160deg,#1a1008,#3d2210);
+  align-items:center;justify-content:center;text-align:center;
+  padding:40px 28px;gap:0;position:relative;overflow:hidden;
+}
+.end-hero{
+  font-size:min(24vw,100px);line-height:1;
+  animation:heartbeat 2.5s ease-in-out infinite;
+  filter:drop-shadow(0 6px 20px rgba(200,114,10,.4));
+  position:relative;z-index:2;
+}
+@keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.1)}28%{transform:scale(1)}42%{transform:scale(1.15)}70%{transform:scale(1)}}
+.end-card{
+  background:var(--soft);border-radius:28px 28px 0 0;padding:28px 28px 48px;
+  display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  width:calc(100% + 56px);margin:28px -28px -40px;position:relative;z-index:2;
+}
+.end-h{
+  font-family:'Fraunces',serif;font-size:clamp(28px,8vw,36px);font-weight:800;
+  color:var(--brown);font-style:italic;
+}
+.end-p{font-size:15px;color:var(--tan);line-height:1.85;max-width:320px}
+.end-p em{color:var(--brown);font-style:italic;font-weight:600}
+.end-label{
+  font-family:'Fraunces',serif;font-size:11px;letter-spacing:2.5px;
+  color:var(--light-tan);text-transform:uppercase;
+}
+.btn-restart{
+  background:transparent;border:2px solid var(--amber);color:var(--amber);
+  border-radius:40px;padding:12px 32px;font-family:'Fraunces',serif;font-size:16px;
+  cursor:pointer;transition:all .15s;
+}
+.btn-restart:active{transform:scale(.95)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:360px){
+  .scene-text,.disc-text{font-size:14px}
+  .location-item{padding:12px 14px;gap:10px}
+  .location-item .loc-emoji{font-size:26px}
+  .mg-tap-btn{padding:14px 32px;font-size:16px}
+}
+@media(min-width:521px){
+  #app{min-height:100vh;min-height:100dvh;border-left:1px solid rgba(200,114,10,.1);border-right:1px solid rgba(200,114,10,.1)}
+}
 </style>
 </head>
 <body>
-<div id="wrap">
+<div id="app">
 
-<!-- TITLE -->
-<div id="s-title" class="scr on">
-  <div id="t-sky"></div>
-  <div class="t-card">
-    <div style="font-size:16px;letter-spacing:10px">🐾 🐾 🐾</div>
-    <h1 class="t-title">Find Me Home</h1>
-    <p class="t-sub">A little puppy named Hank.<br>And one very long day.</p>
-    <button id="btn-start">Begin</button>
-    <p id="resume-lbl">✦ Resume saved game</p>
-    <p class="t-hint">A / D &nbsp;or&nbsp; ← / → &nbsp;to walk &nbsp;·&nbsp; Space to interact</p>
+<!-- ═══ TITLE SCREEN ═══ -->
+<div class="screen title-screen active" id="screen-title">
+  <div class="title-stars" id="title-stars"></div>
+  <div class="title-hero">🐶</div>
+  <div class="title-card">
+    <div class="title-paws">🐾 🐾 🐾</div>
+    <h1 class="title-name">Hanky is Home</h1>
+    <p class="title-sub">A little puppy named Hank.<br>And one very long day.</p>
+    <button class="btn-start" id="btn-start">Begin</button>
+    <p class="title-hint">Tap to explore &middot; Tap to survive</p>
   </div>
 </div>
 
-<!-- GAME -->
-<div id="s-game" class="scr">
-  <div class="pbar"><div class="pfill" id="prog" style="width:0%"></div></div>
-  <div id="hud"><span id="hud-ch"></span><span id="hud-goal"></span></div>
-  <div id="cv-wrap"><canvas id="gc"></canvas></div>
-  <div id="ctrl">
-    <div class="ctrl-l">
-      <button class="cbtn" id="bl">◀</button>
-      <button class="cbtn" id="br">▶</button>
-    </div>
-    <button class="cbtn" id="ba">
-      <span class="ai">●</span>
-      <span id="a-lbl">ACTION</span>
-    </button>
+<!-- ═══ GAME SCREEN ═══ -->
+<div class="screen" id="screen-game">
+  <div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+  <div class="hud">
+    <span class="hud-chapter" id="hud-chapter"></span>
+    <span class="hud-goal" id="hud-goal"></span>
   </div>
-
-  <div class="ov" id="ov-intro">
-    <div class="in-box">
-      <div class="in-num" id="oi-num"></div>
-      <div class="in-name" id="oi-name"></div>
-      <div class="in-sub" id="oi-sub"></div>
-    </div>
-  </div>
-
-  <div class="ov" id="ov-beat">
-    <div class="bt-box">
-      <span class="bt-em" id="be-em"></span>
-      <div class="bt-txt" id="be-txt"></div>
-      <button class="btn-next" id="be-btn">Continue →</button>
-    </div>
-  </div>
-
-  <div class="ov" id="ov-speech">
-    <div class="sp-box">
-      <div class="sp-who">🐶 Hank notices...</div>
-      <div id="sp-txt"></div>
-      <button id="sp-btn">Got it →</button>
-    </div>
-  </div>
-
-  <div class="ov" id="ov-mg">
-    <div id="mg-inner"></div>
-  </div>
+  <div class="story-area" id="story-area"></div>
 </div>
 
-<!-- END -->
-<div id="s-end" class="scr">
-  <div class="end-sky" id="end-sky"></div>
-  <div class="end-mid">
-    <div style="font-size:84px;animation:heartbeat 2.5s ease-in-out infinite;filter:drop-shadow(0 5px 18px rgba(200,114,10,.4))">🐶</div>
-  </div>
+<!-- ═══ END SCREEN ═══ -->
+<div class="screen end-screen" id="screen-end">
+  <div class="title-stars" id="end-stars"></div>
+  <div class="end-hero">🐶</div>
   <div class="end-card">
-    <div style="font-size:24px;letter-spacing:8px">💛 🏠 💛</div>
+    <div style="font-size:22px;letter-spacing:8px">💛 🏠 💛</div>
     <h2 class="end-h">Good boy, Hank.</h2>
-    <p class="end-p">He never found his old family.<br>But somewhere between the barking and the digging and the long car ride —<br><br><em>he found something better.</em></p>
-    <div style="font-size:16px;letter-spacing:10px">🐾 🐾 🐾</div>
-    <p style="font-family:'Fraunces',serif;font-size:11px;letter-spacing:2px;color:#B07040;text-transform:uppercase">— The End —</p>
-    <button id="btn-restart">Play Again</button>
+    <p class="end-p">
+      He never found his old family.<br><br>
+      But somewhere between the barking and the digging and the long car ride —<br><br>
+      <em>he found something better.</em>
+    </p>
+    <div class="title-paws" style="margin-top:0">🐾 🐾 🐾</div>
+    <p class="end-label">— The End —</p>
+    <button class="btn-restart" id="btn-restart">Play Again</button>
+  </div>
+</div>
+
+<!-- ═══ CHAPTER INTRO OVERLAY ═══ -->
+<div class="chapter-intro" id="chapter-intro">
+  <div>
+    <div class="ch-intro-num" id="ch-num"></div>
+    <div class="ch-intro-name" id="ch-name"></div>
+    <div class="ch-intro-sub" id="ch-sub"></div>
   </div>
 </div>
 
 </div>
+
 <script>
 // ═══════════════════════════════════════════
-//  FIND ME HOME  ·  Side-scroll Walker
+//  HANKY IS HOME — Text Adventure
 // ═══════════════════════════════════════════
-const SAVE_KEY = 'fmh_v6';
-const SPD = 3.8;
 
-const gc  = document.getElementById('gc');
-const ctx = gc.getContext('2d');
-let CW=0, CH=0, GY=0;
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
-// State
-let phase='title', chIdx=1, frameN=0, raf=null;
-let doneSets={};
-let level=null, lastTouched=null;
-
-// Player
-const P={x:80, vx:0, facing:1};
-
-// Camera
-let camX=0;
-
-// Input
-const K={left:false,right:false,action:false};
-let actionUsed=false;
-
-// ── Keyboard ──────────────────────────────
-window.addEventListener('keydown',e=>{
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){K.left=true;}
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){K.right=true;}
-  if(e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key==='e'||e.key==='E'){
-    if(!K.action){K.action=true;actionUsed=false;}
-    e.preventDefault();
-  }
-});
-window.addEventListener('keyup',e=>{
-  if(e.key==='ArrowLeft' ||e.key==='a'||e.key==='A'){K.left=false;}
-  if(e.key==='ArrowRight'||e.key==='d'||e.key==='D'){K.right=false;}
-  if(e.key===' '||e.key==='ArrowUp'||e.key==='w'||e.key==='W'||e.key==='e'||e.key==='E'){K.action=false;actionUsed=false;}
-});
-
-// ── Touch buttons ─────────────────────────
-function mkBtn(id,k){
-  const el=document.getElementById(id);
-  const on=e=>{K[k]=true;if(k==='action')actionUsed=false;el.classList.add('held');e.preventDefault();};
-  const off=()=>{K[k]=false;el.classList.remove('held');};
-  el.addEventListener('pointerdown',on,{passive:false});
-  el.addEventListener('pointerup',off);
-  el.addEventListener('pointerleave',off);
-  el.addEventListener('pointercancel',off);
-}
-mkBtn('bl','left'); mkBtn('br','right'); mkBtn('ba','action');
-
-// ── Screen helpers ────────────────────────
-function showScr(id){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('on'));document.getElementById(id).classList.add('on');}
-function showOv(id){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('on'));if(id)document.getElementById(id).classList.add('on');}
-function hideOv(){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('on'));}
-
-// ── Canvas resize ─────────────────────────
-function resize(){
-  const w=document.getElementById('cv-wrap');
-  CW=w.clientWidth||window.innerWidth;
-  CH=w.clientHeight||(window.innerHeight-30-3-88);
-  gc.width=CW; gc.height=CH;
-  GY=Math.round(CH*0.72); // ground line
-}
-window.addEventListener('resize',()=>{if(phase!=='title')resize();});
+let currentChapter = 0;
+let visited = {};
 
 // ═══════════════════════════════════════════
-//  LEVEL DATA
+//  CHAPTER DATA
 // ═══════════════════════════════════════════
-function mkLevel(n){
-  // Level width = multiple of screen width
-  const LW=[0,4.2,5.0,3.8,2.8,4.0].map(f=>Math.round(CW*f))[n];
-
-  // Chapter metadata
-  const meta=[null,
-    {num:'Chapter One',  name:'Left Behind',  sub:'Hank sat tied to a post outside the shelter.\nHis family was gone.',         goal:'Find a way out',             prog:0},
-    {num:'Chapter Two',  name:'The Search',   sub:'Morning light flooded the streets.\nHank pressed his nose to the pavement.', goal:'Follow your nose',           prog:20},
-    {num:'Chapter Three',name:'The Giants',   sub:'The park at dusk.\nHank curled under the big oak tree, exhausted.',           goal:'Explore the park',           prog:40},
-    {num:'Chapter Four', name:'The Car',      sub:'A moving car. Strange smells. Strange voices.\nThe window right there...',    goal:'Find a way out',             prog:60},
-    {num:'Chapter Five', name:'Home',         sub:'A house. Warm light in the windows.\nStrange — and somehow, not scary.',     goal:'Explore your new home',      prog:80},
-  ][n];
-
-  // Decorative background elements (drawn behind everything)
-  // Objects: {id, x (world), emoji, lbl, txt, mg?, last?}
-  const W=f=>Math.round(LW*f); // shorthand
-
-  const objs=[null,
-    // Chapter 1 — Shelter at night
-    [
-      {id:'bowl',  x:W(.10), em:'🥣', lbl:'Water bowl',  txt:'Lukewarm water.\n\nNot even a trace of their smell.'},
-      {id:'dog2',  x:W(.25), em:'🐩', lbl:'Another dog', txt:'The poodle in the corner just looked at you with sad eyes.\n\n<em>She knew.</em>'},
-      {id:'post1', x:W(.50), em:'🪵', lbl:'Fence post',  txt:'Solid as a rock. Not moving.'},
-      {id:'post2', x:W(.62), em:'🪵', lbl:'Fence post',  txt:'Solid as a rock. Not moving.'},
-      {id:'loose', x:W(.82), em:'🔩', lbl:'Loose post?', txt:'⚡ Wait — <em>this one wobbles!</em>', mg:'wiggle'},
+const chapters = [
+  // ── Chapter 1: Left Behind ──
+  {
+    num: 'Chapter One',
+    name: 'Left Behind',
+    sub: 'Hank sat tied to a post outside the shelter.\nHis family was gone.',
+    goal: '🐾 Break free',
+    progress: 0,
+    intro: {
+      emoji: '🌙',
+      label: 'Night — Outside the shelter',
+      text: 'The leash pulled tight against the old wooden post. Around Hank, the shelter was quiet except for the occasional whimper from inside.\n\nHis family\'s car had pulled away twenty minutes ago.\n\n<em>He was still waiting.</em>'
+    },
+    locations: [
+      { id:'pull', emoji:'⛓️', name:'The leash', hint:'It\'s holding you back', minigame:'pull',
+        text:'The leash dug into Hank\'s neck. He planted his paws and <em>pulled</em>.' },
+      { id:'dog2', emoji:'🐩', name:'Another dog', hint:'Huddled in the corner', minigame:'whimper',
+        text:'The poodle looked at you with sad eyes. A low whimper escaped her throat.\n\n<em>She knew.</em>' },
+      { id:'post1', emoji:'🪵', name:'Fence post', hint:'Thick and sturdy', minigame:'chew',
+        text:'Maybe if you chew through the rope...\n\nHank bit down <em>hard</em>.' },
+      { id:'bowl', emoji:'🥣', name:'Water bowl', hint:'Sitting on the concrete',
+        text:'Lukewarm water.\n\nNot even a trace of their smell.' },
+      { id:'loose', emoji:'🔩', name:'Loose post?', hint:'Something feels different here...', key:true,
+        text:'Wait — <em>this one wobbles!</em>\n\nBack and forth. Just a little. But enough.', minigame:'wiggle' },
     ],
-    // Chapter 2 — Streets in morning
-    [
-      {id:'hydrant',x:W(.08), em:'🚒', lbl:'Fire hydrant', txt:'A hundred different dogs.\n\nNone of them familiar.'},
-      {id:'bakery', x:W(.25), em:'🥐', lbl:'Bakery',       txt:'Warm bread. Cinnamon.\n\nSomething almost like home — but not quite.'},
-      {id:'park',   x:W(.48), em:'🌳', lbl:'The park',     txt:'Frisbees. Ice cream. Happy dogs with their people.\n\n<em>You kept walking.</em>'},
-      {id:'house',  x:W(.82), em:'🏠', lbl:'Your old house',txt:'⚡ The smell hit you like a wave. They were <em>here</em>. But the scent was old. Fading.\n\n<em>They were gone.</em>', last:true},
-    ],
-    // Chapter 3 — Park at dusk
-    [
-      {id:'oak',    x:W(.12), em:'🌳', lbl:'Big oak tree', txt:'The bark was rough and familiar.\n\nYou\'d chased a squirrel up this tree once.\n\n<em>The squirrel wasn\'t there.</em>'},
-      {id:'bench',  x:W(.38), em:'🪑', lbl:'Park bench',   txt:'Someone left half a sandwich.\n\n<em>You ate it. No shame.</em>'},
-      {id:'giant',  x:W(.78), em:'👥', lbl:'Two strangers',txt:'⚡ They\'re looking right at you. Their voices are low. Their hands are reaching down from the sky —', mg:'bark'},
-    ],
-    // Chapter 4 — The car
-    [
-      {id:'win1',x:W(.12), em:'🌳', lbl:'Out the window', txt:'Trees rushing past. Fields.\n\nYou pressed your nose to the cold glass.'},
-      {id:'win2',x:W(.35), em:'🏙️', lbl:'Out the window', txt:'Buildings. Streets you didn\'t recognise.\n\n<em>Getting further from everything familiar.</em>'},
-      {id:'door',x:W(.60), em:'🚪', lbl:'Car door',       txt:'Locked. No handle you could reach.\n\n<em>You were going wherever they were taking you.</em>'},
-      {id:'hand',x:W(.85), em:'🤚', lbl:'A hand...',      txt:'⚡ One of them reached back. Slow. Patient.\n\nAn open hand, waiting.', mg:'hand'},
-    ],
-    // Chapter 5 — Home
-    [
-      {id:'bed',  x:W(.12), em:'🛏️', lbl:'A small bed',   txt:'It was exactly your size. Soft.\n\nYour name was embroidered on it.\n\n<em>Your name.</em>'},
-      {id:'bowl5',x:W(.35), em:'🍖', lbl:'A food bowl',   txt:'"HANK." In big, friendly letters on the bowl.\n\n<em>They knew your name.</em>'},
-      {id:'nook', x:W(.58), em:'🧸', lbl:'A warm corner', txt:'A soft blanket. A toy. A window with the last of the evening light.\n\n<em>A perfect dog-sized spot.</em>'},
-      {id:'them', x:W(.82), em:'🧑‍🤝‍🧑',lbl:'The humans',  txt:'⚡ They sat cross-legged on the floor. No towering. No reaching.\n\nJust... waiting. Patient. Calm.\n\n<em>Hank took one step closer.</em>', mg:'approach'},
-    ],
-  ][n];
-
-  // Restore done
-  const done=doneSets[n]||new Set();
-  objs.forEach(o=>{o.done=done.has(o.id);});
-
-  return {n,lw:LW,objs,meta,
-    bgColors:[null,
-      ['#1a1008','#2e1a0a'],  // 1 night
-      ['#FF9A30','#87CEEB'],  // 2 morning
-      ['#1C2B3A','#2C3E50'],  // 3 dusk
-      ['#3A5068','#2A4058'],  // 4 car night
-      ['#F4A261','#C8570F'],  // 5 warm home
-    ][n],
-    gndColors:[null,
-      ['#4A2810','#2A1208'],  // 1 dirt
-      ['#6A8A40','#4A6A28'],  // 2 grass
-      ['#2A4A20','#1A3A10'],  // 3 dark grass
-      ['#484858','#303040'],  // 4 road
-      ['#9A7050','#7A5030'],  // 5 warm floor
-    ][n],
-    hasStars: n===1||n===3||n===4,
-    hasSun:   n===2||n===5,
-    hasMoon:  n===1,
-  };
-}
-
-// ═══════════════════════════════════════════
-//  UPDATE
-// ═══════════════════════════════════════════
-function update(){
-  // Walk
-  if(K.left) { P.vx-=SPD*.4; P.facing=-1; }
-  else if(K.right){ P.vx+=SPD*.4; P.facing=1; }
-  else P.vx*=0.68;
-  P.vx=Math.max(-SPD,Math.min(SPD,P.vx));
-  P.x+=P.vx;
-  P.x=Math.max(30,Math.min(P.x,level.lw-30));
-
-  // Camera follows Hank, smoothly
-  const tgt=Math.max(0,Math.min(P.x-CW/2,level.lw-CW));
-  camX+=(tgt-camX)*.10;
-
-  // Action button — interact with nearest undone object
-  if(K.action&&!actionUsed){
-    actionUsed=true;
-    const n=nearObj();
-    if(n) doInteract(n);
-  }
-  if(!K.action) actionUsed=false;
-
-  // Walk-into proximity auto-trigger
-  const n=nearObj();
-  if(n&&n!==lastTouched) doInteract(n);
-  else if(!n) lastTouched=null;
-
-  // Action button label
-  const nb=nearObj();
-  const lbl=document.getElementById('a-lbl');
-  const btn=document.getElementById('ba');
-  if(nb){lbl.textContent='SNIFF';btn.classList.add('sniff');}
-  else{lbl.textContent='ACTION';btn.classList.remove('sniff');}
-}
-
-function nearObj(){
-  if(!level) return null;
-  const cx=P.x;
-  let best=null,bd=999;
-  for(const o of level.objs){
-    if(o.done) continue;
-    const d=Math.abs(cx-o.x);
-    if(d<70&&d<bd){bd=d;best=o;}
-  }
-  return best;
-}
-
-// ═══════════════════════════════════════════
-//  RENDER
-// ═══════════════════════════════════════════
-function render(){
-  if(!CW||!CH||!level) return;
-  const cx=Math.round(camX);
-
-  // Sky gradient
-  const g=ctx.createLinearGradient(0,0,0,GY);
-  g.addColorStop(0,level.bgColors[0]);
-  g.addColorStop(1,level.bgColors[1]);
-  ctx.fillStyle=g;
-  ctx.fillRect(0,0,CW,CH);
-
-  drawBG(cx);
-
-  // Ground — two layers for depth
-  const gc1=level.gndColors[0], gc2=level.gndColors[1];
-  ctx.fillStyle=gc1;
-  ctx.fillRect(-cx,GY,level.lw,8);
-  ctx.fillStyle=gc2;
-  ctx.fillRect(-cx,GY+8,level.lw,CH-GY-8);
-
-  // Subtle ground texture line
-  ctx.strokeStyle='rgba(255,255,255,.08)';
-  ctx.lineWidth=1;
-  ctx.beginPath();
-  ctx.moveTo(0,GY); ctx.lineTo(CW,GY);
-  ctx.stroke();
-
-  // Objects
-  for(const o of level.objs) drawObj(o,cx);
-
-  // Player (Hank)
-  drawHank(cx);
-
-  // Proximity prompt (keyboard hint)
-  const nb=nearObj();
-  if(nb){
-    const sx=nb.x-cx;
-    const bounce=Math.sin(frameN*.1)*3;
-    ctx.save();
-    ctx.font='bold 11px sans-serif';
-    ctx.fillStyle='#E8921A';
-    ctx.textAlign='center';
-    ctx.textBaseline='bottom';
-    ctx.shadowColor='#E8921A'; ctx.shadowBlur=8;
-    ctx.fillText('[Space] Sniff',sx,GY-50+bounce);
-    ctx.shadowBlur=0;
-    ctx.restore();
-  }
-}
-
-function drawBG(cx){
-  const p=cx*0.22;
-  const lw=level.lw;
-  const n=level.n;
-
-  // Stars (seeded by position, no Math.random each frame)
-  if(level.hasStars){
-    for(let i=0;i<90;i++){
-      const sx=((i*137.508+n*300)%lw)-p;
-      const sy=((i*79.31+n*50)%(GY*.8));
-      const op=.2+Math.sin(frameN*.035+i*.8)*.25;
-      if(sx<-4||sx>CW+4) continue;
-      ctx.fillStyle=`rgba(255,255,255,${op.toFixed(2)})`;
-      ctx.beginPath();
-      ctx.arc(sx,sy,i%6===0?1.8:1.2,0,Math.PI*2);
-      ctx.fill();
+    beat: {
+      emoji: '🌅',
+      text: 'The post snapped free.\n\nHank scrambled through the gap and sprinted into the golden morning light.\n\n<em>"I\'ll find them,"</em> he told himself. <em>"I know I will."</em>'
     }
-  }
-  if(level.hasMoon){
-    const mx=lw*.75-p;
-    if(mx>-30&&mx<CW+30){
-      ctx.fillStyle='#FFFACD';
-      ctx.shadowColor='#FFFACD'; ctx.shadowBlur=20;
-      ctx.beginPath(); ctx.arc(mx,CH*.14,22,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0;
+  },
+  // ── Chapter 2: The Search ──
+  {
+    num: 'Chapter Two',
+    name: 'The Search',
+    sub: 'Morning light flooded the streets.\nHank pressed his nose to the pavement.',
+    goal: '🐾 Follow your nose',
+    progress: 20,
+    intro: {
+      emoji: '☀️',
+      label: 'Morning — The streets',
+      text: 'The sun was warm on Hank\'s back. Every fire hydrant, every mailbox, every crack in the sidewalk held a thousand stories.\n\nBut Hank only cared about one story.\n\n<em>Where did they go?</em>'
+    },
+    locations: [
+      { id:'hydrant', emoji:'🚒', name:'Fire hydrant', hint:'A hundred dog stories here', minigame:'sniff',
+        text:'A hundred different scents. Hank sniffed <em>hard</em> — searching for the one that mattered.' },
+      { id:'bakery', emoji:'🥐', name:'Bakery', hint:'Warm smells drifting out', minigame:'beg',
+        text:'Warm bread. Cinnamon. Hank\'s stomach ached.\n\nA woman stood in the doorway. Maybe if he looked <em>sad enough</em>...' },
+      { id:'park', emoji:'🌳', name:'The park', hint:'Sounds of happy dogs', minigame:'run',
+        text:'Frisbees. Ice cream. Happy dogs with their people.\n\nHank ran through, nose to the ground, <em>searching</em>.' },
+      { id:'house', emoji:'🏠', name:'Your old house', hint:'You know this street...', key:true, minigame:'howl',
+        text:'The smell hit you like a wave. They were <em>here</em>.\n\nBut the scent was old. Fading. The windows were dark.\n\n<em>They were gone.</em>' },
+    ],
+    beat: {
+      emoji: '🌆',
+      text: 'The scent trail went cold at the old house.\n\nHank sat on the pavement, chest heaving.\n\n<em>They were gone.</em>\n\nAs the sun dipped lower, Hank turned and walked toward the only green he could see — the park.'
     }
+  },
+  // ── Chapter 3: The Giants ──
+  {
+    num: 'Chapter Three',
+    name: 'The Giants',
+    sub: 'The park at dusk.\nHank curled under the big oak tree, exhausted.',
+    goal: '🐾 Survive the park',
+    progress: 40,
+    intro: {
+      emoji: '🌳',
+      label: 'Dusk — The park',
+      text: 'The light was going blue and gold. Fireflies blinked on and off.\n\nHank was so tired he could barely keep his eyes open.\n\nBut then he heard footsteps.\n\n<em>Heavy ones.</em>'
+    },
+    locations: [
+      { id:'oak', emoji:'🌳', name:'Big oak tree', hint:'You\'ve been here before', minigame:'hide',
+        text:'The bark was rough and familiar. Hank pressed himself flat against the roots.\n\n<em>Stay small. Stay quiet.</em>' },
+      { id:'bench', emoji:'🪑', name:'Park bench', hint:'Something on the seat', minigame:'eat',
+        text:'Someone left half a sandwich. Hank\'s stomach won the argument.\n\n<em>No shame. Eat fast.</em>' },
+      { id:'giant', emoji:'👥', name:'Two strangers', hint:'They\'re looking right at you', key:true,
+        text:'They\'re looking right at you. Their voices are low.\n\nTheir hands are reaching down from the sky —\n\n<em>Giants.</em>', minigame:'bark' },
+    ],
+    beat: null
+  },
+  // ── Chapter 4: The Car ──
+  {
+    num: 'Chapter Four',
+    name: 'The Car',
+    sub: 'A moving car. Strange smells. Strange voices.\nThe window right there...',
+    goal: '🐾 Survive the ride',
+    progress: 60,
+    intro: {
+      emoji: '🚗',
+      label: 'Night — The car',
+      text: 'The car hummed beneath Hank\'s paws.\n\nThrough the window, the world moved too fast. Trees became streaks. Buildings became blurs.\n\nHank pressed his nose against the cold glass and tried not to shake.'
+    },
+    locations: [
+      { id:'win1', emoji:'🪟', name:'The window', hint:'Trees rushing past', minigame:'watch',
+        text:'Trees rushing past. Fields. Hank pressed his nose to the cold glass.\n\n<em>Watch. Wait. Breathe.</em>' },
+      { id:'door', emoji:'🚪', name:'Car door', hint:'Maybe...?', minigame:'scratch',
+        text:'Locked. No handle you could reach. But maybe if you <em>scratch hard enough</em>...' },
+      { id:'blanket', emoji:'🧣', name:'A blanket', hint:'Wadded up on the seat', minigame:'nestle',
+        text:'It smelled like laundry detergent and something warm. Hank circled once... twice...\n\n<em>Curl up. Don\'t fight it.</em>' },
+      { id:'hand', emoji:'🤚', name:'A hand...', hint:'One of them is reaching back', key:true,
+        text:'One of them reached back. Slow. Patient.\n\nAn open hand, waiting.\n\n<em>No sudden moves. Just... waiting.</em>', minigame:'hand' },
+    ],
+    beat: null
+  },
+  // ── Chapter 5: Home ──
+  {
+    num: 'Chapter Five',
+    name: 'Home',
+    sub: 'A house. Warm light in the windows.\nStrange — and somehow, not scary.',
+    goal: '🐾 Explore your new home',
+    progress: 80,
+    intro: {
+      emoji: '🏡',
+      label: 'Evening — A house',
+      text: 'The car had stopped. A door opened.\n\nCool air, fresh grass, something baking inside.\n\nHank was set down gently on the softest lawn he had ever felt.\n\nThe front door was open. <em>Warm light spilled out.</em>'
+    },
+    locations: [
+      { id:'bed', emoji:'🛏️', name:'A small bed', hint:'It\'s exactly your size', minigame:'settle',
+        text:'It was exactly your size. Soft. Your name was embroidered on it.\n\n<em>Your name.</em>\n\nCircle. Paw. Lie down.' },
+      { id:'bowl5', emoji:'🍖', name:'A food bowl', hint:'Letters on the side', minigame:'feast',
+        text:'"HANK." In big, friendly letters on the bowl.\n\nFresh water. Real food.\n\n<em>They knew your name.</em>' },
+      { id:'nook', emoji:'🧸', name:'A warm corner', hint:'Blanket. Toy. Window light.',
+        text:'A soft blanket. A toy. A window with the last of the evening light.\n\n<em>A perfect dog-sized spot.</em>\n\nHank\'s tail wagged. Twice.' },
+      { id:'them', emoji:'🧑‍🤝‍🧑', name:'The humans', hint:'They\'re sitting on the floor...', key:true,
+        text:'They sat cross-legged on the floor.\n\nNo towering. No reaching.\n\nJust... waiting. Patient. Calm.\n\n<em>Hank took one step closer.</em>', minigame:'approach' },
+    ],
+    beat: null
   }
-  if(level.hasSun){
-    const sx=lw*.8-p;
-    if(sx>-30&&sx<CW+30){
-      ctx.fillStyle='#FFD700';
-      ctx.shadowColor='#FFD700'; ctx.shadowBlur=30;
-      ctx.beginPath(); ctx.arc(sx,CH*.12,26,0,Math.PI*2); ctx.fill();
-      ctx.shadowBlur=0;
+];
+
+
+// ═══════════════════════════════════════════
+//  SCREEN MANAGEMENT
+// ═══════════════════════════════════════════
+function showScreen(id) {
+  $$('.screen').forEach(s => s.classList.remove('active'));
+  $(`#screen-${id}`).classList.add('active');
+}
+
+function makeStars(container) {
+  container.innerHTML = '';
+  for (let i = 0; i < 50; i++) {
+    const s = document.createElement('div');
+    s.className = 'star';
+    const sz = Math.random() < .3 ? 3 : 2;
+    s.style.cssText = `left:${Math.random()*100}%;top:${Math.random()*80}%;width:${sz}px;height:${sz}px;animation-delay:${(Math.random()*3).toFixed(1)}s;animation-duration:${(2+Math.random()*2).toFixed(1)}s`;
+    container.appendChild(s);
+  }
+}
+
+function showChapterIntro(ch) {
+  const intro = $('#chapter-intro');
+  $('#ch-num').textContent = ch.num;
+  $('#ch-name').textContent = ch.name;
+  $('#ch-sub').innerHTML = ch.sub.replace(/\n/g, '<br>');
+  intro.classList.add('active');
+  return new Promise(resolve => {
+    setTimeout(() => {
+      intro.classList.remove('active');
+      setTimeout(resolve, 500);
+    }, 2800);
+  });
+}
+
+
+// ═══════════════════════════════════════════
+//  RENDER CHAPTER
+// ═══════════════════════════════════════════
+function renderChapter(chIndex) {
+  const ch = chapters[chIndex];
+  const area = $('#story-area');
+  area.innerHTML = '';
+  area.scrollTop = 0;
+
+  $('#hud-chapter').textContent = ch.num;
+  $('#hud-goal').textContent = ch.goal;
+  $('#progress').style.width = ch.progress + '%';
+
+  // Intro scene
+  const introBlock = document.createElement('div');
+  introBlock.className = 'scene-block';
+  introBlock.innerHTML = `
+    <div class="scene-emoji">${ch.intro.emoji}</div>
+    <div class="scene-label">${ch.intro.label}</div>
+    <div class="scene-text">${ch.intro.text.replace(/\n/g, '<br>')}</div>
+  `;
+  area.appendChild(introBlock);
+
+  // Separator
+  const sep = document.createElement('div');
+  sep.className = 'scene-block';
+  sep.innerHTML = `<div class="scene-label" style="color:var(--text-dim);letter-spacing:4px;margin:4px 0">· · ·</div>
+    <div style="text-align:center;font-size:13px;color:var(--text-dim);font-style:italic">Look around. Tap to interact.</div>`;
+  sep.style.animationDelay = '.15s';
+  area.appendChild(sep);
+
+  // Location list
+  const locList = document.createElement('div');
+  locList.className = 'location-list';
+  locList.id = 'loc-list';
+
+  const nonKeyLocs = ch.locations.filter(l => !l.key);
+  const allNonKeyDone = nonKeyLocs.every(l => visited[`${chIndex}-${l.id}`]);
+
+  ch.locations.forEach((loc, i) => {
+    const item = document.createElement('div');
+    item.className = 'location-item' + (loc.key ? ' key-item' : '');
+    item.id = `loc-${loc.id}`;
+    if (visited[`${chIndex}-${loc.id}`]) item.classList.add('visited');
+    // Hide key items until all non-key items are done
+    if (loc.key && !allNonKeyDone) item.classList.add('key-locked');
+    if (loc.key && allNonKeyDone && !visited[`${chIndex}-${loc.id}`]) item.classList.add('key-revealed');
+    item.style.animationDelay = (.2 + i * .08) + 's';
+    item.innerHTML = `
+      <span class="loc-emoji">${loc.emoji}</span>
+      <div class="loc-info">
+        <div class="loc-name">${loc.name}</div>
+        <div class="loc-hint">${loc.hint}</div>
+      </div>
+      <span class="loc-badge">${loc.key ? '⚡ KEY' : 'SNIFF'}</span>
+    `;
+    if (!visited[`${chIndex}-${loc.id}`] && !(loc.key && !allNonKeyDone)) {
+      item.addEventListener('click', () => interactWith(chIndex, loc, item));
+    }
+    locList.appendChild(item);
+  });
+
+  // Add nudge when key is revealed
+  if (allNonKeyDone) {
+    const keyLoc = ch.locations.find(l => l.key);
+    if (keyLoc && !visited[`${chIndex}-${keyLoc.id}`]) {
+      const nudge = document.createElement('div');
+      nudge.className = 'scene-block';
+      nudge.id = 'key-nudge';
+      nudge.innerHTML = `<div class="scene-label" style="color:var(--gold);letter-spacing:3px;margin:4px 0">· · ·</div>
+        <div style="text-align:center;font-size:14px;color:var(--gold);font-style:italic">Something new appeared...</div>`;
+      area.appendChild(nudge);
     }
   }
 
-  // Chapter-specific decor
-  if(n===1){ // Shelter fence
-    ctx.fillStyle='rgba(90,50,22,.8)';
-    for(let fx=480-p;fx<lw-p;fx+=26){
-      if(fx<-10||fx>CW+10) continue;
-      const fh=28+((fx*7)%16);
-      ctx.fillRect(fx,GY-fh,9,fh);
+  area.appendChild(locList);
+}
+
+
+// ═══════════════════════════════════════════
+//  INTERACTION
+// ═══════════════════════════════════════════
+function interactWith(chIndex, loc, itemEl) {
+  const key = `${chIndex}-${loc.id}`;
+  if (visited[key]) return;
+  visited[key] = true;
+  itemEl.classList.add('visited');
+
+  const area = $('#story-area');
+  const disc = document.createElement('div');
+  disc.className = 'discovery-panel';
+  disc.innerHTML = `
+    <div class="disc-who">🐶 Hank discovers...</div>
+    <div class="disc-text">${loc.text.replace(/\n/g, '<br>')}</div>
+    <div class="action-row">
+      <button class="btn-action" id="disc-continue">${loc.minigame ? 'Go →' : 'Got it →'}</button>
+    </div>
+  `;
+
+  const locList = $('#loc-list');
+  locList.parentNode.insertBefore(disc, locList.nextSibling);
+  setTimeout(() => disc.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+
+  disc.querySelector('#disc-continue').addEventListener('click', () => {
+    disc.remove();
+    if (loc.minigame) {
+      launchMinigame(chIndex, loc.minigame, loc);
+    } else {
+      checkKeyReveal(chIndex);
+      checkChapterComplete(chIndex);
     }
-    // leash post
-    const lx=120-cx;
-    if(lx>-5&&lx<CW+5){
-      ctx.fillStyle='#5A3010';
-      ctx.fillRect(lx-5,GY-55,10,55);
-      ctx.strokeStyle='#777'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.moveTo(lx+5,GY-50); ctx.lineTo(P.x-cx,GY-30); ctx.stroke();
+  });
+}
+
+function checkChapterComplete(chIndex) {
+  const ch = chapters[chIndex];
+  const allDone = ch.locations.every(loc => visited[`${chIndex}-${loc.id}`]);
+  if (allDone && ch.beat) {
+    setTimeout(() => showBeat(ch.beat, () => advanceChapter(chIndex)), 400);
+  }
+}
+
+// Check if all non-key items are done and reveal the key item
+function checkKeyReveal(chIndex) {
+  const ch = chapters[chIndex];
+  const nonKeyLocs = ch.locations.filter(l => !l.key);
+  const keyLoc = ch.locations.find(l => l.key);
+  if (!keyLoc) return;
+
+  const allNonKeyDone = nonKeyLocs.every(l => visited[`${chIndex}-${l.id}`]);
+  if (!allNonKeyDone) return;
+  if (visited[`${chIndex}-${keyLoc.id}`]) return;
+
+  const keyEl = $(`#loc-${keyLoc.id}`);
+  if (!keyEl || !keyEl.classList.contains('key-locked')) return;
+
+  // Insert a narrative nudge above the location list
+  const locList = $('#loc-list');
+  if (locList && !$('#key-nudge')) {
+    const nudge = document.createElement('div');
+    nudge.className = 'scene-block';
+    nudge.id = 'key-nudge';
+    nudge.innerHTML = `<div class="scene-label" style="color:var(--gold);letter-spacing:3px;margin:4px 0">· · ·</div>
+      <div style="text-align:center;font-size:14px;color:var(--gold);font-style:italic">Something new appeared...</div>`;
+    locList.parentNode.insertBefore(nudge, locList);
+  }
+
+  // Reveal the key item
+  keyEl.classList.remove('key-locked');
+  keyEl.classList.add('key-revealed');
+  keyEl.addEventListener('click', () => interactWith(chIndex, keyLoc, keyEl));
+
+  // Scroll to it
+  setTimeout(() => keyEl.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+}
+
+function showBeat(beat, onContinue) {
+  const area = $('#story-area');
+  const panel = document.createElement('div');
+  panel.className = 'beat-panel';
+  panel.innerHTML = `
+    <span class="beat-emoji">${beat.emoji}</span>
+    <div class="beat-text">${beat.text.replace(/\n/g, '<br>')}</div>
+    <button class="btn-action" id="beat-continue">Continue →</button>
+  `;
+  area.innerHTML = '';
+  area.appendChild(panel);
+  area.scrollTop = 0;
+  panel.querySelector('#beat-continue').addEventListener('click', onContinue);
+}
+
+function advanceChapter(chIndex) {
+  if (chIndex + 1 >= chapters.length) { doEnd(); return; }
+  startChapter(chIndex + 1);
+}
+
+async function startChapter(chIndex) {
+  currentChapter = chIndex;
+  showScreen('game');
+  await showChapterIntro(chapters[chIndex]);
+  renderChapter(chIndex);
+}
+
+
+// ═══════════════════════════════════════════
+//  MINIGAME LAUNCHER
+// ═══════════════════════════════════════════
+function launchMinigame(chIndex, type, loc) {
+  const area = $('#story-area');
+  area.innerHTML = '';
+  area.scrollTop = 0;
+  const panel = document.createElement('div');
+  panel.className = 'minigame-panel';
+  area.appendChild(panel);
+
+  const mg = minigames[type];
+  if (mg) mg(panel, chIndex, loc);
+}
+
+function returnToChapter(chIndex) {
+  renderChapter(chIndex);
+  checkKeyReveal(chIndex);
+  checkChapterComplete(chIndex);
+}
+
+
+// ── Generic speed-tap builder ──
+function buildSpeedTap(panel, opts) {
+  panel.innerHTML = `
+    <div class="mg-title">${opts.title}</div>
+    <div class="mg-desc">${opts.desc}</div>
+    <span class="mg-emoji" id="mg-em">${opts.emoji}</span>
+    <div class="mg-track"><div class="mg-fill" id="mg-fill"></div></div>
+    <div class="mg-counter" id="mg-count">0 / ${opts.total}</div>
+    <button class="mg-tap-btn" id="mg-tap">${opts.btnText}</button>
+    <p class="mg-note" id="mg-note"></p>
+  `;
+  let n = 0;
+  $('#mg-tap').addEventListener('pointerdown', () => {
+    if (n >= opts.total) return;
+    n++;
+    $('#mg-fill').style.width = (n / opts.total * 100) + '%';
+    $('#mg-count').textContent = `${n} / ${opts.total}`;
+    if (opts.onTick) opts.onTick(n, opts.total, $('#mg-em'), $('#mg-tap'));
+    if (n >= opts.total) {
+      $('#mg-tap').disabled = true;
+      setTimeout(() => opts.onDone(panel), 600);
+    }
+  });
+}
+
+// ── Generic drain challenge (tap to fill while bar drains) ──
+function buildDrainTap(panel, opts) {
+  panel.innerHTML = `
+    <div class="mg-title">${opts.title}</div>
+    <div class="mg-desc">${opts.desc}</div>
+    <span class="mg-emoji" id="mg-em">${opts.emoji}</span>
+    <div class="mg-track"><div class="mg-fill" id="mg-fill" style="width:0%"></div></div>
+    <div class="mg-counter" id="mg-count">${opts.hint || 'Keep tapping!'}</div>
+    <button class="mg-tap-btn" id="mg-tap">${opts.btnText}</button>
+    <p class="mg-note" id="mg-note"></p>
+  `;
+  let val = 0, done = false;
+  const fill = $('#mg-fill'), btn = $('#mg-tap'), em = $('#mg-em');
+  const interval = setInterval(() => {
+    if (done) return;
+    val = Math.max(0, val - (opts.drainRate || 2));
+    fill.style.width = val + '%';
+  }, 150);
+  btn.addEventListener('pointerdown', () => {
+    if (done) return;
+    val = Math.min(100, val + (opts.tapGain || 8));
+    fill.style.width = val + '%';
+    if (opts.onTick) opts.onTick(val, em);
+    if (val >= (opts.target || 100)) {
+      done = true;
+      clearInterval(interval);
+      btn.disabled = true;
+      setTimeout(() => opts.onDone(panel), 600);
+    }
+  });
+}
+
+// ── Generic hold challenge ──
+function buildHoldChallenge(panel, opts) {
+  panel.innerHTML = `
+    <div class="mg-title">${opts.title}</div>
+    <div class="mg-desc">${opts.desc}</div>
+    <span class="mg-emoji" id="mg-em">${opts.emoji}</span>
+    <div class="mg-track"><div class="mg-fill" id="mg-fill" style="width:0%"></div></div>
+    <div class="mg-counter" id="mg-count">${opts.hint || 'Hold...'}</div>
+    <button class="mg-tap-btn" id="mg-tap">${opts.btnText}</button>
+    <p class="mg-note" id="mg-note"></p>
+  `;
+  let holding = false, val = 0, timer = null, done = false;
+  const fill = $('#mg-fill'), btn = $('#mg-tap'), em = $('#mg-em'), note = $('#mg-note');
+
+  function startHold() {
+    if (done) return;
+    holding = true;
+    btn.textContent = opts.holdingText || 'HOLDING...';
+    timer = setInterval(() => {
+      if (!holding || done) return;
+      val = Math.min(100, val + (opts.fillRate || 3));
+      fill.style.width = val + '%';
+      if (opts.onHoldTick) opts.onHoldTick(val, em, note);
+      if (val >= 100) {
+        done = true;
+        clearInterval(timer);
+        btn.disabled = true;
+        if (opts.onDone) setTimeout(() => opts.onDone(panel), 600);
+      }
+    }, 100);
+  }
+  function stopHold() {
+    if (done) return;
+    holding = false;
+    clearInterval(timer);
+    btn.textContent = opts.btnText;
+    if (val > 0 && val < 100) {
+      val = Math.max(0, val - (opts.drainOnRelease || 12));
+      fill.style.width = val + '%';
+      if (opts.onRelease) opts.onRelease(note);
     }
   }
-  if(n===2){ // Buildings + clouds
-    const bdata=[[0.04,0.35,70],[0.14,0.22,90],[0.28,0.30,65],[0.42,0.20,85],[0.55,0.38,60],[0.68,0.25,80],[0.80,0.32,95],[0.92,0.20,70],[1.05,0.28,75],[1.18,0.36,60],[1.30,0.24,88],[1.45,0.31,72],[1.62,0.20,90],[1.80,0.35,68],[2.00,0.26,85]];
-    bdata.forEach(([xf,yf,bw])=>{
-      const sx=xf*lw-p; if(sx+bw<-5||sx>CW+5) return;
-      ctx.fillStyle='rgba(35,25,55,.55)';
-      ctx.fillRect(sx,GY*yf,bw,GY*(1-yf));
-      // windows
-      ctx.fillStyle='rgba(255,225,130,.3)';
-      for(let wy=GY*yf+10;wy<GY-12;wy+=16){
-        for(let wx=sx+7;wx<sx+bw-7;wx+=14){
-          if((wx+wy)%3!==0) ctx.fillRect(wx,wy,7,9);
-        }
+  btn.addEventListener('pointerdown', startHold);
+  btn.addEventListener('pointerup', stopHold);
+  btn.addEventListener('pointerleave', stopHold);
+  btn.addEventListener('pointercancel', stopHold);
+}
+
+
+// ═══════════════════════════════════════════
+//  ALL MINIGAME DEFINITIONS
+// ═══════════════════════════════════════════
+const minigames = {
+
+  // ── CH1: Pull the leash ──
+  pull(panel, chIndex) {
+    buildDrainTap(panel, {
+      title: 'PULL!', desc: 'Strain against the leash!', emoji: '⛓️',
+      target: 100, drainRate: 3, tapGain: 7, btnText: 'PULL!', hint: 'Pull harder!',
+      onTick(val, em) {
+        em.style.transform = `rotate(${val > 50 ? -8 : 8}deg) scale(${1 + val/200})`;
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">No use.</div>
+          <span class="mg-emoji">😔</span>
+          <div class="mg-desc" style="color:var(--text-mid)">The leash held firm. Hank's neck burned.<br><br><em>There has to be another way.</em></div>
+          <button class="btn-action" id="mg-back">Keep looking →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
       }
     });
-    // Clouds
-    [[.08,.12,80,18],[.25,.20,60,14],[.48,.10,90,20],[.68,.18,55,13],[.85,.08,75,17]].forEach(([xf,yf,w,h])=>{
-      const sx=xf*lw-p; if(sx+w<-5||sx>CW+w+5) return;
-      ctx.fillStyle='rgba(255,255,255,.55)';
-      ctx.beginPath(); ctx.ellipse(sx,GY*yf,w/2,h/2,0,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(sx-w*.28,GY*yf+2,w*.3,h*.42,0,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(sx+w*.28,GY*yf+2,w*.3,h*.42,0,0,Math.PI*2); ctx.fill();
+  },
+
+  // ── CH1: Whimper with the other dog ──
+  whimper(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'WHIMPER', desc: 'Cry together. Let it out.', emoji: '🐩', total: 12, btnText: 'Whimper...',
+      onTick(n, total, em) {
+        em.textContent = n % 2 ? '😢' : '🐩';
+        em.style.transform = `scale(${1 + .04 * (n % 3)})`;
+        if (n === Math.floor(total * .5)) $('#mg-note').textContent = '"You\'re not alone."';
+        if (n >= total) { em.textContent = '🐩💛'; $('#mg-note').textContent = '"She pressed her nose against the fence. Goodbye."'; }
+      },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1200); }
     });
-  }
-  if(n===3){ // Tree silhouettes
-    const txf=[.06,.15,.26,.37,.47,.58,.68,.78,.90,1.02,1.14,1.24,1.35,1.48,1.62,1.76,1.88,2.02,2.16,2.30,2.42,2.58,2.70,2.84,2.96,3.10,3.25,3.40,3.55,3.70];
-    txf.forEach(f=>{
-      const sx=f*lw-p; if(sx<-50||sx>CW+50) return;
-      ctx.fillStyle='rgba(18,38,18,.75)';
-      ctx.fillRect(sx-5,GY-62,10,62);
-      ctx.beginPath(); ctx.arc(sx,GY-76,26,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(sx-15,GY-86,17,0,Math.PI*2); ctx.fill();
-      ctx.beginPath(); ctx.arc(sx+15,GY-86,17,0,Math.PI*2); ctx.fill();
-    });
-  }
-  if(n===4){ // Car window frame
-    ctx.strokeStyle='rgba(45,40,65,.92)'; ctx.lineWidth=10;
-    ctx.strokeRect(CW*.04,CH*.04,CW*.92,CH*.78);
-    // Rain streaks on window
-    ctx.strokeStyle='rgba(140,190,255,.1)'; ctx.lineWidth=1;
-    for(let i=0;i<14;i++){
-      const rx=((i*47.3+frameN*.6)%CW);
-      ctx.beginPath(); ctx.moveTo(rx,CH*.05); ctx.lineTo(rx+6,CH*.8); ctx.stroke();
-    }
-  }
-  if(n===5){ // Warm house interior wall
-    const wallG=ctx.createLinearGradient(0,0,0,GY);
-    wallG.addColorStop(0,'rgba(235,175,100,.18)');
-    wallG.addColorStop(1,'rgba(200,140,70,.06)');
-    ctx.fillStyle=wallG;
-    ctx.fillRect(0,0,CW,GY);
-    // Subtle wallpaper
-    ctx.globalAlpha=.08;
-    ctx.font='18px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-    for(let xi=0;xi<CW;xi+=80){
-      for(let yi=0;yi<GY;yi+=55){
-        ctx.fillStyle='#C8720A';
-        ctx.fillText('✿',(xi-p%80+80)%CW+40,yi+27);
+  },
+
+  // ── CH1: Chew the rope ──
+  chew(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'CHEW!', desc: 'Bite through the rope!', emoji: '🪵', total: 16, btnText: 'CHOMP!',
+      onTick(n, total, em) {
+        em.style.transform = `rotate(${n % 2 ? 12 : -12}deg)`;
+        if (n >= total) em.textContent = '🪢';
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">Too thick.</div>
+          <span class="mg-emoji">🪢</span>
+          <div class="mg-desc" style="color:var(--text-mid)">Hank's teeth ached. The rope frayed but held.<br><br><em>Not this way either.</em></div>
+          <button class="btn-action" id="mg-back">Keep looking →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
       }
+    });
+  },
+
+  // ── CH1: Wiggle the loose post (chapter ender) ──
+  wiggle(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'WIGGLE FREE!', desc: 'This one moves! Shake it loose!', emoji: '🔩', total: 20, btnText: 'SHAKE IT!',
+      onTick(n, total, em, btn) {
+        em.style.transform = `rotate(${n % 2 ? 22 : -22}deg) scale(${1 + .03 * (n % 4)})`;
+        if (n >= total) { em.textContent = '💨'; em.style.transform = ''; btn.textContent = 'FREE! 🐾'; }
+      },
+      onDone() { showBeat(chapters[chIndex].beat, () => advanceChapter(chIndex)); }
+    });
+  },
+
+  // ── CH2: Sniff the hydrant ──
+  sniff(panel, chIndex) {
+    buildDrainTap(panel, {
+      title: 'SNIFF!', desc: 'Search for a familiar scent!', emoji: '🚒',
+      target: 100, drainRate: 2.5, tapGain: 6, btnText: 'SNIFF!', hint: 'Nose to the ground!',
+      onTick(val, em) {
+        em.style.transform = `scale(${1 + val / 250}) rotate(${val > 50 ? -4 : 4}deg)`;
+        if (val > 60) $('#mg-note').textContent = '"Almost... no. Just another stranger."';
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">Nothing.</div>
+          <span class="mg-emoji">👃</span>
+          <div class="mg-desc" style="color:var(--text-mid)">A hundred dogs. None of them family.<br><br><em>Keep searching.</em></div>
+          <button class="btn-action" id="mg-back">Move on →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
+      }
+    });
+  },
+
+  // ── CH2: Beg at the bakery ──
+  beg(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'BEG!', desc: 'Give her the saddest eyes you\'ve got!', emoji: '🥺', total: 10, btnText: 'PUPPY EYES!',
+      onTick(n, total, em) {
+        const faces = ['🥺','🐶','🥺','😢','🐶'];
+        em.textContent = faces[n % faces.length];
+        em.style.transform = `scale(${1 + n * .03})`;
+        if (n === 6) $('#mg-note').textContent = '"She\'s looking..."';
+        if (n >= total) { em.textContent = '🥐💛'; $('#mg-note').textContent = '"She tossed a warm croissant. Hank caught it mid-air."'; em.style.transform = ''; }
+      },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1400); }
+    });
+  },
+
+  // ── CH2: Run through the park ──
+  run(panel, chIndex) {
+    buildDrainTap(panel, {
+      title: 'RUN!', desc: 'Sprint through the park — nose down!', emoji: '🐶',
+      target: 100, drainRate: 3, tapGain: 7, btnText: 'RUN!', hint: 'Faster!',
+      onTick(val, em) {
+        em.style.transform = `translateX(${(val / 100) * 30 - 15}px) scale(${val % 10 > 5 ? 1.05 : .95})`;
+        if (val > 40 && val <= 70) $('#mg-note').textContent = '"Happy dogs everywhere. None of them care."';
+        if (val > 70) $('#mg-note').textContent = '"You kept running."';
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">Exhausted.</div>
+          <span class="mg-emoji">😮‍💨</span>
+          <div class="mg-desc" style="color:var(--text-mid)">Hank collapsed on the grass, panting.<br>The park was full of families.<br><br><em>None of them his.</em></div>
+          <button class="btn-action" id="mg-back">Keep going →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
+      }
+    });
+  },
+
+  // ── CH2: Howl at the old house (chapter ender) ──
+  howl(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'HOWL!', desc: 'Call out to them. As loud as you can.', emoji: '🐶', total: 14, btnText: 'HOOOWL!',
+      onTick(n, total, em) {
+        em.style.transform = `scale(${1 + n * .04}) rotate(${n % 2 ? -5 : 5}deg)`;
+        if (n === 4) $('#mg-note').textContent = '"The sound echoed off the empty house."';
+        if (n === 8) $('#mg-note').textContent = '"No one came to the door."';
+        if (n === 12) $('#mg-note').textContent = '"No one was coming."';
+        if (n >= total) { em.textContent = '😔'; em.style.transform = ''; }
+      },
+      onDone() { showBeat(chapters[chIndex].beat, () => advanceChapter(chIndex)); }
+    });
+  },
+
+  // ── CH3: Hide behind the tree (HOLD) ──
+  hide(panel, chIndex) {
+    buildHoldChallenge(panel, {
+      title: 'HIDE!', desc: 'Hold to stay perfectly still...', emoji: '🌳',
+      btnText: 'HOLD STILL', holdingText: 'HOLDING...', fillRate: 3, drainOnRelease: 15,
+      hint: 'Don\'t let go...',
+      onHoldTick(val, em, note) {
+        em.style.transform = `scale(${1 - val / 400})`;
+        if (val > 30) note.textContent = '"Don\'t move..."';
+        if (val > 60) note.textContent = '"They\'re passing..."';
+        if (val >= 100) { em.textContent = '🌿'; note.textContent = '"They walked right past."'; }
+      },
+      onRelease(note) { note.textContent = '"You flinched! Stay still!"'; },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1000); }
+    });
+  },
+
+  // ── CH3: Eat the sandwich ──
+  eat(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'EAT!', desc: 'Before someone comes back for it!', emoji: '🥪', total: 10, btnText: 'CHOMP!',
+      onTick(n, total, em) {
+        const stages = ['🥪','🥪','🥪','🍞','🍞','🍞','🍞','😋','😋','😋','✨'];
+        em.textContent = stages[Math.min(n, stages.length - 1)];
+        em.style.transform = `scale(${1 + .06 * (n % 2)}) rotate(${n % 2 ? 8 : -8}deg)`;
+        if (n >= total) { em.style.transform = ''; $('#mg-note').textContent = '"Your tail wagged — just once."'; }
+      },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1200); }
+    });
+  },
+
+  // ── CH3: Bark at the strangers → Dig ──
+  bark(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'BARK!', desc: 'Scare the giants away!', emoji: '🐶', total: 14, btnText: 'WOOF!',
+      onTick(n, total, em) {
+        em.style.transform = `scale(${1 + .08 * (n % 2)}) rotate(${n % 2 ? -8 : 8}deg)`;
+        if (n >= total) { em.textContent = '😤'; em.style.transform = ''; }
+      },
+      onDone(panel) { mgDig(panel, chIndex); }
+    });
+  },
+
+  // ── CH4: Watch out the window (drain) ──
+  watch(panel, chIndex) {
+    buildDrainTap(panel, {
+      title: 'WATCH', desc: 'Press your nose to the glass. Track the world.', emoji: '🪟',
+      target: 100, drainRate: 2, tapGain: 8, btnText: 'LOOK', hint: 'Keep watching...',
+      onTick(val, em) {
+        const scenes = ['🌳','🏠','🌾','🏙️','🌉','🌳'];
+        em.textContent = scenes[Math.floor((val / 100) * (scenes.length - 1))];
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">Everything unfamiliar.</div>
+          <span class="mg-emoji">🌌</span>
+          <div class="mg-desc" style="color:var(--text-mid)">The world kept moving. Hank didn't recognise any of it.<br><br><em>Where are they taking me?</em></div>
+          <button class="btn-action" id="mg-back">Accept it →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
+      }
+    });
+  },
+
+  // ── CH4: Scratch the door ──
+  scratch(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'SCRATCH!', desc: 'Claw at the door handle!', emoji: '🚪', total: 16, btnText: 'SCRATCH!',
+      onTick(n, total, em) {
+        em.style.transform = `rotate(${n % 2 ? 6 : -6}deg)`;
+        if (n === 6) $('#mg-note').textContent = '"The door rattled but held."';
+        if (n === 12) $('#mg-note').textContent = '"A voice from the front: easy, buddy..."';
+        if (n >= total) { em.textContent = '🔒'; em.style.transform = ''; $('#mg-note').textContent = '"Locked. No way out."'; }
+      },
+      onDone(panel) {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">No escape.</div>
+          <span class="mg-emoji">🔒</span>
+          <div class="mg-desc" style="color:var(--text-mid)">Hank slumped against the door.<br><br><em>Wherever this goes... it goes.</em></div>
+          <button class="btn-action" id="mg-back">Give up →</button>`;
+        panel.querySelector('#mg-back').addEventListener('click', () => returnToChapter(chIndex));
+      }
+    });
+  },
+
+  // ── CH4: Nestle into blanket (HOLD) ──
+  nestle(panel, chIndex) {
+    buildHoldChallenge(panel, {
+      title: 'CURL UP', desc: 'Hold to nestle into the blanket...', emoji: '🧣',
+      btnText: 'CURL UP', holdingText: 'HOLDING...', fillRate: 3, drainOnRelease: 10,
+      hint: 'Hold to curl up...',
+      onHoldTick(val, em, note) {
+        em.style.transform = `scale(${1 - val / 300}) rotate(${val / 10}deg)`;
+        if (val > 25) note.textContent = '"The blanket was warm."';
+        if (val > 50) { note.textContent = '"Hank\'s eyes grew heavy."'; em.textContent = '😴'; }
+        if (val > 75) note.textContent = '"Just... for a moment."';
+        if (val >= 100) note.innerHTML = '<em>"Something almost like safe."</em>';
+      },
+      onRelease(note) { note.textContent = '"Not yet... hold on."'; },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1000); }
+    });
+  },
+
+  // ── CH4: The hand (choice) ──
+  hand(panel, chIndex) {
+    panel.innerHTML = `
+      <div class="mg-title" style="font-style:italic">"A hand reached back..."</div>
+      <div class="mg-desc">Slow. Patient. Waiting.</div>
+      <span class="mg-emoji" id="mg-em" style="animation:float 2s ease-in-out infinite">🤚</span>
+      <div class="choice-row">
+        <button class="choice-btn yes" id="ch-yes">Accept 💛</button>
+        <button class="choice-btn no" id="ch-no">Pull away 😤</button>
+      </div>
+      <p class="mg-note" id="mg-note"></p>`;
+    function pick(yes) {
+      $('#ch-yes').disabled = true;
+      $('#ch-no').disabled = true;
+      if (yes) { $('#mg-em').textContent = '🤚💛'; $('#mg-note').textContent = '"Your eyes closed. Just... for a moment."'; }
+      else { $('#mg-em').textContent = '😤'; $('#mg-note').style.color = 'var(--text-dim)'; $('#mg-note').textContent = '"The hand retreated. No force. Somehow that made it worse."'; }
+      setTimeout(() => {
+        showBeat({ emoji: '🏡', text: 'The car slowed. Stopped.\n\nA door opened — cool air, fresh grass, something baking inside a house.\n\nHank was set down gently on the softest lawn he had ever felt.' }, () => advanceChapter(chIndex));
+      }, 1800);
     }
-    ctx.globalAlpha=1;
-    // Fireplace glow near center
-    const fx=lw*.5-p;
-    if(fx>-60&&fx<CW+60){
-      ctx.fillStyle='rgba(255,140,30,.07)';
-      ctx.beginPath(); ctx.ellipse(fx,GY,80,30,0,0,Math.PI*2); ctx.fill();
-    }
+    $('#ch-yes').addEventListener('pointerdown', () => pick(true));
+    $('#ch-no').addEventListener('pointerdown', () => pick(false));
+  },
+
+  // ── CH5: Settle into bed (tap stages) ──
+  settle(panel, chIndex) {
+    const stages = [
+      { emoji: '🔄', btn: 'CIRCLE...', note: '"Once around..."' },
+      { emoji: '🔄', btn: 'AGAIN...', note: '"Twice around..."' },
+      { emoji: '🐾', btn: 'PAW THE BED', note: '"Paw. Paw. Paw."' },
+      { emoji: '🐾', btn: 'KEEP PAWING', note: '"Almost right..."' },
+      { emoji: '🐶', btn: 'LIE DOWN', note: '"There."' },
+      { emoji: '😌', btn: '', note: '' },
+    ];
+    const total = stages.length;
+    panel.innerHTML = `
+      <div class="mg-title">SETTLE IN</div>
+      <div class="mg-desc">Circle... paw... lie down.</div>
+      <span class="mg-emoji" id="mg-em">🛏️</span>
+      <div class="mg-track"><div class="mg-fill" id="mg-fill" style="width:0%"></div></div>
+      <button class="mg-tap-btn" id="mg-tap">CIRCLE</button>
+      <p class="mg-note" id="mg-note"></p>`;
+    let n = 0;
+    $('#mg-tap').addEventListener('pointerdown', () => {
+      if (n >= total) return;
+      const s = stages[n];
+      n++;
+      $('#mg-fill').style.width = (n / total * 100) + '%';
+      $('#mg-em').textContent = s.emoji;
+      $('#mg-em').style.transform = `rotate(${n * 55}deg)`;
+      if (s.note) $('#mg-note').textContent = s.note;
+      if (n < total) $('#mg-tap').textContent = stages[n] ? stages[n].btn || 'DONE' : 'DONE';
+      if (n >= total) {
+        $('#mg-em').textContent = '😌';
+        $('#mg-em').style.transform = '';
+        $('#mg-tap').disabled = true;
+        $('#mg-note').innerHTML = '<em>"It was exactly your size."</em>';
+        setTimeout(() => returnToChapter(chIndex), 1200);
+      }
+    });
+  },
+
+  // ── CH5: Eat from the bowl ──
+  feast(panel, chIndex) {
+    buildSpeedTap(panel, {
+      title: 'EAT!', desc: 'Real food. In a bowl with YOUR name on it.', emoji: '🍖', total: 12, btnText: 'NOM!',
+      onTick(n, total, em) {
+        em.style.transform = `scale(${1 + .05 * (n % 2)}) rotate(${n % 2 ? 6 : -6}deg)`;
+        if (n === 3) $('#mg-note').textContent = '"Warm. Fresh. Real."';
+        if (n === 7) $('#mg-note').textContent = '"Your tail was going so fast."';
+        if (n >= total) { em.textContent = '✨'; em.style.transform = ''; $('#mg-note').innerHTML = '<em>"HANK. Your name. They knew it."</em>'; }
+      },
+      onDone() { setTimeout(() => returnToChapter(chIndex), 1400); }
+    });
+  },
+
+  // ── CH5: Approach the humans (final) ──
+  approach(panel, chIndex) {
+    panel.innerHTML = `
+      <div class="mg-title" style="font-style:italic">They're on the floor.</div>
+      <div class="mg-desc">No hovering. No reaching.<br>Just waiting for you.</div>
+      <div class="approach-scene">
+        <div class="approach-humans" id="ap-humans">🧑 &nbsp;&nbsp;&nbsp; 🧑</div>
+        <span class="approach-hank" id="ap-hank">🐶</span>
+      </div>
+      <button class="mg-tap-btn" id="mg-tap" style="margin-top:12px">Walk toward them →</button>
+      <p class="mg-note" id="mg-note"></p>`;
+    let steps = 0;
+    $('#mg-tap').addEventListener('pointerdown', () => {
+      steps++;
+      if (steps === 1) {
+        $('#ap-hank').style.transform = 'translateY(-8px) scale(1.05)';
+        $('#mg-tap').textContent = 'Keep going...';
+        $('#mg-note').textContent = '"One step. Then another."';
+      } else if (steps === 2) {
+        $('#ap-hank').style.transform = 'translateY(-16px) scale(1.1)';
+        $('#mg-tap').textContent = 'Almost there...';
+        $('#mg-note').textContent = '"Something settled. Something clicked."';
+      } else {
+        $('#ap-humans').innerHTML = '🧑🐶🧑';
+        $('#ap-humans').style.fontSize = '52px';
+        $('#ap-hank').style.opacity = '0';
+        $('#ap-hank').style.transform = 'translateY(-24px) scale(0)';
+        $('#mg-tap').disabled = true;
+        $('#mg-note').innerHTML = '<em style="color:var(--gold);font-size:18px">Oh.</em>';
+        setTimeout(() => doEnd(), 1800);
+      }
+    });
   }
-}
+};
 
-function drawObj(o,cx){
-  const sx=o.x-cx;
-  if(sx<-60||sx>CW+60) return;
-
-  ctx.globalAlpha=o.done?0.38:1;
-
-  if(!o.done){
-    const bounce=Math.sin(frameN*.07)*4;
-    ctx.save();
-    ctx.font='bold 12px sans-serif';
-    ctx.fillStyle='#E8921A';
-    ctx.textAlign='center';
-    ctx.textBaseline='bottom';
-    ctx.shadowColor='#E8921A'; ctx.shadowBlur=10;
-    ctx.fillText('?',sx,GY-52+bounce);
-    ctx.shadowBlur=0;
-    ctx.restore();
-  }
-
-  ctx.font='32px serif';
-  ctx.textAlign='center';
-  ctx.textBaseline='bottom';
-  ctx.fillText(o.em,sx,GY-8);
-  ctx.globalAlpha=1;
-}
-
-function drawHank(cx){
-  const sx=P.x-cx;
-  const bob=Math.abs(P.vx)>0.5?Math.sin(frameN*.28)*2.5:0;
-  ctx.save();
-  ctx.translate(sx,GY-8+bob);
-  ctx.scale(P.facing,1);
-  ctx.font='36px serif';
-  ctx.textAlign='center';
-  ctx.textBaseline='bottom';
-  ctx.fillText('🐶',0,0);
-  ctx.restore();
-}
-
-// ═══════════════════════════════════════════
-//  GAME LOOP
-// ═══════════════════════════════════════════
-function tick(){
-  raf=requestAnimationFrame(tick);
-  frameN++;
-  if(phase==='play') update();
-  if(phase==='play'||phase==='speech'||phase==='beat') render();
-}
-
-// ═══════════════════════════════════════════
-//  STORY FLOW
-// ═══════════════════════════════════════════
-function startChapter(n){
-  chIdx=n;
-  doneSets[n]=doneSets[n]||new Set();
-  level=mkLevel(n);
-  P.x=Math.round(level.lw*.04); P.vx=0; P.facing=1;
-  camX=0; lastTouched=null;
-
-  const m=level.meta;
-  document.getElementById('prog').style.width=m.prog+'%';
-  document.getElementById('hud-ch').textContent=m.num;
-  document.getElementById('hud-goal').textContent='🐾 '+m.goal;
-  document.getElementById('oi-num').textContent=m.num;
-  document.getElementById('oi-name').textContent=m.name;
-  document.getElementById('oi-sub').innerHTML=m.sub.replace(/\n/g,'<br>');
-
-  phase='intro';
-  showOv('ov-intro');
-  setTimeout(()=>{hideOv();phase='play';lastTouched=null;},3000);
-}
-
-function doInteract(o){
-  if(o.done) return;
-  o.done=true; lastTouched=o;
-  doneSets[chIdx].add(o.id);
-  doSave();
-  phase='speech';
-
-  document.getElementById('sp-txt').innerHTML=o.txt.replace(/\n/g,'<br>');
-  const btn=document.getElementById('sp-btn');
-  if(o.mg){
-    btn.textContent='Got it →';
-    btn.onclick=()=>{hideOv();launchMG(o.mg);};
-  } else {
-    btn.textContent='Got it →';
-    btn.onclick=()=>{hideOv();phase='play';lastTouched=null;checkAllDone();};
-  }
-  showOv('ov-speech');
-}
-
-function checkAllDone(){
-  if(!level||!level.objs.every(o=>o.done)) return;
-  const beats={
-    1:{em:'🌅',txt:'The post snapped free.\n\nHank scrambled through the gap and sprinted into the golden morning light.\n\n<em>"I\'ll find them,"</em> he told himself. <em>"I know I will."</em>'},
-    2:{em:'🌆',txt:'The scent trail went cold at the old house.\n\nHank sat on the pavement, chest heaving.\n\n<em>They were gone.</em>'},
-  };
-  if(beats[chIdx]) setTimeout(()=>showBeat(beats[chIdx]),400);
-}
-
-function showBeat(b){
-  phase='beat';
-  document.getElementById('be-em').textContent=b.em;
-  document.getElementById('be-txt').innerHTML=b.txt.replace(/\n/g,'<br>');
-  document.getElementById('be-btn').onclick=()=>{hideOv();advance();};
-  showOv('ov-beat');
-}
-
-function advance(){
-  if(chIdx>=5){doEnd();return;}
-  startChapter(chIdx+1);
-}
-
-// ═══════════════════════════════════════════
-//  MINI-GAMES
-// ═══════════════════════════════════════════
-function launchMG(id){
-  phase='mg';
-  const w=document.getElementById('mg-inner');
-  w.innerHTML='';
-  ({
-    wiggle:  ()=>mgWiggle(w),
-    bark:    ()=>mgBark(w),
-    hand:    ()=>mgHand(w),
-    approach:()=>mgApproach(w),
-  })[id]?.();
-  showOv('ov-mg');
-}
-function closeMG(cb){hideOv();phase='play';lastTouched=null;if(cb)setTimeout(cb,250);}
-
-// ── 1. Wiggle Free ────────────────────────
-function mgWiggle(w){
-  const T=22;
-  w.innerHTML=`
-    <div class="mg-h">Wiggle free!</div>
-    <div class="mg-d">Tap as fast as you can!</div>
-    <span class="mg-em" id="me">🪵</span>
-    <div class="mg-track"><div class="mg-fill" id="mf"></div></div>
-    <div class="mg-cnt" id="mc">0 / ${T}</div>
-    <button class="mg-tap" id="mt" style="touch-action:manipulation">SHAKE IT!</button>`;
-  let n=0;
-  document.getElementById('mt').addEventListener('pointerdown',()=>{
-    if(n>=T) return;
-    n++;
-    document.getElementById('mf').style.width=(n/T*100)+'%';
-    document.getElementById('mc').textContent=`${n} / ${T}`;
-    document.getElementById('me').style.transform=`rotate(${n%2?22:-22}deg) scale(${1+.03*(n%4)})`;
-    if(n>=T){
-      document.getElementById('me').textContent='💨';
-      document.getElementById('me').style.transform='';
-      document.getElementById('mt').textContent='FREE! 🐾';
-      document.getElementById('mt').disabled=true;
-      setTimeout(()=>closeMG(()=>showBeat({
-        em:'🌅',
-        txt:'The post snapped free.\n\nHank scrambled through the gap and sprinted into the golden morning light.\n\n<em>"I\'ll find them,"</em> he told himself.'
-      })),700);
+// ── Dig (chained from bark) ──
+function mgDig(panel, chIndex) {
+  buildSpeedTap(panel, {
+    title: 'DIG!', desc: 'Dig a hole to hide — fast!', emoji: '🐶', total: 16, btnText: 'DIG!',
+    onTick(n, total, em) {
+      em.textContent = ['🐶','🕳️','🐶','🕳️'][n % 4];
+      em.style.transform = `scale(${1 - n / total * .2})`;
+      if (n >= total) { em.style.transform = ''; $('#mg-count').textContent = 'Almost there...'; }
+    },
+    onDone(panel) {
+      setTimeout(() => {
+        panel.innerHTML = `
+          <div class="mg-title" style="font-style:italic">Too late.</div>
+          <span class="mg-emoji" style="animation:float 1.5s ease-in-out infinite">🙌</span>
+          <div class="mg-desc" style="color:var(--text-mid);line-height:1.7">No matter how deep Hank dug —<br>the hands found him anyway.</div>`;
+        setTimeout(() => {
+          showBeat({
+            emoji: '🙌',
+            text: 'Hank barked his biggest bark. He dug and dug until the dirt flew.\n\nAnd then — two warm hands reached into the hole and lifted him gently into the sky.\n\n<em>The ground disappeared beneath his paws.</em>'
+          }, () => advanceChapter(chIndex));
+        }, 2000);
+      }, 800);
     }
   });
 }
 
-// ── 2. Bark (then auto-flows into Dig) ────
-function mgBark(w){
-  const T=16;
-  w.innerHTML=`
-    <div class="mg-h">BARK!</div>
-    <div class="mg-d">Tap as fast as you can!</div>
-    <div class="arena" id="ar">
-      <span style="font-size:46px;position:relative;z-index:2" id="mhk">🐶</span>
-    </div>
-    <div class="mg-track"><div class="mg-fill" id="mf"></div></div>
-    <button class="mg-tap" id="mt" style="touch-action:manipulation">WOOF!</button>`;
-  let n=0;
-  const btn=document.getElementById('mt'),fill=document.getElementById('mf');
-  const ar=document.getElementById('ar'),hk=document.getElementById('mhk');
-  btn.addEventListener('pointerdown',()=>{
-    if(n>=T) return;
-    n++; fill.style.width=(n/T*100)+'%';
-    hk.style.transform=`scale(${1+.09*(n%2)}) rotate(${n%2?-10:10}deg)`;
-    const bw=document.createElement('div'); bw.className='bwave';
-    bw.style.cssText='left:50%;top:50%';
-    ar.appendChild(bw); setTimeout(()=>bw.remove(),550);
-    if(n>=T){
-      btn.disabled=true;
-      hk.textContent='😤'; hk.style.transform='';
-      setTimeout(()=>{
-        // Transition into DIG
-        const w2=document.getElementById('mg-inner');
-        w2.innerHTML='';
-        mgDig(w2);
-      },600);
-    }
-  });
-}
-
-// ── 3. Dig (follows Bark, then scooped) ──
-function mgDig(w){
-  w.innerHTML=`
-    <div class="mg-h">DIG!</div>
-    <div class="mg-d">Tap to dig a hole — fast!</div>
-    <div class="dig-scene" id="dsc">
-      <div class="dig-ground" id="dg" style="top:40%"></div>
-      <div class="dig-hole"   id="dh" style="width:40px;height:0px;bottom:60%"></div>
-      <div class="dig-hank"   id="dhk" style="bottom:calc(60% + 2px);font-size:30px">🐶</div>
-    </div>
-    <div class="mg-track"><div class="mg-fill" id="mf"></div></div>
-    <div class="mg-cnt" id="mc">Dig deep enough to hide...</div>
-    <button class="mg-tap" id="mt" style="touch-action:manipulation">DIG!</button>`;
-
-  const T=18;
-  let n=0, done=false;
-  const fill=document.getElementById('mf');
-  const ground=document.getElementById('dg');
-  const hole=document.getElementById('dh');
-  const hankEl=document.getElementById('dhk');
-  const scene=document.getElementById('dsc');
-  const cnt=document.getElementById('mc');
-
-  function spawnDirt(){
-    const d=document.createElement('div'); d.className='dirt-piece';
-    const side=Math.random()>.5?1:-1;
-    d.textContent=['🟫','⬛','🟤'][Math.floor(Math.random()*3)];
-    d.style.cssText=`left:${40+Math.random()*20}%;top:50%;--dx:${(30+Math.random()*40)*side}px;--dy:${-(20+Math.random()*35)}px`;
-    scene.appendChild(d); setTimeout(()=>d.remove(),650);
-  }
-
-  document.getElementById('mt').addEventListener('pointerdown',()=>{
-    if(done||n>=T) return;
-    n++;
-    fill.style.width=(n/T*100)+'%';
-    spawnDirt();
-    // Visually deepen the hole
-    const pct=n/T;
-    const holeW=40+pct*60; const holeH=pct*50;
-    const groundTop=40-pct*30;
-    ground.style.top=groundTop+'%';
-    hole.style.width=holeW+'px'; hole.style.height=holeH+'px';
-    hole.style.bottom=(100-groundTop)+'%';
-    hankEl.style.bottom=`calc(${100-groundTop}% + 2px)`;
-    hankEl.style.fontSize=(30-pct*8)+'px'; // shrinks into hole
-
-    if(n>=T){
-      done=true;
-      cnt.textContent='Almost there...';
-      document.getElementById('mt').disabled=true;
-      // A beat — then the hands come anyway
-      setTimeout(()=>{
-        document.getElementById('mg-inner').innerHTML=`
-          <div class="mg-h" style="font-style:italic">Too late.</div>
-          <span class="mg-em" style="animation:bob 1.5s ease-in-out infinite">🙌</span>
-          <p style="font-size:15px;color:rgba(251,244,228,.7);text-align:center;line-height:1.6">No matter how deep Hank dug —<br>the hands found him anyway.</p>`;
-        setTimeout(()=>closeMG(()=>showBeat({
-          em:'🙌',
-          txt:'Hank barked his biggest bark. He dug and dug until the dirt flew.\n\nAnd then — two warm hands reached into the hole and lifted him gently into the sky.\n\n<em>The ground disappeared beneath his paws.</em>'
-        })),2000);
-      },1200);
-    }
-  });
-}
-
-// ── 4. The Hand ───────────────────────────
-function mgHand(w){
-  w.innerHTML=`
-    <div class="mg-h" style="font-style:italic">"A hand reached back..."</div>
-    <div class="mg-d">Slow. Patient. Waiting.</div>
-    <span class="mg-em" id="mhe" style="animation:bob 2s ease-in-out infinite">🤚</span>
-    <div class="crow">
-      <button class="cbtm yes" id="cy">Accept 💛</button>
-      <button class="cbtm no"  id="cn">Pull away 😤</button>
-    </div>
-    <p class="mg-note" id="mn"></p>`;
-  const em=document.getElementById('mhe'), note=document.getElementById('mn');
-  function pick(yes){
-    document.getElementById('cy').disabled=document.getElementById('cn').disabled=true;
-    if(yes){ em.textContent='🤚💛'; note.textContent='"Your eyes closed. Just... for a moment."'; }
-    else   { em.textContent='😤'; note.style.color='rgba(251,244,228,.5)'; note.textContent='"The hand retreated. No force. Somehow that made it worse."'; }
-    setTimeout(()=>closeMG(()=>showBeat({
-      em:'🏡',
-      txt:'The car slowed. Stopped.\n\nA door opened — cool air, fresh grass, something baking inside a house.\n\nHank was set down gently on the softest lawn he had ever felt.'
-    })),1500);
-  }
-  document.getElementById('cy').addEventListener('pointerdown',()=>pick(true));
-  document.getElementById('cn').addEventListener('pointerdown',()=>pick(false));
-}
-
-// ── 5. Final Approach ─────────────────────
-function mgApproach(w){
-  w.innerHTML=`
-    <div class="mg-h" style="font-style:italic">They're on the floor.</div>
-    <div class="mg-d">No hovering. No reaching.<br>Just waiting for you.</div>
-    <div style="font-size:50px;margin:10px 0;text-align:center;transition:all .4s" id="asc">🧑&nbsp;&nbsp;&nbsp;🧑</div>
-    <span style="font-size:44px;display:block;text-align:center;transition:transform .4s ease;margin:4px 0" id="ahk">🐶</span>
-    <button class="mg-tap" style="margin-top:14px;touch-action:manipulation" id="ab">Walk toward them →</button>
-    <p class="mg-note" id="an"></p>`;
-  let s=0;
-  document.getElementById('ab').addEventListener('pointerdown',()=>{
-    s++;
-    document.getElementById('ahk').style.transform=`translateX(${s*24}px)`;
-    if(s===1){ document.getElementById('ab').textContent='Keep going...'; document.getElementById('an').textContent='"One step. Then another."'; }
-    else if(s===2){ document.getElementById('ab').textContent='Almost there...'; document.getElementById('an').textContent='"Something settled. Something clicked."'; }
-    else {
-      document.getElementById('asc').innerHTML='🧑🐶🧑';
-      document.getElementById('asc').style.fontSize='46px';
-      document.getElementById('ahk').style.opacity='0';
-      document.getElementById('ab').disabled=true;
-      document.getElementById('an').innerHTML='<em style="color:#E8921A">Oh.</em>';
-      setTimeout(()=>{hideOv();doEnd();},1400);
-    }
-  });
-}
 
 // ═══════════════════════════════════════════
 //  END
 // ═══════════════════════════════════════════
-function doEnd(){
-  phase='end';
-  doSave({finished:true});
-  document.getElementById('prog').style.width='100%';
-  const sky=document.getElementById('end-sky');
-  sky.innerHTML='';
-  for(let i=0;i<60;i++){
-    const s=document.createElement('div'); s.className='sdot';
-    const sz=Math.random()<.3?3:2;
-    s.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*75}%;width:${sz}px;height:${sz}px;animation-delay:${(Math.random()*3).toFixed(1)}s;animation-duration:${(2+Math.random()*2).toFixed(1)}s`;
-    sky.appendChild(s);
-  }
-  showScr('s-end');
+function doEnd() {
+  $('#progress').style.width = '100%';
+  showScreen('end');
+  makeStars($('#end-stars'));
 }
 
-// ═══════════════════════════════════════════
-//  SAVE / LOAD
-// ═══════════════════════════════════════════
-function doSave(extra={}){
-  try{
-    const dc={};
-    for(const k in doneSets) dc[k]=[...doneSets[k]];
-    localStorage.setItem(SAVE_KEY,JSON.stringify({ch:chIdx,done:dc,...extra}));
-  }catch(e){}
-}
-function loadSv(){ try{const d=JSON.parse(localStorage.getItem(SAVE_KEY));return(d&&d.ch)?d:null;}catch(e){return null;} }
-function clearSv(){ try{localStorage.removeItem(SAVE_KEY);}catch(e){} }
 
 // ═══════════════════════════════════════════
-//  TITLE DECOR
+//  iOS ZOOM PREVENTION
 // ═══════════════════════════════════════════
-(function(){
-  const sky=document.getElementById('t-sky');
-  for(let i=0;i<55;i++){
-    const s=document.createElement('div'); s.className='sdot';
-    const sz=Math.random()<.3?3:2;
-    s.style.cssText=`position:absolute;left:${Math.random()*100}%;top:${Math.random()*85}%;width:${sz}px;height:${sz}px;animation-delay:${(Math.random()*3).toFixed(1)}s;animation-duration:${(2+Math.random()*2).toFixed(1)}s`;
-    sky.appendChild(s);
-  }
-  const hk=document.createElement('div');
-  hk.style.cssText='font-size:88px;animation:bob 4s ease-in-out infinite;position:relative;z-index:2;filter:drop-shadow(0 5px 18px rgba(200,114,10,.35))';
-  hk.textContent='🐶';
-  sky.appendChild(hk);
-})();
+// Prevent double-tap zoom on iOS Safari
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+// Prevent pinch-to-zoom gesture
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturechange', e => e.preventDefault(), { passive: false });
+document.addEventListener('gestureend', e => e.preventDefault(), { passive: false });
+// Prevent touch-based zoom on rapid taps
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) e.preventDefault();
+  lastTouchEnd = now;
+}, { passive: false });
+
 
 // ═══════════════════════════════════════════
 //  BOOT
 // ═══════════════════════════════════════════
-document.getElementById('btn-start').addEventListener('click',()=>{
-  showScr('s-game');
-  // Double-rAF to guarantee layout before measuring
-  requestAnimationFrame(()=>requestAnimationFrame(()=>{
-    resize();
-    const sv=loadSv();
-    if(sv&&!sv.finished&&sv.ch){
-      chIdx=sv.ch;
-      if(sv.done) for(const k in sv.done) doneSets[k]=new Set(sv.done[k]);
-    } else { chIdx=1; doneSets={}; clearSv(); }
-    if(!raf) tick();
-    startChapter(chIdx);
-  }));
+makeStars($('#title-stars'));
+
+$('#btn-start').addEventListener('click', () => {
+  visited = {};
+  startChapter(0);
 });
 
-document.getElementById('btn-restart').addEventListener('click',()=>{
-  clearSv(); doneSets={}; chIdx=1;
-  showScr('s-title');
-});
-
-window.addEventListener('load',()=>{
-  const sv=loadSv();
-  if(sv&&!sv.finished&&sv.ch>1) document.getElementById('resume-lbl').style.display='block';
+$('#btn-restart').addEventListener('click', () => {
+  visited = {};
+  currentChapter = 0;
+  showScreen('title');
 });
 </script>
 </body>
