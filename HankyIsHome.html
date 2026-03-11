@@ -12,9 +12,9 @@
   --brown:#3A1F0E;--tan:#7A4520;--light-tan:#B07040;--soft:#FEFAF2;
   --text-dim:rgba(251,244,228,.58);--text-mid:rgba(251,244,228,.78);--text-hi:rgba(251,244,228,.92);
 }
-html{height:100%;background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+html{height:100%;overflow:hidden;background:var(--bg);-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 body{
-  min-height:100%;display:flex;align-items:center;justify-content:center;
+  height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;
   font-family:'Crimson Pro',Georgia,serif;color:var(--cream);
   user-select:none;-webkit-user-select:none;touch-action:manipulation;
 }
@@ -22,7 +22,7 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 
 /* ── MAIN WRAPPER ── */
 #app{
-  width:100%;max-width:520px;min-height:100vh;min-height:100dvh;
+  width:100%;max-width:520px;height:100vh;height:100dvh;
   display:flex;flex-direction:column;position:relative;overflow:hidden;
 }
 
@@ -45,10 +45,11 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 }
 .hud-goal{font-size:12px;color:var(--text-dim);font-style:italic}
 
-/* ── SCROLLABLE STORY AREA ── */
+/* ── STORY AREA — flex-fit to viewport ── */
 .story-area{
-  flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth;padding:0 0 120px;
+  flex:1;display:flex;flex-direction:column;min-height:0;
+  overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;
+  scroll-behavior:smooth;
 }
 .story-area::-webkit-scrollbar{width:3px}
 .story-area::-webkit-scrollbar-track{background:transparent}
@@ -58,7 +59,8 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 .title-screen{
   background:linear-gradient(160deg,#1a1008 0%,#3d2210 60%,#1a0a04 100%);
   align-items:center;justify-content:center;text-align:center;
-  padding:40px 28px;gap:0;position:relative;overflow:hidden;
+  padding:clamp(16px,4vh,40px) 28px;gap:0;position:relative;overflow:hidden;
+  overflow-y:auto;
 }
 .title-stars{position:absolute;inset:0;pointer-events:none}
 .star{
@@ -67,21 +69,21 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 }
 @keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.85}}
 .title-hero{
-  font-size:min(28vw,120px);line-height:1;
+  font-size:clamp(60px,16vh,120px);line-height:1;
   animation:float 4s ease-in-out infinite;
   filter:drop-shadow(0 8px 24px rgba(200,114,10,.35));
   position:relative;z-index:2;
 }
 @keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-12px) rotate(2deg)}}
-.title-paws{font-size:16px;letter-spacing:12px;margin-top:32px;opacity:.7}
+.title-paws{font-size:16px;letter-spacing:12px;margin-top:clamp(12px,3vh,32px);opacity:.7}
 .title-name{
-  font-family:'Fraunces',serif;font-size:clamp(36px,10vw,52px);font-weight:800;
+  font-family:'Fraunces',serif;font-size:clamp(32px,8vw,52px);font-weight:800;
   color:var(--brown);font-style:italic;line-height:1.05;
 }
 .title-card{
-  background:var(--soft);border-radius:28px 28px 0 0;padding:28px 28px 48px;
-  display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
-  width:calc(100% + 56px);margin:32px -28px -40px;position:relative;z-index:2;
+  background:var(--soft);border-radius:28px 28px 0 0;padding:clamp(16px,3vh,28px) 28px clamp(24px,5vh,48px);
+  display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.5vh,14px);text-align:center;
+  width:calc(100% + 56px);margin:clamp(12px,3vh,32px) -28px -40px;position:relative;z-index:2;
 }
 .title-sub{font-size:16px;color:var(--tan);line-height:1.6}
 .title-hint{font-size:12px;color:var(--light-tan);font-style:italic;opacity:.7}
@@ -106,38 +108,42 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
   text-transform:uppercase;color:var(--gold);margin-bottom:10px;
 }
 .ch-intro-name{
-  font-family:'Fraunces',serif;font-size:clamp(28px,8vw,38px);font-weight:800;
-  color:var(--cream);font-style:italic;line-height:1.1;margin-bottom:14px;
+  font-family:'Fraunces',serif;font-size:clamp(24px,6vh,38px);font-weight:800;
+  color:var(--cream);font-style:italic;line-height:1.1;margin-bottom:clamp(8px,1.5vh,14px);
 }
-.ch-intro-sub{font-size:15px;color:var(--text-mid);line-height:1.8}
+.ch-intro-sub{font-size:clamp(13px,1.8vh,15px);color:var(--text-mid);line-height:1.7}
 
 /* ── STORY CONTENT BLOCKS ── */
 .scene-block{
-  padding:20px 22px;animation:fadeUp .5s ease both;
-  border-bottom:1px solid rgba(200,114,10,.08);
+  padding:clamp(8px,2vh,20px) 18px;animation:fadeUp .5s ease both;
+  border-bottom:1px solid rgba(200,114,10,.08);flex-shrink:1;
 }
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 
 .scene-emoji{
-  font-size:52px;text-align:center;display:block;margin:8px 0 12px;
+  font-size:clamp(28px,6vh,52px);text-align:center;display:block;margin:clamp(2px,1vh,8px) 0 clamp(4px,1vh,12px);
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));
 }
 .scene-label{
   font-family:'Fraunces',serif;font-size:11px;letter-spacing:2px;
   text-transform:uppercase;color:var(--gold);text-align:center;
-  margin-bottom:6px;
+  margin-bottom:4px;
 }
 .scene-text{
-  font-size:16px;line-height:1.8;color:var(--text-mid);text-align:center;
+  font-size:clamp(13px,1.8vh,16px);line-height:1.65;color:var(--text-mid);text-align:center;
 }
 .scene-text em{color:var(--gold);font-style:italic}
 
 /* ── LOCATION ITEMS ── */
-.location-list{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.location-list{
+  padding:clamp(6px,1.2vh,16px) 14px;display:flex;flex-direction:column;
+  gap:clamp(5px,1vh,10px);flex:1;justify-content:center;
+}
 
 .location-item{
   background:rgba(255,255,255,.04);border:1.5px solid rgba(200,114,10,.18);
-  border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:14px;
+  border-radius:12px;padding:clamp(8px,1.3vh,14px) 14px;display:flex;align-items:center;
+  gap:clamp(8px,1.5vw,14px);
   cursor:pointer;transition:all .2s ease;position:relative;overflow:hidden;
 }
 .location-item:active{transform:scale(.97)}
@@ -146,12 +152,12 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
   opacity:.4;border-color:rgba(255,255,255,.06);pointer-events:none;
   background:rgba(255,255,255,.02);
 }
-.location-item .loc-emoji{font-size:32px;flex-shrink:0}
+.location-item .loc-emoji{font-size:clamp(22px,3.5vh,32px);flex-shrink:0}
 .location-item .loc-info{flex:1;min-width:0}
 .location-item .loc-name{
-  font-family:'Fraunces',serif;font-size:15px;font-weight:700;color:var(--cream);
+  font-family:'Fraunces',serif;font-size:clamp(13px,1.8vh,15px);font-weight:700;color:var(--cream);
 }
-.location-item .loc-hint{font-size:12px;color:var(--text-dim);margin-top:2px}
+.location-item .loc-hint{font-size:clamp(10px,1.4vh,12px);color:var(--text-dim);margin-top:1px}
 .location-item .loc-badge{
   font-size:9px;background:var(--amber);color:#fff;padding:3px 8px;border-radius:20px;
   font-family:'Fraunces',serif;font-weight:700;letter-spacing:1px;text-transform:uppercase;
@@ -177,8 +183,8 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 /* ── DISCOVERY PANEL ── */
 .discovery-panel{
   background:var(--soft);border-top:3px solid var(--amber);
-  padding:18px 20px 20px;margin:0 12px 12px;border-radius:0 0 16px 16px;
-  animation:slideReveal .3s ease both;
+  padding:clamp(10px,1.5vh,18px) 16px clamp(10px,1.5vh,20px);margin:0 12px clamp(6px,1vh,12px);
+  border-radius:0 0 16px 16px;animation:slideReveal .3s ease both;
 }
 @keyframes slideReveal{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
 .disc-who{
@@ -202,16 +208,17 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 
 /* ── MINIGAME AREA ── */
 .minigame-panel{
-  padding:24px 20px;text-align:center;display:flex;flex-direction:column;
-  align-items:center;gap:12px;animation:fadeUp .4s ease both;
+  padding:clamp(12px,2vh,24px) 20px;text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:clamp(8px,1.5vh,12px);animation:fadeUp .4s ease both;
+  flex:1;justify-content:center;
 }
 .mg-title{
-  font-family:'Fraunces',serif;font-size:clamp(22px,6vw,28px);font-weight:800;
+  font-family:'Fraunces',serif;font-size:clamp(20px,5vw,28px);font-weight:800;
   color:var(--cream);font-style:italic;line-height:1.1;
 }
-.mg-desc{font-size:14px;color:var(--text-dim);line-height:1.6}
+.mg-desc{font-size:clamp(12px,1.6vh,14px);color:var(--text-dim);line-height:1.5}
 .mg-emoji{
-  font-size:56px;display:block;transition:transform .15s ease;
+  font-size:clamp(40px,8vh,56px);display:block;transition:transform .15s ease;
   filter:drop-shadow(0 4px 12px rgba(0,0,0,.3));
 }
 .mg-track{
@@ -259,40 +266,42 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 
 /* ── BEAT / TRANSITION PANEL ── */
 .beat-panel{
-  padding:28px 24px;text-align:center;display:flex;flex-direction:column;
-  align-items:center;gap:16px;animation:fadeUp .5s ease both;
+  padding:clamp(16px,3vh,28px) 24px;text-align:center;display:flex;flex-direction:column;
+  align-items:center;gap:clamp(10px,2vh,16px);animation:fadeUp .5s ease both;
+  flex:1;justify-content:center;
 }
 .beat-emoji{
-  font-size:60px;display:block;
+  font-size:clamp(40px,8vh,60px);display:block;
   animation:float 3s ease-in-out infinite;
   filter:drop-shadow(0 6px 18px rgba(0,0,0,.3));
 }
-.beat-text{font-size:16px;line-height:1.85;color:var(--text-mid);max-width:340px}
+.beat-text{font-size:clamp(14px,1.8vh,16px);line-height:1.75;color:var(--text-mid);max-width:340px}
 .beat-text em{color:var(--gold);font-style:italic}
 
 /* ── END SCREEN ── */
 .end-screen{
   background:linear-gradient(160deg,#1a1008,#3d2210);
   align-items:center;justify-content:center;text-align:center;
-  padding:40px 28px;gap:0;position:relative;overflow:hidden;
+  padding:clamp(16px,4vh,40px) 28px;gap:0;position:relative;overflow:hidden;
+  overflow-y:auto;
 }
 .end-hero{
-  font-size:min(24vw,100px);line-height:1;
+  font-size:clamp(56px,14vh,100px);line-height:1;
   animation:heartbeat 2.5s ease-in-out infinite;
   filter:drop-shadow(0 6px 20px rgba(200,114,10,.4));
   position:relative;z-index:2;
 }
 @keyframes heartbeat{0%,100%{transform:scale(1)}14%{transform:scale(1.1)}28%{transform:scale(1)}42%{transform:scale(1.15)}70%{transform:scale(1)}}
 .end-card{
-  background:var(--soft);border-radius:28px 28px 0 0;padding:28px 28px 48px;
-  display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
-  width:calc(100% + 56px);margin:28px -28px -40px;position:relative;z-index:2;
+  background:var(--soft);border-radius:28px 28px 0 0;padding:clamp(16px,3vh,28px) 28px clamp(24px,5vh,48px);
+  display:flex;flex-direction:column;align-items:center;gap:clamp(8px,1.2vh,12px);text-align:center;
+  width:calc(100% + 56px);margin:clamp(12px,3vh,28px) -28px -40px;position:relative;z-index:2;
 }
 .end-h{
-  font-family:'Fraunces',serif;font-size:clamp(28px,8vw,36px);font-weight:800;
+  font-family:'Fraunces',serif;font-size:clamp(24px,5vh,36px);font-weight:800;
   color:var(--brown);font-style:italic;
 }
-.end-p{font-size:15px;color:var(--tan);line-height:1.85;max-width:320px}
+.end-p{font-size:clamp(13px,1.8vh,15px);color:var(--tan);line-height:1.7;max-width:320px}
 .end-p em{color:var(--brown);font-style:italic;font-weight:600}
 .end-label{
   font-family:'Fraunces',serif;font-size:11px;letter-spacing:2.5px;
@@ -306,14 +315,54 @@ button,a,[role="button"]{touch-action:manipulation;-webkit-tap-highlight-color:t
 .btn-restart:active{transform:scale(.95)}
 
 /* ── RESPONSIVE ── */
+/* Short screens (iPhone SE, small Androids) */
+@media(max-height:680px){
+  .scene-block{padding:6px 14px}
+  .scene-emoji{font-size:24px;margin:2px 0 4px}
+  .scene-text{font-size:12px;line-height:1.5}
+  .scene-label{font-size:10px;margin-bottom:2px}
+  .location-list{padding:4px 12px;gap:4px}
+  .location-item{padding:7px 10px;gap:8px;border-radius:10px}
+  .location-item .loc-emoji{font-size:20px}
+  .location-item .loc-name{font-size:12px}
+  .location-item .loc-hint{font-size:10px;margin-top:0}
+  .location-item .loc-badge{font-size:8px;padding:2px 6px}
+  .mg-tap-btn{padding:12px 28px;font-size:15px}
+  .mg-emoji{font-size:36px}
+  .beat-emoji{font-size:36px}
+  .discovery-panel{padding:8px 12px;margin:0 8px 4px}
+  .disc-text{font-size:13px;line-height:1.5}
+  .btn-action{padding:8px 20px;font-size:13px}
+  .hud{padding:5px 12px}
+  .separator-block{padding:4px 14px !important}
+  .title-hero{font-size:60px}
+  .title-card{padding:14px 20px 24px;gap:8px;margin-top:10px}
+  .title-sub{font-size:14px}
+  .btn-start{padding:12px 32px;font-size:16px}
+  .end-hero{font-size:56px}
+  .end-card{padding:14px 20px 24px;gap:8px;margin-top:10px}
+  .end-p{font-size:13px;line-height:1.6}
+  .choice-btn{padding:10px 8px;font-size:13px}
+  .mg-track{height:8px}
+}
+/* Medium-short screens */
+@media(max-height:780px) and (min-height:681px){
+  .scene-emoji{font-size:32px;margin:4px 0 6px}
+  .scene-text{font-size:13px;line-height:1.55}
+  .location-list{padding:6px 14px;gap:6px}
+  .location-item{padding:9px 12px;gap:10px}
+  .location-item .loc-emoji{font-size:24px}
+  .location-item .loc-name{font-size:13px}
+  .location-item .loc-hint{font-size:11px}
+}
 @media(max-width:360px){
-  .scene-text,.disc-text{font-size:14px}
-  .location-item{padding:12px 14px;gap:10px}
-  .location-item .loc-emoji{font-size:26px}
-  .mg-tap-btn{padding:14px 32px;font-size:16px}
+  .scene-text,.disc-text{font-size:13px}
+  .location-item{padding:8px 10px;gap:8px}
+  .location-item .loc-emoji{font-size:22px}
+  .mg-tap-btn{padding:12px 28px;font-size:15px}
 }
 @media(min-width:521px){
-  #app{min-height:100vh;min-height:100dvh;border-left:1px solid rgba(200,114,10,.1);border-right:1px solid rgba(200,114,10,.1)}
+  #app{height:100vh;height:100dvh;border-left:1px solid rgba(200,114,10,.1);border-right:1px solid rgba(200,114,10,.1)}
 }
 </style>
 </head>
@@ -575,10 +624,10 @@ function renderChapter(chIndex) {
 
   // Separator
   const sep = document.createElement('div');
-  sep.className = 'scene-block';
-  sep.innerHTML = `<div class="scene-label" style="color:var(--text-dim);letter-spacing:4px;margin:4px 0">· · ·</div>
-    <div style="text-align:center;font-size:13px;color:var(--text-dim);font-style:italic">Look around. Tap to interact.</div>`;
+  sep.className = 'scene-block separator-block';
+  sep.innerHTML = `<div style="text-align:center;font-size:12px;color:var(--text-dim);font-style:italic">· · · Look around. Tap to interact. · · ·</div>`;
   sep.style.animationDelay = '.15s';
+  sep.style.padding = 'clamp(4px,1vh,12px) 18px';
   area.appendChild(sep);
 
   // Location list
@@ -617,10 +666,9 @@ function renderChapter(chIndex) {
     const keyLoc = ch.locations.find(l => l.key);
     if (keyLoc && !visited[`${chIndex}-${keyLoc.id}`]) {
       const nudge = document.createElement('div');
-      nudge.className = 'scene-block';
+      nudge.className = 'scene-block separator-block';
       nudge.id = 'key-nudge';
-      nudge.innerHTML = `<div class="scene-label" style="color:var(--gold);letter-spacing:3px;margin:4px 0">· · ·</div>
-        <div style="text-align:center;font-size:14px;color:var(--gold);font-style:italic">Something new appeared...</div>`;
+      nudge.innerHTML = `<div style="text-align:center;font-size:clamp(12px,1.6vh,14px);color:var(--gold);font-style:italic">· · · Something new appeared · · ·</div>`;
       area.appendChild(nudge);
     }
   }
@@ -690,10 +738,9 @@ function checkKeyReveal(chIndex) {
   const locList = $('#loc-list');
   if (locList && !$('#key-nudge')) {
     const nudge = document.createElement('div');
-    nudge.className = 'scene-block';
+    nudge.className = 'scene-block separator-block';
     nudge.id = 'key-nudge';
-    nudge.innerHTML = `<div class="scene-label" style="color:var(--gold);letter-spacing:3px;margin:4px 0">· · ·</div>
-      <div style="text-align:center;font-size:14px;color:var(--gold);font-style:italic">Something new appeared...</div>`;
+    nudge.innerHTML = `<div style="text-align:center;font-size:clamp(12px,1.6vh,14px);color:var(--gold);font-style:italic">· · · Something new appeared · · ·</div>`;
     locList.parentNode.insertBefore(nudge, locList);
   }
 
