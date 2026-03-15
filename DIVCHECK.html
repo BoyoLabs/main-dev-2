@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Dividend Power Rankings</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --accent: #38bdf8;
+            --text: #f1f5f9;
+            --dividend-green: #22c55e;
+            --border: #334155;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+
+        .container { width: 100%; max-width: 800px; }
+        
+        header { text-align: center; margin-bottom: 30px; }
+        h1 { font-size: 2rem; margin: 0; color: var(--text); }
+        .subtitle { color: #94a3b8; margin-top: 8px; font-size: 0.9rem; }
+
+        .controls { 
+            display: flex; 
+            justify-content: center; 
+            gap: 12px; 
+            margin-bottom: 25px; 
+        }
+
+        button {
+            background: var(--card);
+            color: #94a3b8;
+            border: 1px solid var(--border);
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        button.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(56, 189, 248, 0.1);
+        }
+
+        #rank-list { display: flex; flex-direction: column; gap: 12px; }
+
+        .etf-card {
+            display: grid;
+            grid-template-columns: 60px 1fr 140px 120px;
+            align-items: center;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            transition: border-color 0.3s;
+        }
+
+        .etf-card:hover { border-color: #475569; }
+
+        .rank { font-size: 1.2rem; font-weight: 800; color: #475569; }
+        .ticker-box .symbol { font-size: 1.25rem; font-weight: 700; display: block; }
+        .ticker-box .full-name { font-size: 0.8rem; color: #94a3b8; }
+
+        .metric { text-align: right; }
+        .label { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+        .val { font-family: 'SF Mono', monospace; font-size: 1.1rem; font-weight: 600; }
+        .yield-highlight { color: var(--dividend-green); font-size: 1.3rem; }
+
+        .loader { 
+            text-align: center; 
+            padding: 40px; 
+            color: var(--accent); 
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Dividend Power Rankings</h1>
+        <div class="subtitle">Snapshot for March 2026 • Data only refreshes on load</div>
+    </header>
+
+    <div class="controls">
+        <button id="sort-yield" class="active">By Yield %</button>
+        <button id="sort-price">By Share Price</button>
+    </div>
+
+    <div id="loader" class="loader">FETCHING MARKET DATA...</div>
+    <div id="rank-list"></div>
+</div>
+
+<script>
+    const API_KEY = 'W6XH5OYiIinOYrciFT3Fp6y6SFgDl4Pi';
+    const TICKERS = ['SCHD', 'VYM', 'JEPI', 'JEPQ', 'VIG', 'DGRO', 'SPYD', 'KBWY', 'SDY', 'DIVO', 'MLPA'];
+    
+    let etfData = [];
+    let currentSort = 'yield';
+
+    async function loadData() {
+        try {
+            const symbols = TICKERS.join(',');
+
+            // FIX: key-metrics-ttm does NOT support multi-ticker batch requests.
+            // The /quote endpoint already contains a dividendYield field, so
+            // one single fetch is all we need.
+            const res = await fetch(
+                `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${API_KEY}`
+            );
+            const quotes = await res.json();
+
+            if (!Array.isArray(quotes) || quotes.length === 0) {
+                throw new Error('Empty or unexpected response from API.');
+            }
+
+            etfData = quotes.map(q => ({
+                symbol: q.symbol,
+                name:   q.name,
+                price:  q.price,
+                // dividendYield comes back as a decimal (e.g. 0.035 = 3.5%)
+                yield:  q.dividendYield != null
+                            ? (q.dividendYield * 100).toFixed(2)
+                            : "0.00"
+            }));
+
+            document.getElementById('loader').style.display = 'none';
+            render();
+        } catch (err) {
+            document.getElementById('loader').innerText =
+                `FAILED TO LOAD DATA: ${err.message}`;
+            console.error(err);
+        }
+    }
+
+    function render() {
+        const list = document.getElementById('rank-list');
+        list.innerHTML = '';
+
+        const sorted = [...etfData].sort(
+            (a, b) => parseFloat(b[currentSort]) - parseFloat(a[currentSort])
+        );
+
+        sorted.forEach((etf, i) => {
+            const row = document.createElement('div');
+            row.className = 'etf-card';
+            row.innerHTML = `
+                <div class="rank">#${i + 1}</div>
+                <div class="ticker-box">
+                    <span class="symbol">${etf.symbol}</span>
+                    <span class="full-name">${etf.name}</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Div Yield</span>
+                    <span class="val yield-highlight">${etf.yield}%</span>
+                </div>
+                <div class="metric">
+                    <span class="label">Price</span>
+                    <span class="val">$${parseFloat(etf.price).toFixed(2)}</span>
+                </div>
+            `;
+            list.appendChild(row);
+        });
+    }
+
+    document.getElementById('sort-yield').onclick = (e) => {
+        currentSort = 'yield';
+        updateUI(e.target);
+    };
+
+    document.getElementById('sort-price').onclick = (e) => {
+        currentSort = 'price';
+        updateUI(e.target);
+    };
+
+    function updateUI(btn) {
+        document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        render();
+    }
+
+    loadData();
+</script>
+
+</body>
+</html>
