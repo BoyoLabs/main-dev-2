@@ -12,8 +12,8 @@
             --text: #f1f5f9;
             --dividend-green: #22c55e;
             --border: #334155;
+            --error: #f87171;
         }
-
         body {
             font-family: 'Inter', -apple-system, sans-serif;
             background-color: var(--bg);
@@ -24,20 +24,16 @@
             padding: 40px 20px;
             margin: 0;
         }
-
         .container { width: 100%; max-width: 800px; }
-        
         header { text-align: center; margin-bottom: 30px; }
         h1 { font-size: 2rem; margin: 0; color: var(--text); }
         .subtitle { color: #94a3b8; margin-top: 8px; font-size: 0.9rem; }
-
-        .controls { 
-            display: flex; 
-            justify-content: center; 
-            gap: 12px; 
-            margin-bottom: 25px; 
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 25px;
         }
-
         button {
             background: var(--card);
             color: #94a3b8;
@@ -48,15 +44,12 @@
             font-weight: 600;
             transition: 0.2s ease;
         }
-
         button.active {
             border-color: var(--accent);
             color: var(--accent);
             background: rgba(56, 189, 248, 0.1);
         }
-
         #rank-list { display: flex; flex-direction: column; gap: 12px; }
-
         .etf-card {
             display: grid;
             grid-template-columns: 60px 1fr 140px 120px;
@@ -67,94 +60,172 @@
             border-radius: 12px;
             transition: border-color 0.3s;
         }
-
         .etf-card:hover { border-color: #475569; }
-
         .rank { font-size: 1.2rem; font-weight: 800; color: #475569; }
         .ticker-box .symbol { font-size: 1.25rem; font-weight: 700; display: block; }
         .ticker-box .full-name { font-size: 0.8rem; color: #94a3b8; }
-
         .metric { text-align: right; }
         .label { display: block; font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
         .val { font-family: 'SF Mono', monospace; font-size: 1.1rem; font-weight: 600; }
         .yield-highlight { color: var(--dividend-green); font-size: 1.3rem; }
-
-        .loader { 
-            text-align: center; 
-            padding: 40px; 
-            color: var(--accent); 
+        .loader {
+            text-align: center;
+            padding: 40px;
+            color: var(--accent);
             font-weight: bold;
             letter-spacing: 1px;
+        }
+        #progress-bar-wrap {
+            width: 100%;
+            background: #0f172a;
+            border-radius: 8px;
+            overflow: hidden;
+            height: 6px;
+            margin-top: 16px;
+            display: none;
+        }
+        #progress-bar {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        .error-box {
+            background: rgba(248, 113, 113, 0.1);
+            border: 1px solid var(--error);
+            border-radius: 10px;
+            padding: 20px;
+            color: var(--error);
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        .error-box strong { display: block; font-size: 1rem; margin-bottom: 8px; }
+        .error-box code {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+        .tip {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(248,113,113,0.3);
+            color: #fca5a5;
         }
     </style>
 </head>
 <body>
-
 <div class="container">
     <header>
         <h1>Dividend Power Rankings</h1>
         <div class="subtitle">Snapshot for March 2026 • Data only refreshes on load</div>
     </header>
-
     <div class="controls">
         <button id="sort-yield" class="active">By Yield %</button>
         <button id="sort-price">By Share Price</button>
     </div>
-
-    <div id="loader" class="loader">FETCHING MARKET DATA...</div>
+    <div id="loader" class="loader">
+        FETCHING MARKET DATA...
+        <div id="progress-bar-wrap"><div id="progress-bar"></div></div>
+    </div>
     <div id="rank-list"></div>
 </div>
 
 <script>
     const API_KEY = 'W6XH5OYiIinOYrciFT3Fp6y6SFgDl4Pi';
     const TICKERS = ['SCHD', 'VYM', 'JEPI', 'JEPQ', 'VIG', 'DGRO', 'SPYD', 'KBWY', 'SDY', 'DIVO', 'MLPA'];
-    
+
+    // FMP's free tier blocks direct browser requests (returns 403).
+    // We route through corsproxy.io which makes the call server-side.
+    const PROXY = 'https://corsproxy.io/?url=';
+
     let etfData = [];
     let currentSort = 'yield';
 
+    function setProgress(pct) {
+        document.getElementById('progress-bar-wrap').style.display = 'block';
+        document.getElementById('progress-bar').style.width = pct + '%';
+    }
+
+    function showError(title, detail, tip) {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('rank-list').innerHTML = `
+            <div class="error-box">
+                <strong>⚠ ${title}</strong>
+                ${detail}
+                ${tip ? `<div class="tip">💡 ${tip}</div>` : ''}
+            </div>`;
+    }
+
+    async function fetchTicker(symbol) {
+        const target = `https://financialmodelingprep.com/api/v3/quote/${symbol}?apikey=${API_KEY}`;
+        const res = await fetch(PROXY + encodeURIComponent(target));
+
+        if (res.status === 403) throw new Error(`403 — API key rejected or plan restriction for ${symbol}`);
+        if (!res.ok)           throw new Error(`HTTP ${res.status} for ${symbol}`);
+
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) throw new Error(`Empty response for ${symbol}`);
+        return data[0];
+    }
+
     async function loadData() {
-        try {
-            const symbols = TICKERS.join(',');
+        setProgress(5);
+        const results = [];
+        const failed  = [];
 
-            // FIX: key-metrics-ttm does NOT support multi-ticker batch requests.
-            // The /quote endpoint already contains a dividendYield field, so
-            // one single fetch is all we need.
-            const res = await fetch(
-                `https://financialmodelingprep.com/api/v3/quote/${symbols}?apikey=${API_KEY}`
-            );
-            const quotes = await res.json();
-
-            if (!Array.isArray(quotes) || quotes.length === 0) {
-                throw new Error('Empty or unexpected response from API.');
+        for (let i = 0; i < TICKERS.length; i++) {
+            const symbol = TICKERS[i];
+            try {
+                const q = await fetchTicker(symbol);
+                results.push({
+                    symbol: q.symbol,
+                    name:   q.name,
+                    price:  q.price,
+                    yield:  q.dividendYield != null
+                                ? (q.dividendYield * 100).toFixed(2)
+                                : '0.00'
+                });
+            } catch (err) {
+                console.error(`[${symbol}]`, err.message);
+                // Bail early on first failure with a helpful message
+                if (i === 0) {
+                    const is403 = err.message.includes('403');
+                    showError(
+                        is403 ? 'API Plan Restriction (403)' : 'Request Failed',
+                        is403
+                            ? `FMP returned 403 even through the CORS proxy. This means your free-tier
+                               API key does not have permission for this endpoint.<br><br>
+                               Error: <code>${err.message}</code>`
+                            : `Could not reach the API.<br><br>Error: <code>${err.message}</code>`,
+                        is403
+                            ? `You may need to upgrade your FMP plan, or switch to a free alternative 
+                               like <code>Alpha Vantage</code> or <code>Polygon.io</code>.`
+                            : `Check the browser Console (F12) for network details.`
+                    );
+                    return;
+                }
+                failed.push(symbol);
             }
-
-            etfData = quotes.map(q => ({
-                symbol: q.symbol,
-                name:   q.name,
-                price:  q.price,
-                // dividendYield comes back as a decimal (e.g. 0.035 = 3.5%)
-                yield:  q.dividendYield != null
-                            ? (q.dividendYield * 100).toFixed(2)
-                            : "0.00"
-            }));
-
-            document.getElementById('loader').style.display = 'none';
-            render();
-        } catch (err) {
-            document.getElementById('loader').innerText =
-                `FAILED TO LOAD DATA: ${err.message}`;
-            console.error(err);
+            setProgress(Math.round(((i + 1) / TICKERS.length) * 100));
         }
+
+        if (results.length === 0) {
+            showError('No Data Loaded', 'All ticker requests failed.', 'Check the Console (F12) for details.');
+            return;
+        }
+
+        if (failed.length) console.warn('Skipped tickers:', failed.join(', '));
+
+        etfData = results;
+        document.getElementById('loader').style.display = 'none';
+        render();
     }
 
     function render() {
         const list = document.getElementById('rank-list');
         list.innerHTML = '';
-
-        const sorted = [...etfData].sort(
-            (a, b) => parseFloat(b[currentSort]) - parseFloat(a[currentSort])
-        );
-
+        const sorted = [...etfData].sort((a, b) => parseFloat(b[currentSort]) - parseFloat(a[currentSort]));
         sorted.forEach((etf, i) => {
             const row = document.createElement('div');
             row.className = 'etf-card';
@@ -171,21 +242,13 @@
                 <div class="metric">
                     <span class="label">Price</span>
                     <span class="val">$${parseFloat(etf.price).toFixed(2)}</span>
-                </div>
-            `;
+                </div>`;
             list.appendChild(row);
         });
     }
 
-    document.getElementById('sort-yield').onclick = (e) => {
-        currentSort = 'yield';
-        updateUI(e.target);
-    };
-
-    document.getElementById('sort-price').onclick = (e) => {
-        currentSort = 'price';
-        updateUI(e.target);
-    };
+    document.getElementById('sort-yield').onclick = e => { currentSort = 'yield'; updateUI(e.target); };
+    document.getElementById('sort-price').onclick = e => { currentSort = 'price'; updateUI(e.target); };
 
     function updateUI(btn) {
         document.querySelectorAll('button').forEach(b => b.classList.remove('active'));
@@ -195,6 +258,5 @@
 
     loadData();
 </script>
-
 </body>
 </html>
