@@ -231,26 +231,33 @@
         <h2>The Workshop</h2>
         <div id="forum-posts"></div>
         <hr>
-        <h3>Contribute to the Archive</h3>
-        <input type="text" id="post-author" placeholder="Your Username">
-        <textarea id="post-content" placeholder="Share your insights on the grind..."></textarea>
-        <button class="btn-main" onclick="submitPost()">Submit Post</button>
+        <div id="forum-post-form"></div>
     </section>
 
     <section id="profile">
         <h2>Member Portal</h2>
 
-        <!-- Step 1: Username lookup -->
+        <!-- Login -->
         <div id="login-view">
-            <p>Enter your username to access or create your guild record.</p>
+            <label>Username:</label>
             <input type="text" id="login-user" placeholder="Username">
-            <button class="btn-main" onclick="accessProfile()">Access Records</button>
+            <label>Password:</label>
+            <input type="password" id="login-pass" placeholder="Password">
+            <button class="btn-main" onclick="login()">Login</button>
+            <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
+                New member? <a href="#" onclick="showRegister(); return false;">Register here</a>
+            </p>
         </div>
 
-        <!-- Step 2a: New user registration -->
+        <!-- Register -->
         <div id="register-view" style="display:none;">
-            <h3>Create Guild Record</h3>
-            <p>No record found for "<strong id="register-name-display"></strong>". Register now?</p>
+            <h3>Create Account</h3>
+            <label>Username:</label>
+            <input type="text" id="register-user" placeholder="Choose a username">
+            <label>Password:</label>
+            <input type="password" id="register-pass" placeholder="Choose a password">
+            <label>Confirm Password:</label>
+            <input type="password" id="register-pass-confirm" placeholder="Confirm password">
             <label>Preferred Variant:</label>
             <select id="register-variant">
                 <option value="Classical">Classical</option>
@@ -271,14 +278,16 @@
                 <label>FIDE ID:</label>
                 <input type="text" id="register-fide" placeholder="e.g. 1503014">
             </div>
-            <button class="btn-main" onclick="createProfile()">Register to Guild</button>
-            <button class="btn-secondary" onclick="cancelRegister()">Back</button>
+            <button class="btn-main" onclick="register()">Create Account</button>
+            <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
+                Already a member? <a href="#" onclick="showLogin(); return false;">Login here</a>
+            </p>
         </div>
 
-        <!-- Step 2b: Existing user edit -->
+        <!-- Account (logged in) -->
         <div id="edit-view" style="display:none;">
-            <h3 id="edit-title-name">Welcome, Member</h3>
-            <label>Current Verified Wins:</label>
+            <h3 id="edit-title-name">My Account</h3>
+            <label>Verified Wins:</label>
             <input type="number" id="edit-wins">
             <label>Preferred Variant:</label>
             <select id="edit-variant">
@@ -298,8 +307,8 @@
                 <label>FIDE ID:</label>
                 <input type="text" id="edit-fide" placeholder="e.g. 1503014">
             </div>
-            <button class="btn-main" onclick="saveProfileChanges()">Commit Changes to Registry</button>
-            <button class="btn-secondary" onclick="logoutProfile()">Back to Login</button>
+            <button class="btn-main" onclick="saveProfileChanges()">Save Changes</button>
+            <button class="btn-secondary" onclick="logout()">Logout</button>
         </div>
     </section>
 </div>
@@ -349,6 +358,7 @@
     function renderAll() {
         renderLeaderboard();
         renderForum();
+        renderForumForm();
     }
 
     function renderLeaderboard() {
@@ -399,67 +409,95 @@
         if (navBtn) navBtn.classList.add('active');
     }
 
-    // Profile Logic
-    function accessProfile() {
-        const name = document.getElementById('login-user').value.trim();
-        if (!name) return alert("Please enter a username.");
-        const user = guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase());
-
-        if (user) {
-            openEditView(user);
-        } else {
-            document.getElementById('register-name-display').innerText = name;
-            document.getElementById('login-view').style.display = 'none';
-            document.getElementById('register-view').style.display = 'block';
-        }
+    // Password hashing (SHA-256 via Web Crypto, username used as salt)
+    async function hashPassword(username, password) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(username.toLowerCase() + ':' + password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        return Array.from(new Uint8Array(hashBuffer))
+            .map(b => b.toString(16).padStart(2, '0')).join('');
     }
 
-    function openEditView(user) {
+    // Auth helpers
+    function showLogin() {
+        document.getElementById('register-view').style.display = 'none';
+        document.getElementById('edit-view').style.display = 'none';
+        document.getElementById('login-view').style.display = 'block';
+    }
+
+    function showRegister() {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('edit-view').style.display = 'none';
+        document.getElementById('register-view').style.display = 'block';
+    }
+
+    function updateHeaderButton() {
+        const btn = document.getElementById('login-link');
+        btn.textContent = currentUser ? currentUser.username : 'Login / Register';
+    }
+
+    function openAccountView(user) {
         currentUser = user;
         const l = user.links || {};
+        showLogin(); // reset all views first
         document.getElementById('login-view').style.display = 'none';
-        document.getElementById('register-view').style.display = 'none';
         document.getElementById('edit-view').style.display = 'block';
-        document.getElementById('edit-title-name').innerText = `Records for ${user.username}`;
+        document.getElementById('edit-title-name').innerText = `Welcome, ${user.username}`;
         document.getElementById('edit-wins').value = user.total_wins;
         document.getElementById('edit-variant').value = user.preferred_variant;
         document.getElementById('edit-chesscom').value = l.chesscom || '';
         document.getElementById('edit-lichess').value = l.lichess || '';
         document.getElementById('edit-fide').value = l.fide || '';
+        updateHeaderButton();
+        renderForumForm();
     }
 
-    function createProfile() {
+    async function login() {
         const name = document.getElementById('login-user').value.trim();
-        const wins = parseInt(document.getElementById('register-wins').value) || 0;
-        const variant = document.getElementById('register-variant').value;
-        const chesscom = document.getElementById('register-chesscom').value.trim();
-        const lichess = document.getElementById('register-lichess').value.trim();
-        const fide = document.getElementById('register-fide').value.trim();
+        const pass = document.getElementById('login-pass').value;
+        if (!name || !pass) return alert("Please enter your username and password.");
+        const user = guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase());
+        if (!user) return alert("No account found with that username.");
+        const hash = await hashPassword(name, pass);
+        if (user.password !== hash) return alert("Incorrect password.");
+        openAccountView(user);
+    }
+
+    async function register() {
+        const name = document.getElementById('register-user').value.trim();
+        const pass = document.getElementById('register-pass').value;
+        const confirm = document.getElementById('register-pass-confirm').value;
+        if (!name || !pass) return alert("Username and password are required.");
+        if (pass !== confirm) return alert("Passwords do not match.");
+        if (guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase())) {
+            return alert("That username is already taken.");
+        }
 
         const newUser = {
             id: 'user_' + Date.now(),
             username: name,
-            total_wins: wins,
-            preferred_variant: variant,
-            links: { chesscom, lichess, fide }
+            password: await hashPassword(name, pass),
+            total_wins: parseInt(document.getElementById('register-wins').value) || 0,
+            preferred_variant: document.getElementById('register-variant').value,
+            links: {
+                chesscom: document.getElementById('register-chesscom').value.trim(),
+                lichess:  document.getElementById('register-lichess').value.trim(),
+                fide:     document.getElementById('register-fide').value.trim()
+            }
         };
 
         guildData.users.push(newUser);
         syncToCloud();
-        openEditView(newUser);
-        alert("Guild record created. Welcome to the registry!");
+        openAccountView(newUser);
     }
 
-    function cancelRegister() {
-        document.getElementById('register-view').style.display = 'none';
-        document.getElementById('login-view').style.display = 'block';
-    }
-
-    function logoutProfile() {
+    function logout() {
         currentUser = null;
-        document.getElementById('edit-view').style.display = 'none';
-        document.getElementById('login-view').style.display = 'block';
+        updateHeaderButton();
+        showLogin();
         document.getElementById('login-user').value = '';
+        document.getElementById('login-pass').value = '';
+        renderForumForm();
     }
 
     function saveProfileChanges() {
@@ -467,27 +505,41 @@
         currentUser.preferred_variant = document.getElementById('edit-variant').value;
         if (!currentUser.links) currentUser.links = {};
         currentUser.links.chesscom = document.getElementById('edit-chesscom').value.trim();
-        currentUser.links.lichess = document.getElementById('edit-lichess').value.trim();
-        currentUser.links.fide = document.getElementById('edit-fide').value.trim();
+        currentUser.links.lichess  = document.getElementById('edit-lichess').value.trim();
+        currentUser.links.fide     = document.getElementById('edit-fide').value.trim();
         syncToCloud();
-        alert("Records updated.");
+        alert("Changes saved.");
     }
 
     // Forum Logic
-    function submitPost() {
-        const author = document.getElementById('post-author').value;
-        const content = document.getElementById('post-content').value;
-        if(!author || !content) return alert("Fields cannot be empty.");
+    function renderForumForm() {
+        const el = document.getElementById('forum-post-form');
+        if (currentUser) {
+            el.innerHTML = `
+                <h3>Post to the Workshop</h3>
+                <p style="font-size:0.9rem;color:#666;">Posting as <strong>${currentUser.username}</strong></p>
+                <textarea id="post-content" placeholder="Share your insights on the grind..."></textarea>
+                <button class="btn-main" onclick="submitPost()">Submit Post</button>
+            `;
+        } else {
+            el.innerHTML = `<p style="color:#888; font-style:italic;">
+                <a href="#" onclick="showSection('profile'); return false;">Login</a> to post in the Workshop.
+            </p>`;
+        }
+    }
 
-        const newPost = {
+    function submitPost() {
+        const content = document.getElementById('post-content').value.trim();
+        if (!content) return alert("Post cannot be empty.");
+
+        guildData.forum.categories[0].threads.push({
             id: "post_" + Date.now(),
-            author: author,
+            author: currentUser.username,
             content: content,
             timestamp: new Date().toISOString(),
             replies: []
-        };
+        });
 
-        guildData.forum.categories[0].threads.push(newPost);
         syncToCloud();
         document.getElementById('post-content').value = '';
     }
