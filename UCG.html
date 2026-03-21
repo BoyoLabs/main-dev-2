@@ -195,11 +195,79 @@
         .link-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
         .link-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
         .link-section small { color: #888; }
+
+        /* Clickable usernames */
+        .username-link {
+            cursor: pointer;
+            color: var(--text-dark);
+            text-decoration: underline;
+            text-decoration-color: var(--guild-gold);
+            text-underline-offset: 3px;
+        }
+        .username-link:hover { color: var(--guild-gold); }
+
+        /* Public profile modal */
+        #profile-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.55);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+        #profile-modal-overlay.open { display: flex; }
+        #profile-modal {
+            background: var(--white);
+            border-top: 4px solid var(--guild-gold);
+            padding: 2rem;
+            width: 90%;
+            max-width: 420px;
+            position: relative;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+        }
+        #profile-modal h3 { margin: 0 0 0.25rem 0; font-size: 1.4rem; }
+        #profile-modal .modal-title-tag {
+            font-size: 0.85rem;
+            color: #888;
+            margin-bottom: 1.2rem;
+            font-style: italic;
+        }
+        .modal-stat { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
+        .modal-stat:last-of-type { border-bottom: none; }
+        .modal-stat span:first-child { color: #888; }
+        .modal-links { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        #modal-close {
+            position: absolute;
+            top: 0.75rem; right: 1rem;
+            background: none; border: none;
+            font-size: 1.4rem; cursor: pointer; color: #999;
+        }
+        #modal-close:hover { color: var(--text-dark); }
+
+        /* About section */
+        .about-block { margin-bottom: 2rem; }
+        .about-block h3 { color: var(--guild-blue); border-left: 3px solid var(--guild-gold); padding-left: 0.75rem; margin-bottom: 0.5rem; }
+        .title-row { display: flex; align-items: baseline; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid #eee; }
+        .title-row:last-child { border-bottom: none; }
+        .title-label { min-width: 80px; font-weight: bold; }
     </style>
 </head>
 <body>
 
 <div id="loading-overlay">Checking Guild Archives...</div>
+
+<!-- Public profile modal -->
+<div id="profile-modal-overlay" onclick="closeModal(event)">
+    <div id="profile-modal">
+        <button id="modal-close" onclick="closeModal()">&#x2715;</button>
+        <h3 id="modal-username"></h3>
+        <div class="modal-title-tag" id="modal-title-tag"></div>
+        <div class="modal-stat"><span>Verified Wins</span><strong id="modal-wins"></strong></div>
+        <div class="modal-stat"><span>Preferred Variant</span><span id="modal-variant"></span></div>
+        <div class="modal-links" id="modal-links"></div>
+    </div>
+</div>
 
 <header>
     <button id="login-link" onclick="showSection('profile')">Login / Register</button>
@@ -207,6 +275,7 @@
     <nav>
         <button onclick="showSection('leaderboard')" id="btn-leaderboard" class="active">Leaderboard</button>
         <button onclick="showSection('forum')" id="btn-forum">The Workshop</button>
+        <button onclick="showSection('about')" id="btn-about">About</button>
     </nav>
 </header>
 
@@ -232,6 +301,51 @@
         <div id="forum-posts"></div>
         <hr>
         <div id="forum-post-form"></div>
+    </section>
+
+    <section id="about">
+        <h2>About the United Chess Guild</h2>
+
+        <div class="about-block">
+            <h3>Our Philosophy</h3>
+            <p>At the United Chess Guild, we believe that Elo rating — while a useful and important tool for matchmaking — is ultimately a volatile, transient number. It rises and falls with every game, swayed by streaks, opponents, and circumstance. It does not tell you how hard someone has worked, how many battles they have fought, or how deep their commitment to the game truly runs.</p>
+            <p>What we respect is <strong>the grind</strong>. The accumulated body of games played, studied, and won. Win volume is a measure of dedication that cannot be taken away by a bad weekend. We call this your <em>Verified Win Count</em>, and it is the only number that matters here.</p>
+        </div>
+
+        <div class="about-block">
+            <h3>What the UCG Does</h3>
+            <p>The UCG is a registry and community platform for chess players who want to be recognized for their persistence above all else. Members create a profile, self-report their verified win count, and link their external platform profiles — Chess.com, Lichess, or FIDE — so that the community can confirm the numbers. There is no automated API scraping; verification is built on transparency and trust.</p>
+            <p>Members can update their win count at any time as they continue to accumulate games. The leaderboard reflects the current standings in real time.</p>
+        </div>
+
+        <div class="about-block">
+            <h3>Variants</h3>
+            <p>The UCG recognizes all time controls and rule variants as legitimate chess. Whether you grind Classical, Blitz, Bullet, Hyperbullet, Crazyhouse, 3-Check, or any other format — every win counts toward your total. Wins are wins. Your preferred variant is displayed on your profile and in the standings as a point of identity, not hierarchy.</p>
+        </div>
+
+        <div class="about-block">
+            <h3>Title System</h3>
+            <p>The UCG title system is inspired by the trades — a recognition of experience, output, and mastery earned through volume of work rather than peak performance.</p>
+            <div>
+                <div class="title-row">
+                    <div class="title-label">Apprentice</div>
+                    <div><em>0 – 999 wins.</em> No prefix. You are learning the grind. Every win is a brick laid.</div>
+                </div>
+                <div class="title-row">
+                    <div class="title-label"><span class="title-jm">JM</span> Journeyman</div>
+                    <div><em>1,000+ wins.</em> You have proven staying power. The prefix <strong>JM</strong> appears before your name on the leaderboard and your profile.</div>
+                </div>
+                <div class="title-row">
+                    <div class="title-label"><span class="title-m">M</span> Master</div>
+                    <div><em>5,000+ wins.</em> You are the craft. The prefix <strong>M</strong> appears before your name. Few reach this mark. Those who do have earned permanent respect in this registry.</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="about-block">
+            <h3>The Workshop</h3>
+            <p>The Workshop is the UCG's community forum. Log in to contribute — share your insights on openings, your journey toward a milestone, or anything else the grind has taught you.</p>
+        </div>
     </section>
 
     <section id="profile">
@@ -361,6 +475,37 @@
         renderForumForm();
     }
 
+    function getTitle(wins) {
+        if (wins >= 5000) return { tag: '<span class="title-m">M</span>', label: 'Master', description: 'M' };
+        if (wins >= 1000) return { tag: '<span class="title-jm">JM</span>', label: 'Journeyman', description: 'JM' };
+        return { tag: '', label: 'Apprentice', description: '' };
+    }
+
+    function openUserModal(username) {
+        const user = guildData.users.find(u => u.username === username);
+        if (!user) return;
+        const title = getTitle(user.total_wins);
+        const l = user.links || {};
+
+        document.getElementById('modal-username').innerHTML = title.tag + ' ' + user.username;
+        document.getElementById('modal-title-tag').textContent = title.label;
+        document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
+        document.getElementById('modal-variant').textContent = user.preferred_variant;
+
+        let links = '';
+        if (l.chesscom) links += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc">Chess.com</a>`;
+        if (l.lichess)  links += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li">Lichess</a>`;
+        if (l.fide)     links += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide">FIDE</a>`;
+        document.getElementById('modal-links').innerHTML = links || '<span style="color:#aaa;font-size:0.85rem;">No verification links added.</span>';
+
+        document.getElementById('profile-modal-overlay').classList.add('open');
+    }
+
+    function closeModal(e) {
+        if (e && e.target !== document.getElementById('profile-modal-overlay') && e.target !== document.getElementById('modal-close')) return;
+        document.getElementById('profile-modal-overlay').classList.remove('open');
+    }
+
     function renderLeaderboard() {
         const body = document.getElementById('leaderboard-body');
         const query = (document.getElementById('leaderboard-search')?.value || '').toLowerCase();
@@ -369,19 +514,16 @@
             .filter(u => u.username.toLowerCase().includes(query));
 
         body.innerHTML = sorted.map((u, i) => {
-            let titleTag = '';
-            if (u.total_wins >= 5000) titleTag = '<span class="title-m">M</span>';
-            else if (u.total_wins >= 1000) titleTag = '<span class="title-jm">JM</span>';
-
-            let badges = '';
+            const title = getTitle(u.total_wins);
             const l = u.links || {};
+            let badges = '';
             if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${l.chesscom}">CC</a>`;
             if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${l.lichess}">Li</a>`;
             if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${l.fide}">FIDE</a>`;
 
             return `<tr>
                 <td>${i + 1}</td>
-                <td>${titleTag}${u.username}${badges}</td>
+                <td>${title.tag}<span class="username-link" onclick="openUserModal('${u.username.replace(/'/g, "\\'")}')">${u.username}</span>${badges}</td>
                 <td>${u.preferred_variant}</td>
                 <td>${u.total_wins.toLocaleString()}</td>
             </tr>`;
@@ -390,13 +532,11 @@
 
     function renderForum() {
         const container = document.getElementById('forum-posts');
-        // Flattening our nested forum structure for simple display
         const threads = guildData.forum.categories[0].threads;
         container.innerHTML = threads.map(t => `
             <div class="post">
-                <strong>${t.title || 'Note from the Grind'}</strong>
                 <p>${t.content}</p>
-                <div class="post-meta">— ${t.author}, ${new Date(t.timestamp).toLocaleDateString()}</div>
+                <div class="post-meta">— <span class="username-link" onclick="openUserModal('${t.author.replace(/'/g, "\\'")}')">${t.author}</span>, ${new Date(t.timestamp).toLocaleDateString()}</div>
             </div>
         `).reverse().join('');
     }
