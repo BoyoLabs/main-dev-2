@@ -315,7 +315,7 @@
     async function refreshData() {
         document.getElementById('loading-overlay').style.display = 'flex';
         try {
-            const response = await fetch(URL, { headers: { 'X-Master-Key': API_KEY } });
+            const response = await fetch(URL, { headers: { 'X-Access-Key': API_KEY } });
             const result = await response.json();
             if (!response.ok) {
                 throw new Error(`${response.status}: ${JSON.stringify(result)}`);
@@ -336,7 +336,7 @@
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY
+                    'X-Access-Key': API_KEY
                 },
                 body: JSON.stringify(guildData)
             });
