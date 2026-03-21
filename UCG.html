@@ -196,6 +196,15 @@
         .link-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
         .link-section small { color: #888; }
 
+        /* Admin panel */
+        .admin-section { margin-bottom: 2rem; }
+        .admin-section h4 { border-bottom: 1px solid #eee; padding-bottom: 0.4rem; margin-bottom: 0.75rem; font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
+        .admin-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.9rem; }
+        .admin-row:last-child { border-bottom: none; }
+        .btn-delete { background: #c0392b; color: white; border: none; padding: 0.25rem 0.7rem; cursor: pointer; font-size: 0.75rem; border-radius: 2px; }
+        .btn-delete:hover { background: #a93226; }
+        .admin-post-text { color: #666; font-size: 0.85rem; max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         /* Clickable usernames */
         .username-link {
             cursor: pointer;
@@ -251,6 +260,53 @@
         .title-row { display: flex; align-items: baseline; gap: 1rem; padding: 0.75rem 0; border-bottom: 1px solid #eee; }
         .title-row:last-child { border-bottom: none; }
         .title-label { min-width: 80px; font-weight: bold; }
+
+        /* Footer / ToS */
+        footer {
+            background: var(--guild-blue);
+            color: #aaa;
+            font-size: 0.78rem;
+            padding: 2rem 1rem;
+            margin-top: 3rem;
+            line-height: 1.7;
+        }
+        footer .footer-inner {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        footer h4 {
+            color: var(--guild-gold);
+            font-variant: small-caps;
+            letter-spacing: 2px;
+            margin: 0 0 1rem 0;
+            font-size: 0.85rem;
+        }
+        footer p { margin: 0 0 0.75rem 0; }
+        footer a { color: var(--guild-gold); text-decoration: none; }
+        footer a:hover { text-decoration: underline; }
+        footer .footer-copy { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #2e4055; color: #666; }
+
+        .tos-agree {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            color: #555;
+            margin: 0.5rem 0 1rem 0;
+            line-height: 1.5;
+        }
+        .tos-agree input[type="checkbox"] {
+            width: auto;
+            margin: 0.2rem 0 0 0;
+            flex-shrink: 0;
+        }
+        .tos-note {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+            margin-top: 1rem;
+        }
+        .tos-note a { color: var(--guild-gold); }
     </style>
 </head>
 <body>
@@ -346,6 +402,27 @@
             <h3>The Workshop</h3>
             <p>The Workshop is the UCG's community forum. Log in to contribute — share your insights on openings, your journey toward a milestone, or anything else the grind has taught you.</p>
         </div>
+
+        <div class="about-block" id="tos">
+            <h3>Terms of Service &amp; Liability Waiver</h3>
+            <p><em>Last updated: March 2026</em></p>
+
+            <p><strong>1. Acceptance of Terms.</strong> By creating an account or using any part of the United Chess Guild ("UCG") platform, you agree to be bound by these Terms of Service. If you do not agree, do not register or use this platform.</p>
+
+            <p><strong>2. Honor System &amp; Self-Reported Data.</strong> Win counts on the UCG are entirely self-reported by members. The UCG does not independently verify, audit, or guarantee the accuracy of any win count, linked profile, or any other user-submitted information. The platform provides tools for members to link external profiles (Chess.com, Lichess, FIDE) as a courtesy for peer verification only. The UCG expressly disclaims all liability for inaccurate, false, or misleading data submitted by users.</p>
+
+            <p><strong>3. No Warranty.</strong> This platform is provided "as is" and "as available" without warranty of any kind. The UCG makes no representations regarding uptime, data integrity, or fitness for any particular purpose. User data is stored via a third-party service (JSONBin) and the UCG is not liable for any data loss, breach, or service interruption caused by that or any other third party.</p>
+
+            <p><strong>4. Account Security.</strong> You are responsible for maintaining the confidentiality of your account credentials. The UCG cannot recover lost passwords. Do not share your password with anyone. The UCG is not liable for any unauthorized access to your account resulting from your failure to secure your credentials.</p>
+
+            <p><strong>5. User Conduct.</strong> Members agree not to post content in The Workshop that is abusive, defamatory, harassing, obscene, or otherwise harmful to other members or the community. Members agree not to submit fraudulent win counts intended to deceive the community. Violations may result in account removal at the sole discretion of guild administrators.</p>
+
+            <p><strong>6. Moderation.</strong> The UCG reserves the right to remove any user account or forum post at any time, for any reason, without notice or explanation. This is a private registry and community, not a public utility. Administrators exercise final authority over all content.</p>
+
+            <p><strong>7. Limitation of Liability.</strong> To the fullest extent permitted by applicable law, the UCG, its administrators, and its operators shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising out of your use of or inability to use this platform, even if advised of the possibility of such damages.</p>
+
+            <p><strong>8. Changes to Terms.</strong> These terms may be updated at any time. Continued use of the platform after changes are posted constitutes acceptance of the revised terms.</p>
+        </div>
     </section>
 
     <section id="profile">
@@ -358,7 +435,8 @@
             <label>Password:</label>
             <input type="password" id="login-pass" placeholder="Password">
             <button class="btn-main" onclick="login()">Login</button>
-            <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
+            <p class="tos-note">By logging in you agree to the <a href="#" onclick="showSection('about'); return false;">Terms of Service</a>.</p>
+            <p style="text-align:center; margin-top:0.5rem; font-size:0.9rem;">
                 New member? <a href="#" onclick="showRegister(); return false;">Register here</a>
             </p>
         </div>
@@ -374,12 +452,20 @@
             <input type="password" id="register-pass-confirm" placeholder="Confirm password">
             <label>Preferred Variant:</label>
             <select id="register-variant">
-                <option value="Classical">Classical</option>
-                <option value="Blitz">Blitz</option>
-                <option value="Bullet">Bullet</option>
                 <option value="Hyperbullet">Hyperbullet</option>
-                <option value="3 Check">3 Check</option>
+                <option value="Bullet">Bullet</option>
+                <option value="Blitz">Blitz</option>
+                <option value="Rapid">Rapid</option>
+                <option value="Classical">Classical</option>
+                <option value="Chess960">Chess960</option>
+                <option value="King of the Hill">King of the Hill</option>
+                <option value="Three Check">Three Check</option>
                 <option value="Crazyhouse">Crazyhouse</option>
+                <option value="Antichess">Antichess</option>
+                <option value="Atomic">Atomic</option>
+                <option value="Horde">Horde</option>
+                <option value="Racing Kings">Racing Kings</option>
+                <option value="Other">Other</option>
             </select>
             <label>Total Wins (self-reported):</label>
             <input type="number" id="register-wins" value="0" min="0">
@@ -392,10 +478,21 @@
                 <label>FIDE ID:</label>
                 <input type="text" id="register-fide" placeholder="e.g. 1503014">
             </div>
+            <div class="tos-agree">
+                <input type="checkbox" id="register-tos">
+                <label for="register-tos">I have read and agree to the <a href="#" onclick="showSection('about'); return false;">United Chess Guild Terms of Service</a>, including the honor system policy for self-reported win counts and the community conduct standards.</label>
+            </div>
             <button class="btn-main" onclick="register()">Create Account</button>
             <p style="text-align:center; margin-top:1rem; font-size:0.9rem;">
                 Already a member? <a href="#" onclick="showLogin(); return false;">Login here</a>
             </p>
+        </div>
+
+        <!-- Admin panel -->
+        <div id="admin-view" style="display:none;">
+            <h3>&#9876; Admin Panel</h3>
+            <div id="admin-content"></div>
+            <button class="btn-secondary" style="margin-top:1.5rem;" onclick="logout()">Logout</button>
         </div>
 
         <!-- Account (logged in) -->
@@ -405,12 +502,20 @@
             <input type="number" id="edit-wins">
             <label>Preferred Variant:</label>
             <select id="edit-variant">
-                <option value="Classical">Classical</option>
-                <option value="Blitz">Blitz</option>
-                <option value="Bullet">Bullet</option>
                 <option value="Hyperbullet">Hyperbullet</option>
-                <option value="3 Check">3 Check</option>
+                <option value="Bullet">Bullet</option>
+                <option value="Blitz">Blitz</option>
+                <option value="Rapid">Rapid</option>
+                <option value="Classical">Classical</option>
+                <option value="Chess960">Chess960</option>
+                <option value="King of the Hill">King of the Hill</option>
+                <option value="Three Check">Three Check</option>
                 <option value="Crazyhouse">Crazyhouse</option>
+                <option value="Antichess">Antichess</option>
+                <option value="Atomic">Atomic</option>
+                <option value="Horde">Horde</option>
+                <option value="Racing Kings">Racing Kings</option>
+                <option value="Other">Other</option>
             </select>
             <div class="link-section">
                 <h4>Verification Links <small>(optional — lets others confirm your win count)</small></h4>
@@ -434,6 +539,22 @@
 
     let guildData = null;
     let currentUser = null;
+    let ADMIN_HASH = null;
+
+    // Escape user-supplied strings before inserting into innerHTML
+    function escapeHtml(str) {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Compute admin hash at load — plaintext never persists after this
+    (async () => {
+        ADMIN_HASH = await hashPassword('admin', 'UCGLife!');
+    })();
 
     async function refreshData() {
         document.getElementById('loading-overlay').style.display = 'flex';
@@ -487,7 +608,7 @@
         const title = getTitle(user.total_wins);
         const l = user.links || {};
 
-        document.getElementById('modal-username').innerHTML = title.tag + ' ' + user.username;
+        document.getElementById('modal-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
         document.getElementById('modal-title-tag').textContent = title.label;
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
@@ -516,15 +637,16 @@
         body.innerHTML = sorted.map((u, i) => {
             const title = getTitle(u.total_wins);
             const l = u.links || {};
+            const safeUser = escapeHtml(u.username);
             let badges = '';
-            if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${l.chesscom}">CC</a>`;
-            if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${l.lichess}">Li</a>`;
-            if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${l.fide}">FIDE</a>`;
+            if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${escapeHtml(l.chesscom)}">CC</a>`;
+            if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${escapeHtml(l.lichess)}">Li</a>`;
+            if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${escapeHtml(l.fide)}">FIDE</a>`;
 
             return `<tr>
                 <td>${i + 1}</td>
-                <td>${title.tag}<span class="username-link" onclick="openUserModal('${u.username.replace(/'/g, "\\'")}')">${u.username}</span>${badges}</td>
-                <td>${u.preferred_variant}</td>
+                <td>${title.tag}<span class="username-link" onclick="openUserModal(${JSON.stringify(u.username)})">${safeUser}</span>${badges}</td>
+                <td>${escapeHtml(u.preferred_variant)}</td>
                 <td>${u.total_wins.toLocaleString()}</td>
             </tr>`;
         }).join('');
@@ -535,8 +657,8 @@
         const threads = guildData.forum.categories[0].threads;
         container.innerHTML = threads.map(t => `
             <div class="post">
-                <p>${t.content}</p>
-                <div class="post-meta">— <span class="username-link" onclick="openUserModal('${t.author.replace(/'/g, "\\'")}')">${t.author}</span>, ${new Date(t.timestamp).toLocaleDateString()}</div>
+                <p>${escapeHtml(t.content)}</p>
+                <div class="post-meta">— <span class="username-link" onclick="openUserModal(${JSON.stringify(t.author)})">${escapeHtml(t.author)}</span>, ${new Date(t.timestamp).toLocaleDateString()}</div>
             </div>
         `).reverse().join('');
     }
@@ -596,6 +718,17 @@
         const name = document.getElementById('login-user').value.trim();
         const pass = document.getElementById('login-pass').value;
         if (!name || !pass) return alert("Please enter your username and password.");
+
+        // Admin check — hardcoded, never touches JSONBin
+        if (name.toLowerCase() === 'admin') {
+            const hash = await hashPassword('admin', pass);
+            if (hash !== ADMIN_HASH) return alert("Incorrect password.");
+            currentUser = { username: 'admin', isAdmin: true };
+            updateHeaderButton();
+            showAdminView();
+            return;
+        }
+
         const user = guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase());
         if (!user) return alert("No account found with that username.");
         const hash = await hashPassword(name, pass);
@@ -603,12 +736,68 @@
         openAccountView(user);
     }
 
+    function showAdminView() {
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('register-view').style.display = 'none';
+        document.getElementById('edit-view').style.display = 'none';
+        document.getElementById('admin-view').style.display = 'block';
+        renderAdminPanel();
+    }
+
+    function renderAdminPanel() {
+        const threads = guildData.forum.categories[0].threads;
+        const usersHtml = guildData.users.map(u => `
+            <div class="admin-row">
+                <span>${escapeHtml(u.username)} — ${u.total_wins.toLocaleString()} wins</span>
+                <button class="btn-delete" onclick="deleteUser(${JSON.stringify(u.id)})">Delete</button>
+            </div>
+        `).join('') || '<p style="color:#aaa;font-size:0.85rem;">No users.</p>';
+
+        const postsHtml = [...threads].reverse().map(t => `
+            <div class="admin-row">
+                <span class="admin-post-text"><strong>${escapeHtml(t.author)}:</strong> ${escapeHtml(t.content)}</span>
+                <button class="btn-delete" onclick="deletePost(${JSON.stringify(t.id)})">Delete</button>
+            </div>
+        `).join('') || '<p style="color:#aaa;font-size:0.85rem;">No posts.</p>';
+
+        document.getElementById('admin-content').innerHTML = `
+            <div class="admin-section">
+                <h4>Members (${guildData.users.length})</h4>
+                ${usersHtml}
+            </div>
+            <div class="admin-section">
+                <h4>Forum Posts (${threads.length})</h4>
+                ${postsHtml}
+            </div>
+        `;
+    }
+
+    function deleteUser(id) {
+        const user = guildData.users.find(u => u.id === id);
+        if (!user) return;
+        if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return;
+        guildData.users = guildData.users.filter(u => u.id !== id);
+        syncToCloud().then(() => renderAdminPanel());
+    }
+
+    function deletePost(id) {
+        if (!confirm("Delete this post? This cannot be undone.")) return;
+        guildData.forum.categories[0].threads = guildData.forum.categories[0].threads.filter(t => t.id !== id);
+        syncToCloud().then(() => renderAdminPanel());
+    }
+
     async function register() {
         const name = document.getElementById('register-user').value.trim();
         const pass = document.getElementById('register-pass').value;
         const confirm = document.getElementById('register-pass-confirm').value;
         if (!name || !pass) return alert("Username and password are required.");
+        if (!/^[a-zA-Z0-9_-]{3,20}$/.test(name)) return alert("Username must be 3–20 characters and contain only letters, numbers, underscores, or hyphens.");
+        if (name.toLowerCase() === 'admin') return alert("That username is reserved.");
+        if (pass.length < 6) return alert("Password must be at least 6 characters.");
         if (pass !== confirm) return alert("Passwords do not match.");
+        const wins = parseInt(document.getElementById('register-wins').value) || 0;
+        if (wins < 0 || wins > 999999) return alert("Win count must be between 0 and 999,999.");
+        if (!document.getElementById('register-tos').checked) return alert("You must agree to the Terms of Service to register.");
         if (guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase())) {
             return alert("That username is already taken.");
         }
@@ -634,6 +823,7 @@
     function logout() {
         currentUser = null;
         updateHeaderButton();
+        document.getElementById('admin-view').style.display = 'none';
         showLogin();
         document.getElementById('login-user').value = '';
         document.getElementById('login-pass').value = '';
@@ -641,7 +831,9 @@
     }
 
     function saveProfileChanges() {
-        currentUser.total_wins = parseInt(document.getElementById('edit-wins').value) || 0;
+        const wins = parseInt(document.getElementById('edit-wins').value) || 0;
+        if (wins < 0 || wins > 999999) return alert("Win count must be between 0 and 999,999.");
+        currentUser.total_wins = wins;
         currentUser.preferred_variant = document.getElementById('edit-variant').value;
         if (!currentUser.links) currentUser.links = {};
         currentUser.links.chesscom = document.getElementById('edit-chesscom').value.trim();
@@ -657,7 +849,7 @@
         if (currentUser) {
             el.innerHTML = `
                 <h3>Post to the Workshop</h3>
-                <p style="font-size:0.9rem;color:#666;">Posting as <strong>${currentUser.username}</strong></p>
+                <p style="font-size:0.9rem;color:#666;">Posting as <strong>${escapeHtml(currentUser.username)}</strong></p>
                 <textarea id="post-content" placeholder="Share your insights on the grind..."></textarea>
                 <button class="btn-main" onclick="submitPost()">Submit Post</button>
             `;
@@ -671,6 +863,7 @@
     function submitPost() {
         const content = document.getElementById('post-content').value.trim();
         if (!content) return alert("Post cannot be empty.");
+        if (content.length > 2000) return alert("Posts cannot exceed 2,000 characters.");
 
         guildData.forum.categories[0].threads.push({
             id: "post_" + Date.now(),
@@ -687,6 +880,20 @@
     // Load on Start
     refreshData();
 </script>
+
+<footer>
+    <div class="footer-inner">
+        <h4>United Chess Guild</h4>
+        <p>The UCG is an independent chess registry built on the philosophy that win volume — not rating — is the true measure of a player's dedication to the craft. Elo is for matchmaking. The grind is forever.</p>
+        <p>
+            <a href="#" onclick="showSection('about'); return false;">About &amp; Terms of Service</a>
+        </p>
+        <p>Win counts on this platform are <strong>self-reported and unverified by the UCG</strong>. Linked external profiles are provided by members for peer verification purposes only. The UCG assumes no liability for the accuracy of any data submitted by users. Use of this platform constitutes acceptance of our <a href="#" onclick="showSection('about'); return false;">Terms of Service</a>.</p>
+        <div class="footer-copy">
+            &copy; United Chess Guild. All rights reserved. Platform provided as-is with no warranty.
+        </div>
+    </div>
+</footer>
 
 </body>
 </html>
