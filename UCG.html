@@ -835,7 +835,7 @@
 
             return `<tr>
                 <td>${i + 1}</td>
-                <td>${title.tag}<span class="username-link" onclick="openUserModal(${JSON.stringify(u.username)})">${safeUser}</span>${badges}</td>
+                <td>${title.tag}<span class="username-link" onclick='openUserModal(${JSON.stringify(u.username)})'>${safeUser}</span>${badges}</td>
                 <td>${escapeHtml(u.preferred_variant)}</td>
                 <td>${u.total_wins.toLocaleString()}</td>
             </tr>`;
@@ -848,7 +848,7 @@
         container.innerHTML = threads.map(t => `
             <div class="post">
                 <p>${escapeHtml(t.content)}</p>
-                <div class="post-meta">— <span class="username-link" onclick="openUserModal(${JSON.stringify(t.author)})">${escapeHtml(t.author)}</span>, ${new Date(t.timestamp).toLocaleDateString()}</div>
+                <div class="post-meta">— <span class="username-link" onclick='openUserModal(${JSON.stringify(t.author)})'>${escapeHtml(t.author)}</span>, ${new Date(t.timestamp).toLocaleDateString()}</div>
             </div>
         `).reverse().join('');
     }
@@ -939,14 +939,14 @@
         const usersHtml = guildData.users.map(u => `
             <div class="admin-row">
                 <span>${escapeHtml(u.username)} — ${u.total_wins.toLocaleString()} wins</span>
-                <button class="btn-delete" onclick="deleteUser(${JSON.stringify(u.id)})">Delete</button>
+                <button class="btn-delete" onclick='deleteUser(${JSON.stringify(u.id)})'>Delete</button>
             </div>
         `).join('') || '<p style="color:#aaa;font-size:0.85rem;">No users.</p>';
 
         const postsHtml = [...threads].reverse().map(t => `
             <div class="admin-row">
                 <span class="admin-post-text"><strong>${escapeHtml(t.author)}:</strong> ${escapeHtml(t.content)}</span>
-                <button class="btn-delete" onclick="deletePost(${JSON.stringify(t.id)})">Delete</button>
+                <button class="btn-delete" onclick='deletePost(${JSON.stringify(t.id)})'>Delete</button>
             </div>
         `).join('') || '<p style="color:#aaa;font-size:0.85rem;">No posts.</p>';
 
