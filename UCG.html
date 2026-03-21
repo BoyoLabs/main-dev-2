@@ -317,10 +317,13 @@
         try {
             const response = await fetch(URL, { headers: { 'X-Master-Key': API_KEY } });
             const result = await response.json();
+            if (!response.ok) {
+                throw new Error(`${response.status}: ${JSON.stringify(result)}`);
+            }
             guildData = result.record;
             renderAll();
         } catch (err) {
-            alert("Archive connection lost. Check console.");
+            alert("Archive connection lost: " + err.message);
             console.error(err);
         }
         document.getElementById('loading-overlay').style.display = 'none';
