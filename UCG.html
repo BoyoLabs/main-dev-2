@@ -636,7 +636,7 @@
 
     let guildData = null;
     let currentUser = null;
-    let ADMIN_HASH = null;
+    const ADMIN_HASH = 'eb2edde652bbcc772dc72a45eb335ec5258a5c51d02389bb3aa09dd692c189d3';
 
     // Escape user-supplied strings before inserting into innerHTML
     function escapeHtml(str) {
@@ -648,10 +648,6 @@
             .replace(/'/g, '&#039;');
     }
 
-    // Compute admin hash at load — plaintext never persists after this
-    (async () => {
-        ADMIN_HASH = await hashPassword('admin', 'UCGLife!');
-    })();
 
     async function refreshData() {
         document.getElementById('loading-overlay').style.display = 'flex';
