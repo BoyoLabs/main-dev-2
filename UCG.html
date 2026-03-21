@@ -253,6 +253,52 @@
             font-size: 1.4rem; cursor: pointer; color: #999;
         }
         #modal-close:hover { color: var(--text-dark); }
+        .modal-graph { margin-top: 1rem; }
+        .modal-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
+        .modal-actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
+        .modal-actions button { flex: 1; padding: 0.6rem; cursor: pointer; font-family: inherit; font-size: 0.85rem; border: none; }
+        .btn-view-full { background: var(--guild-blue); color: white; }
+        .btn-view-full:hover { background: #243547; }
+
+        /* Full profile modal */
+        #full-profile-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.65);
+            z-index: 600;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            box-sizing: border-box;
+        }
+        #full-profile-overlay.open { display: flex; }
+        #full-profile-modal {
+            background: var(--white);
+            border-top: 4px solid var(--guild-gold);
+            padding: 2rem;
+            width: 100%;
+            max-width: 640px;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        }
+        #full-profile-modal h2 { margin: 0 0 0.2rem 0; font-size: 1.8rem; font-weight: normal; }
+        #full-profile-modal .fp-title { color: #888; font-style: italic; margin-bottom: 1.5rem; }
+        #full-profile-modal .fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+        .fp-stat-box { background: #f7f7f7; padding: 1rem; text-align: center; }
+        .fp-stat-box .fp-stat-val { font-size: 1.6rem; color: var(--guild-blue); font-weight: bold; }
+        .fp-stat-box .fp-stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        #full-profile-modal .fp-graph { margin-bottom: 1.5rem; }
+        #full-profile-modal .fp-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
+        #full-profile-close {
+            position: absolute;
+            top: 0.75rem; right: 1rem;
+            background: none; border: none;
+            font-size: 1.4rem; cursor: pointer; color: #999;
+        }
+        #full-profile-close:hover { color: var(--text-dark); }
 
         /* About section */
         .about-block { margin-bottom: 2rem; }
@@ -313,7 +359,7 @@
 
 <div id="loading-overlay">Checking Guild Archives...</div>
 
-<!-- Public profile modal -->
+<!-- Public profile preview modal -->
 <div id="profile-modal-overlay" onclick="closeModal(event)">
     <div id="profile-modal">
         <button id="modal-close" onclick="closeModal()">&#x2715;</button>
@@ -322,6 +368,36 @@
         <div class="modal-stat"><span>Verified Wins</span><strong id="modal-wins"></strong></div>
         <div class="modal-stat"><span>Preferred Variant</span><span id="modal-variant"></span></div>
         <div class="modal-links" id="modal-links"></div>
+        <div class="modal-graph">
+            <canvas id="modal-graph-canvas" height="100"></canvas>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-view-full" onclick="openFullProfile()">View Full Profile</button>
+        </div>
+    </div>
+</div>
+
+<!-- Full profile modal -->
+<div id="full-profile-overlay" onclick="closeFullProfile(event)">
+    <div id="full-profile-modal">
+        <button id="full-profile-close" onclick="closeFullProfile()">&#x2715;</button>
+        <h2 id="fp-username"></h2>
+        <div class="fp-title" id="fp-title"></div>
+        <div class="fp-stats">
+            <div class="fp-stat-box">
+                <div class="fp-stat-val" id="fp-wins"></div>
+                <div class="fp-stat-label">Verified Wins</div>
+            </div>
+            <div class="fp-stat-box">
+                <div class="fp-stat-val" id="fp-variant" style="font-size:1rem;padding-top:0.4rem;"></div>
+                <div class="fp-stat-label">Preferred Variant</div>
+            </div>
+        </div>
+        <div class="fp-graph">
+            <canvas id="fp-graph-canvas" height="180"></canvas>
+        </div>
+        <div class="modal-links" id="fp-links" style="margin-bottom:1rem;"></div>
+        <div id="fp-actions"></div>
     </div>
 </div>
 
@@ -602,29 +678,143 @@
         return { tag: '', label: 'Apprentice', description: '' };
     }
 
+    let modalUser = null;
+
+    function drawGraph(canvasId, history) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const W = canvas.offsetWidth || canvas.width;
+        canvas.width = W;
+        const H = canvas.height;
+        const pad = { top: 14, right: 14, bottom: 28, left: 52 };
+        ctx.clearRect(0, 0, W, H);
+
+        if (!history || history.length === 0) {
+            ctx.fillStyle = '#bbb';
+            ctx.font = '12px Georgia';
+            ctx.textAlign = 'center';
+            ctx.fillText('No history yet', W / 2, H / 2);
+            return;
+        }
+
+        const pts = history.map(h => ({ d: new Date(h.date).getTime(), w: h.wins }));
+        const minW = Math.min(...pts.map(p => p.w));
+        const maxW = Math.max(...pts.map(p => p.w));
+        const minD = pts[0].d;
+        const maxD = pts[pts.length - 1].d;
+        const xRange = maxD - minD || 1;
+        const wRange = maxW - minW || 1;
+
+        const xPos = d => pad.left + (d - minD) / xRange * (W - pad.left - pad.right);
+        const yPos = w => H - pad.bottom - (w - minW) / wRange * (H - pad.top - pad.bottom);
+
+        // Grid line at top and bottom
+        ctx.strokeStyle = '#eee';
+        ctx.lineWidth = 1;
+        [minW, maxW].forEach(w => {
+            const y = yPos(w);
+            ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+        });
+
+        // Axes
+        ctx.strokeStyle = '#ddd';
+        ctx.beginPath();
+        ctx.moveTo(pad.left, pad.top);
+        ctx.lineTo(pad.left, H - pad.bottom);
+        ctx.lineTo(W - pad.right, H - pad.bottom);
+        ctx.stroke();
+
+        // Fill area under line
+        ctx.beginPath();
+        pts.forEach((p, i) => i === 0 ? ctx.moveTo(xPos(p.d), yPos(p.w)) : ctx.lineTo(xPos(p.d), yPos(p.w)));
+        ctx.lineTo(xPos(pts[pts.length - 1].d), H - pad.bottom);
+        ctx.lineTo(xPos(pts[0].d), H - pad.bottom);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(197,160,89,0.12)';
+        ctx.fill();
+
+        // Line
+        ctx.strokeStyle = '#c5a059';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        pts.forEach((p, i) => i === 0 ? ctx.moveTo(xPos(p.d), yPos(p.w)) : ctx.lineTo(xPos(p.d), yPos(p.w)));
+        ctx.stroke();
+
+        // Points
+        pts.forEach(p => {
+            ctx.beginPath();
+            ctx.arc(xPos(p.d), yPos(p.w), 3.5, 0, Math.PI * 2);
+            ctx.fillStyle = '#1a2a3a';
+            ctx.fill();
+        });
+
+        // Y labels
+        ctx.fillStyle = '#999';
+        ctx.font = '10px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(maxW.toLocaleString(), pad.left - 5, yPos(maxW) + 4);
+        if (minW !== maxW) ctx.fillText(minW.toLocaleString(), pad.left - 5, yPos(minW) + 4);
+
+        // X labels: first and last date
+        ctx.textAlign = 'center';
+        ctx.fillText(new Date(pts[0].d).toLocaleDateString(), xPos(pts[0].d), H - 6);
+        if (pts.length > 1) ctx.fillText(new Date(pts[pts.length-1].d).toLocaleDateString(), xPos(pts[pts.length-1].d), H - 6);
+    }
+
+    function buildLinksHtml(l) {
+        let links = '';
+        if (l.chesscom) links += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc">Chess.com</a>`;
+        if (l.lichess)  links += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li">Lichess</a>`;
+        if (l.fide)     links += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide">FIDE</a>`;
+        return links || '<span style="color:#aaa;font-size:0.85rem;">No verification links added.</span>';
+    }
+
     function openUserModal(username) {
         const user = guildData.users.find(u => u.username === username);
         if (!user) return;
+        modalUser = user;
         const title = getTitle(user.total_wins);
-        const l = user.links || {};
 
         document.getElementById('modal-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
         document.getElementById('modal-title-tag').textContent = title.label;
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
-
-        let links = '';
-        if (l.chesscom) links += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc">Chess.com</a>`;
-        if (l.lichess)  links += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li">Lichess</a>`;
-        if (l.fide)     links += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide">FIDE</a>`;
-        document.getElementById('modal-links').innerHTML = links || '<span style="color:#aaa;font-size:0.85rem;">No verification links added.</span>';
-
+        document.getElementById('modal-links').innerHTML = buildLinksHtml(user.links || {});
         document.getElementById('profile-modal-overlay').classList.add('open');
+
+        // Draw mini graph after overlay is visible so offsetWidth is available
+        requestAnimationFrame(() => drawGraph('modal-graph-canvas', user.wins_history || []));
     }
 
     function closeModal(e) {
         if (e && e.target !== document.getElementById('profile-modal-overlay') && e.target !== document.getElementById('modal-close')) return;
         document.getElementById('profile-modal-overlay').classList.remove('open');
+    }
+
+    function openFullProfile() {
+        if (!modalUser) return;
+        const user = modalUser;
+        const title = getTitle(user.total_wins);
+        const l = user.links || {};
+        const isOwn = currentUser && !currentUser.isAdmin && currentUser.username === user.username;
+
+        document.getElementById('fp-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
+        document.getElementById('fp-title').textContent = title.label;
+        document.getElementById('fp-wins').textContent = user.total_wins.toLocaleString();
+        document.getElementById('fp-variant').textContent = user.preferred_variant;
+        document.getElementById('fp-links').innerHTML = buildLinksHtml(l);
+        document.getElementById('fp-actions').innerHTML = isOwn
+            ? `<button class="btn-main" onclick="closeFullProfile(); closeModal(); showSection('profile');">Update My Stats</button>`
+            : '';
+
+        document.getElementById('full-profile-overlay').classList.add('open');
+        requestAnimationFrame(() => drawGraph('fp-graph-canvas', user.wins_history || []));
+    }
+
+    function closeFullProfile(e) {
+        if (e && e.target !== document.getElementById('full-profile-overlay') && e.target !== document.getElementById('full-profile-close')) return;
+        document.getElementById('full-profile-overlay').classList.remove('open');
     }
 
     function renderLeaderboard() {
@@ -806,13 +996,14 @@
             id: 'user_' + Date.now(),
             username: name,
             password: await hashPassword(name, pass),
-            total_wins: parseInt(document.getElementById('register-wins').value) || 0,
+            total_wins: wins,
             preferred_variant: document.getElementById('register-variant').value,
             links: {
                 chesscom: document.getElementById('register-chesscom').value.trim(),
                 lichess:  document.getElementById('register-lichess').value.trim(),
                 fide:     document.getElementById('register-fide').value.trim()
-            }
+            },
+            wins_history: wins > 0 ? [{ date: new Date().toISOString(), wins }] : []
         };
 
         guildData.users.push(newUser);
@@ -833,6 +1024,10 @@
     function saveProfileChanges() {
         const wins = parseInt(document.getElementById('edit-wins').value) || 0;
         if (wins < 0 || wins > 999999) return alert("Win count must be between 0 and 999,999.");
+        if (wins !== currentUser.total_wins) {
+            if (!currentUser.wins_history) currentUser.wins_history = [];
+            currentUser.wins_history.push({ date: new Date().toISOString(), wins });
+        }
         currentUser.total_wins = wins;
         currentUser.preferred_variant = document.getElementById('edit-variant').value;
         if (!currentUser.links) currentUser.links = {};
