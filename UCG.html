@@ -196,6 +196,15 @@
         .link-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
         .link-section small { color: #888; }
 
+        .other-link-row { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.5rem; }
+        .other-link-row input { margin: 0; flex: 1; }
+        .other-link-row input.link-label { max-width: 140px; flex: 0 0 140px; }
+        .btn-remove-link { background: none; border: 1px solid #ccc; color: #999; cursor: pointer; padding: 0.8rem 0.6rem; font-size: 1rem; line-height: 1; flex-shrink: 0; }
+        .btn-remove-link:hover { border-color: #c0392b; color: #c0392b; }
+        .btn-add-link { background: none; border: 1px dashed var(--guild-gold); color: var(--guild-gold); cursor: pointer; padding: 0.5rem 1rem; font-size: 0.8rem; width: 100%; margin-top: 0.25rem; font-family: inherit; }
+        .btn-add-link:hover { background: rgba(197,160,89,0.08); }
+        .profile-badge.other { background: #555; color: #fff; }
+
         /* Admin panel */
         .admin-section { margin-bottom: 2rem; }
         .admin-section h4 { border-bottom: 1px solid #eee; padding-bottom: 0.4rem; margin-bottom: 0.75rem; font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; }
@@ -553,6 +562,9 @@
                 <input type="text" id="register-lichess" placeholder="e.g. DrNykterstein">
                 <label>FIDE ID:</label>
                 <input type="text" id="register-fide" placeholder="e.g. 1503014">
+                <label style="margin-top:0.75rem;">Other Profile Links:</label>
+                <div id="register-other-links"></div>
+                <button type="button" class="btn-add-link" onclick="addOtherLink('register')">+ Add a profile link</button>
             </div>
             <div class="tos-agree">
                 <input type="checkbox" id="register-tos">
@@ -601,6 +613,9 @@
                 <input type="text" id="edit-lichess" placeholder="e.g. DrNykterstein">
                 <label>FIDE ID:</label>
                 <input type="text" id="edit-fide" placeholder="e.g. 1503014">
+                <label style="margin-top:0.75rem;">Other Profile Links:</label>
+                <div id="edit-other-links"></div>
+                <button type="button" class="btn-add-link" onclick="addOtherLink('edit')">+ Add a profile link</button>
             </div>
             <button class="btn-main" onclick="saveProfileChanges()">Save Changes</button>
             <button class="btn-secondary" onclick="logout()">Logout</button>
@@ -767,7 +782,35 @@
         if (l.chesscom) links += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc">Chess.com</a>`;
         if (l.lichess)  links += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li">Lichess</a>`;
         if (l.fide)     links += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide">FIDE</a>`;
+        if (l.other)    l.other.forEach(o => {
+            if (o.url && o.label) links += `<a href="${escapeHtml(o.url)}" target="_blank" rel="noopener noreferrer" class="profile-badge other">${escapeHtml(o.label)}</a>`;
+        });
         return links || '<span style="color:#aaa;font-size:0.85rem;">No verification links added.</span>';
+    }
+
+    function addOtherLink(prefix, label = '', url = '') {
+        const container = document.getElementById(`${prefix}-other-links`);
+        const row = document.createElement('div');
+        row.className = 'other-link-row';
+        row.innerHTML = `
+            <input type="text" class="link-label" placeholder="Site name" value="${escapeHtml(label)}" maxlength="30">
+            <input type="url" class="link-url" placeholder="https://..." value="${escapeHtml(url)}">
+            <button type="button" class="btn-remove-link" onclick="this.parentElement.remove()" title="Remove">&times;</button>
+        `;
+        container.appendChild(row);
+    }
+
+    function collectOtherLinks(prefix) {
+        const rows = document.querySelectorAll(`#${prefix}-other-links .other-link-row`);
+        const result = [];
+        rows.forEach(row => {
+            const label = row.querySelector('.link-label').value.trim();
+            const url   = row.querySelector('.link-url').value.trim();
+            if (!label || !url) return;
+            if (!/^https?:\/\/.+/.test(url)) return; // silently skip invalid URLs
+            result.push({ label, url });
+        });
+        return result;
     }
 
     function openUserModal(username) {
@@ -900,6 +943,9 @@
         document.getElementById('edit-chesscom').value = l.chesscom || '';
         document.getElementById('edit-lichess').value = l.lichess || '';
         document.getElementById('edit-fide').value = l.fide || '';
+        const otherContainer = document.getElementById('edit-other-links');
+        otherContainer.innerHTML = '';
+        (l.other || []).forEach(o => addOtherLink('edit', o.label, o.url));
         updateHeaderButton();
         renderForumForm();
     }
@@ -1001,7 +1047,8 @@
             links: {
                 chesscom: document.getElementById('register-chesscom').value.trim(),
                 lichess:  document.getElementById('register-lichess').value.trim(),
-                fide:     document.getElementById('register-fide').value.trim()
+                fide:     document.getElementById('register-fide').value.trim(),
+                other:    collectOtherLinks('register')
             },
             wins_history: wins > 0 ? [{ date: new Date().toISOString(), wins }] : []
         };
@@ -1034,6 +1081,7 @@
         currentUser.links.chesscom = document.getElementById('edit-chesscom').value.trim();
         currentUser.links.lichess  = document.getElementById('edit-lichess').value.trim();
         currentUser.links.fide     = document.getElementById('edit-fide').value.trim();
+        currentUser.links.other    = collectOtherLinks('edit');
         syncToCloud();
         alert("Changes saved.");
     }
