@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>United Chess Guild | Official Registry</title>
+    <style>
+        :root {
+            --guild-blue: #1a2a3a;
+            --guild-gold: #c5a059;
+            --bg-light: #f4f7f6;
+            --text-dark: #2c3e50;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: 'Georgia', serif;
+            background: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Header & Navigation */
+        header {
+            background: var(--guild-blue);
+            color: var(--white);
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 5px solid var(--guild-gold);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        #login-link {
+            position: absolute;
+            top: 1rem;
+            right: 1.2rem;
+            color: var(--guild-gold);
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            border: 1px solid var(--guild-gold);
+            padding: 0.3rem 0.8rem;
+            background: transparent;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        #login-link:hover {
+            background: var(--guild-gold);
+            color: var(--guild-blue);
+        }
+
+        header h1 {
+            margin: 0;
+            letter-spacing: 4px;
+            font-variant: small-caps;
+            font-size: 2.2rem;
+        }
+
+        nav {
+            margin-top: 1.5rem;
+        }
+
+        nav button {
+            background: transparent;
+            color: var(--guild-gold);
+            border: 1px solid var(--guild-gold);
+            padding: 0.5rem 1.5rem;
+            margin: 0 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
+
+        nav button:hover, nav button.active {
+            background: var(--guild-gold);
+            color: var(--guild-blue);
+        }
+
+        /* Container & Sections */
+        .container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        section {
+            display: none;
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 2px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.05);
+            border: 1px solid #ddd;
+        }
+
+        section.active { display: block; }
+
+        h2 {
+            border-bottom: 1px solid var(--guild-gold);
+            padding-bottom: 0.5rem;
+            margin-top: 0;
+            font-weight: normal;
+        }
+
+        /* Leaderboard Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            background: #eee;
+            padding: 1rem;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .title-m { color: var(--guild-gold); font-weight: bold; margin-right: 5px; }
+        .title-jm { color: #7f8c8d; font-weight: bold; margin-right: 5px; }
+
+        /* Forum & Forms */
+        .post {
+            border-left: 3px solid var(--guild-gold);
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            background: #fafafa;
+            padding-top: 0.5rem;
+        }
+
+        .post-meta { font-size: 0.8rem; color: #666; font-style: italic; }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0 1rem 0;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+
+        .btn-main {
+            background: var(--guild-blue);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        #loading-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .profile-badge {
+            display: inline-block;
+            padding: 1px 5px;
+            border-radius: 2px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-decoration: none;
+            margin-left: 4px;
+            vertical-align: middle;
+            font-family: sans-serif;
+        }
+        .profile-badge.cc   { background: #81b64c; color: #fff; }
+        .profile-badge.li   { background: #3692e7; color: #fff; }
+        .profile-badge.fide { background: var(--guild-gold); color: var(--guild-blue); }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-dark);
+            border: 1px solid #ccc;
+            padding: 0.8rem 2rem;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        .link-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .link-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
+        .link-section small { color: #888; }
+    </style>
+</head>
+<body>
+
+<div id="loading-overlay">Checking Guild Archives...</div>
+
+<header>
+    <button id="login-link" onclick="showSection('profile')">Login / Register</button>
+    <h1>United Chess Guild</h1>
+    <nav>
+        <button onclick="showSection('leaderboard')" id="btn-leaderboard" class="active">Leaderboard</button>
+        <button onclick="showSection('forum')" id="btn-forum">The Workshop</button>
+    </nav>
+</header>
+
+<div class="container">
+    <section id="leaderboard" class="active">
+        <h2>Official Standings</h2>
+        <input type="text" id="leaderboard-search" placeholder="Search practitioner..." oninput="renderLeaderboard()" style="margin-bottom:1rem;">
+        <table>
+            <thead>
+                <tr>
+                    <th>Rank</th>
+                    <th>Practitioner</th>
+                    <th>Primary Variant</th>
+                    <th>Verified Wins</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboard-body"></tbody>
+        </table>
+    </section>
+
+    <section id="forum">
+        <h2>The Workshop</h2>
+        <div id="forum-posts"></div>
+        <hr>
+        <h3>Contribute to the Archive</h3>
+        <input type="text" id="post-author" placeholder="Your Username">
+        <textarea id="post-content" placeholder="Share your insights on the grind..."></textarea>
+        <button class="btn-main" onclick="submitPost()">Submit Post</button>
+    </section>
+
+    <section id="profile">
+        <h2>Member Portal</h2>
+
+        <!-- Step 1: Username lookup -->
+        <div id="login-view">
+            <p>Enter your username to access or create your guild record.</p>
+            <input type="text" id="login-user" placeholder="Username">
+            <button class="btn-main" onclick="accessProfile()">Access Records</button>
+        </div>
+
+        <!-- Step 2a: New user registration -->
+        <div id="register-view" style="display:none;">
+            <h3>Create Guild Record</h3>
+            <p>No record found for "<strong id="register-name-display"></strong>". Register now?</p>
+            <label>Preferred Variant:</label>
+            <select id="register-variant">
+                <option value="Classical">Classical</option>
+                <option value="Blitz">Blitz</option>
+                <option value="Bullet">Bullet</option>
+                <option value="Hyperbullet">Hyperbullet</option>
+                <option value="3 Check">3 Check</option>
+                <option value="Crazyhouse">Crazyhouse</option>
+            </select>
+            <label>Total Wins (self-reported):</label>
+            <input type="number" id="register-wins" value="0" min="0">
+            <div class="link-section">
+                <h4>Verification Links <small>(optional — lets others confirm your win count)</small></h4>
+                <label>Chess.com Username:</label>
+                <input type="text" id="register-chesscom" placeholder="e.g. hikaru">
+                <label>Lichess Username:</label>
+                <input type="text" id="register-lichess" placeholder="e.g. DrNykterstein">
+                <label>FIDE ID:</label>
+                <input type="text" id="register-fide" placeholder="e.g. 1503014">
+            </div>
+            <button class="btn-main" onclick="createProfile()">Register to Guild</button>
+            <button class="btn-secondary" onclick="cancelRegister()">Back</button>
+        </div>
+
+        <!-- Step 2b: Existing user edit -->
+        <div id="edit-view" style="display:none;">
+            <h3 id="edit-title-name">Welcome, Member</h3>
+            <label>Current Verified Wins:</label>
+            <input type="number" id="edit-wins">
+            <label>Preferred Variant:</label>
+            <select id="edit-variant">
+                <option value="Classical">Classical</option>
+                <option value="Blitz">Blitz</option>
+                <option value="Bullet">Bullet</option>
+                <option value="Hyperbullet">Hyperbullet</option>
+                <option value="3 Check">3 Check</option>
+                <option value="Crazyhouse">Crazyhouse</option>
+            </select>
+            <div class="link-section">
+                <h4>Verification Links <small>(optional — lets others confirm your win count)</small></h4>
+                <label>Chess.com Username:</label>
+                <input type="text" id="edit-chesscom" placeholder="e.g. hikaru">
+                <label>Lichess Username:</label>
+                <input type="text" id="edit-lichess" placeholder="e.g. DrNykterstein">
+                <label>FIDE ID:</label>
+                <input type="text" id="edit-fide" placeholder="e.g. 1503014">
+            </div>
+            <button class="btn-main" onclick="saveProfileChanges()">Commit Changes to Registry</button>
+            <button class="btn-secondary" onclick="logoutProfile()">Back to Login</button>
+        </div>
+    </section>
+</div>
+
+<script>
+    const BIN_ID = '69bebe65aa77b81da9065e81';
+    const API_KEY = '$2a$10$McU13F/2f3icjcr.fUB5s.FW9SAg2yxAbHQtQvI6XyamqVKFECV2i';
+    const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+
+    let guildData = null;
+    let currentUser = null;
+
+    async function refreshData() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            const response = await fetch(URL, { headers: { 'X-Master-Key': API_KEY } });
+            const result = await response.json();
+            guildData = result.record;
+            renderAll();
+        } catch (err) {
+            alert("Archive connection lost. Check console.");
+            console.error(err);
+        }
+        document.getElementById('loading-overlay').style.display = 'none';
+    }
+
+    async function syncToCloud() {
+        document.getElementById('loading-overlay').style.display = 'flex';
+        try {
+            await fetch(URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': API_KEY
+                },
+                body: JSON.stringify(guildData)
+            });
+            await refreshData();
+        } catch (err) {
+            alert("Could not sync changes.");
+        }
+    }
+
+    function renderAll() {
+        renderLeaderboard();
+        renderForum();
+    }
+
+    function renderLeaderboard() {
+        const body = document.getElementById('leaderboard-body');
+        const query = (document.getElementById('leaderboard-search')?.value || '').toLowerCase();
+        const sorted = [...guildData.users]
+            .sort((a, b) => b.total_wins - a.total_wins)
+            .filter(u => u.username.toLowerCase().includes(query));
+
+        body.innerHTML = sorted.map((u, i) => {
+            let titleTag = '';
+            if (u.total_wins >= 5000) titleTag = '<span class="title-m">M</span>';
+            else if (u.total_wins >= 1000) titleTag = '<span class="title-jm">JM</span>';
+
+            let badges = '';
+            const l = u.links || {};
+            if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${l.chesscom}">CC</a>`;
+            if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${l.lichess}">Li</a>`;
+            if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${l.fide}">FIDE</a>`;
+
+            return `<tr>
+                <td>${i + 1}</td>
+                <td>${titleTag}${u.username}${badges}</td>
+                <td>${u.preferred_variant}</td>
+                <td>${u.total_wins.toLocaleString()}</td>
+            </tr>`;
+        }).join('');
+    }
+
+    function renderForum() {
+        const container = document.getElementById('forum-posts');
+        // Flattening our nested forum structure for simple display
+        const threads = guildData.forum.categories[0].threads;
+        container.innerHTML = threads.map(t => `
+            <div class="post">
+                <strong>${t.title || 'Note from the Grind'}</strong>
+                <p>${t.content}</p>
+                <div class="post-meta">— ${t.author}, ${new Date(t.timestamp).toLocaleDateString()}</div>
+            </div>
+        `).reverse().join('');
+    }
+
+    function showSection(id) {
+        document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+        const navBtn = document.getElementById('btn-' + id);
+        if (navBtn) navBtn.classList.add('active');
+    }
+
+    // Profile Logic
+    function accessProfile() {
+        const name = document.getElementById('login-user').value.trim();
+        if (!name) return alert("Please enter a username.");
+        const user = guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase());
+
+        if (user) {
+            openEditView(user);
+        } else {
+            document.getElementById('register-name-display').innerText = name;
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('register-view').style.display = 'block';
+        }
+    }
+
+    function openEditView(user) {
+        currentUser = user;
+        const l = user.links || {};
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('register-view').style.display = 'none';
+        document.getElementById('edit-view').style.display = 'block';
+        document.getElementById('edit-title-name').innerText = `Records for ${user.username}`;
+        document.getElementById('edit-wins').value = user.total_wins;
+        document.getElementById('edit-variant').value = user.preferred_variant;
+        document.getElementById('edit-chesscom').value = l.chesscom || '';
+        document.getElementById('edit-lichess').value = l.lichess || '';
+        document.getElementById('edit-fide').value = l.fide || '';
+    }
+
+    function createProfile() {
+        const name = document.getElementById('login-user').value.trim();
+        const wins = parseInt(document.getElementById('register-wins').value) || 0;
+        const variant = document.getElementById('register-variant').value;
+        const chesscom = document.getElementById('register-chesscom').value.trim();
+        const lichess = document.getElementById('register-lichess').value.trim();
+        const fide = document.getElementById('register-fide').value.trim();
+
+        const newUser = {
+            id: 'user_' + Date.now(),
+            username: name,
+            total_wins: wins,
+            preferred_variant: variant,
+            links: { chesscom, lichess, fide }
+        };
+
+        guildData.users.push(newUser);
+        syncToCloud();
+        openEditView(newUser);
+        alert("Guild record created. Welcome to the registry!");
+    }
+
+    function cancelRegister() {
+        document.getElementById('register-view').style.display = 'none';
+        document.getElementById('login-view').style.display = 'block';
+    }
+
+    function logoutProfile() {
+        currentUser = null;
+        document.getElementById('edit-view').style.display = 'none';
+        document.getElementById('login-view').style.display = 'block';
+        document.getElementById('login-user').value = '';
+    }
+
+    function saveProfileChanges() {
+        currentUser.total_wins = parseInt(document.getElementById('edit-wins').value) || 0;
+        currentUser.preferred_variant = document.getElementById('edit-variant').value;
+        if (!currentUser.links) currentUser.links = {};
+        currentUser.links.chesscom = document.getElementById('edit-chesscom').value.trim();
+        currentUser.links.lichess = document.getElementById('edit-lichess').value.trim();
+        currentUser.links.fide = document.getElementById('edit-fide').value.trim();
+        syncToCloud();
+        alert("Records updated.");
+    }
+
+    // Forum Logic
+    function submitPost() {
+        const author = document.getElementById('post-author').value;
+        const content = document.getElementById('post-content').value;
+        if(!author || !content) return alert("Fields cannot be empty.");
+
+        const newPost = {
+            id: "post_" + Date.now(),
+            author: author,
+            content: content,
+            timestamp: new Date().toISOString(),
+            replies: []
+        };
+
+        guildData.forum.categories[0].threads.push(newPost);
+        syncToCloud();
+        document.getElementById('post-content').value = '';
+    }
+
+    // Load on Start
+    refreshData();
+</script>
+
+</body>
+</html>
