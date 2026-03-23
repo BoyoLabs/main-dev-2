@@ -310,6 +310,34 @@
         }
         #full-profile-close:hover { color: var(--text-dark); }
 
+        /* Game log */
+        .game-log-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .game-log-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
+        .game-log-section small { color: #888; }
+        .game-entry { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; }
+        .game-entry input, .game-entry select { margin: 0; }
+        .game-entry input.game-date { flex: 0 0 130px; max-width: 130px; }
+        .game-entry input.game-opponent { flex: 1; min-width: 100px; }
+        .game-entry select.game-result { flex: 0 0 72px; max-width: 72px; }
+        .game-entry input.game-notes { flex: 1 1 100%; font-size: 0.85rem; padding: 0.5rem 0.8rem; color: #666; }
+        .btn-remove-game { background: none; border: 1px solid #ccc; color: #999; cursor: pointer; padding: 0.8rem 0.6rem; font-size: 1rem; line-height: 1; flex-shrink: 0; }
+        .btn-remove-game:hover { border-color: #c0392b; color: #c0392b; }
+        .btn-add-game { background: none; border: 1px dashed var(--guild-gold); color: var(--guild-gold); cursor: pointer; padding: 0.5rem 1rem; font-size: 0.8rem; width: 100%; margin-top: 0.25rem; font-family: inherit; }
+        .btn-add-game:hover { background: rgba(197,160,89,0.08); }
+
+        .fp-games { margin-bottom: 1.5rem; }
+        .fp-games h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
+        .fp-game-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88rem; gap: 0.5rem; }
+        .fp-game-row:last-child { border-bottom: none; }
+        .fp-game-date { color: #999; font-size: 0.8rem; flex-shrink: 0; min-width: 75px; }
+        .fp-game-opponent { flex: 1; }
+        .fp-game-result { font-weight: bold; flex-shrink: 0; font-size: 0.8rem; padding: 1px 8px; border-radius: 2px; }
+        .fp-game-result.win  { background: #d4edda; color: #155724; }
+        .fp-game-result.loss { background: #f8d7da; color: #721c24; }
+        .fp-game-result.draw { background: #e2e3e5; color: #383d41; }
+        .fp-game-notes { font-size: 0.78rem; color: #888; font-style: italic; width: 100%; padding-left: 75px; margin-top: -2px; }
+        .fp-no-games { color: #bbb; font-size: 0.85rem; font-style: italic; }
+
         /* About section */
         .about-block { margin-bottom: 2rem; }
         .about-block h3 { color: var(--guild-blue); border-left: 3px solid var(--guild-gold); padding-left: 0.75rem; margin-bottom: 0.5rem; }
@@ -442,6 +470,13 @@
             #full-profile-modal .fp-stats { gap: 0.5rem; }
             .fp-stat-box .fp-stat-val { font-size: 1.2rem; }
 
+            /* Game log entries — stack on mobile */
+            .game-entry { flex-wrap: wrap; }
+            .game-entry input.game-date { flex: 1 1 100%; max-width: 100%; }
+            .game-entry input.game-opponent { flex: 1 1 calc(100% - 130px); }
+            .game-entry select.game-result { flex: 0 0 65px; }
+            .fp-game-notes { padding-left: 0; }
+
             /* Forum posts */
             .post { padding-left: 0.75rem; }
 
@@ -462,6 +497,7 @@
         <div class="modal-title-tag" id="modal-title-tag"></div>
         <div class="modal-stat"><span>Verified Wins</span><strong id="modal-wins"></strong></div>
         <div class="modal-stat"><span>Preferred Variant</span><span id="modal-variant"></span></div>
+        <div class="modal-stat" id="modal-games-stat" style="display:none;"><span>Games Logged</span><strong id="modal-games-count"></strong></div>
         <div class="modal-links" id="modal-links"></div>
         <div class="modal-graph">
             <canvas id="modal-graph-canvas" height="100"></canvas>
@@ -487,11 +523,20 @@
                 <div class="fp-stat-val" id="fp-variant" style="font-size:1rem;padding-top:0.4rem;"></div>
                 <div class="fp-stat-label">Preferred Variant</div>
             </div>
+            <div class="fp-stat-box" id="fp-games-stat" style="display:none;">
+                <div class="fp-stat-val" id="fp-games-count"></div>
+                <div class="fp-stat-label">Games Logged</div>
+            </div>
+            <div class="fp-stat-box" id="fp-games-record-stat" style="display:none;">
+                <div class="fp-stat-val" id="fp-games-record" style="font-size:1rem;padding-top:0.4rem;"></div>
+                <div class="fp-stat-label">W / L / D</div>
+            </div>
         </div>
         <div class="fp-graph">
             <canvas id="fp-graph-canvas" height="180"></canvas>
         </div>
         <div class="modal-links" id="fp-links" style="margin-bottom:1rem;"></div>
+        <div class="fp-games" id="fp-games"></div>
         <div id="fp-actions"></div>
     </div>
 </div>
@@ -578,7 +623,7 @@
         <div class="about-block">
             <h3>Impersonation &amp; Account Abuse</h3>
             <p>Because verification links are self-reported, it is possible for a bad actor to add someone else's Chess.com, Lichess, or FIDE profile to their UCG account in an attempt to impersonate them or falsely claim their win record. We take this seriously.</p>
-            <p>If you believe someone has linked your external profile without your permission, or is otherwise impersonating you on the UCG platform, please contact us immediately at <a href="mailto:boyolabstech@gmail.com">boyolabstech@gmail.com</a>. Include your UCG username (if you have one), the offending account name, and a link to the external profile being misused. We will investigate and remove the fraudulent account.</p>
+            <p>If you believe someone has linked your external profile without your permission, or is otherwise impersonating you on the UCG platform, please contact us immediately at <a href="/cdn-cgi/l/email-protection#24464b5d4b484546575041474c644349454d480a474b49"><span class="__cf_email__" data-cfemail="52303d2b3d3e3330212637313a12353f333b3e7c313d3f">[email&#160;protected]</span></a>. Include your UCG username (if you have one), the offending account name, and a link to the external profile being misused. We will investigate and remove the fraudulent account.</p>
         </div>
 
         <div class="about-block" id="tos">
@@ -710,13 +755,18 @@
                 <div id="edit-other-links"></div>
                 <button type="button" class="btn-add-link" onclick="addOtherLink('edit')">+ Add a profile link</button>
             </div>
+            <div class="game-log-section">
+                <h4>Game Log <small>(record individual games — visible on your public profile)</small></h4>
+                <div id="edit-games"></div>
+                <button type="button" class="btn-add-game" onclick="addGameEntry()">+ Log a game</button>
+            </div>
             <button class="btn-main" onclick="saveProfileChanges()">Save Changes</button>
             <button class="btn-secondary" onclick="logout()">Logout</button>
         </div>
     </section>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
     const BIN_ID = '69bebe65aa77b81da9065e81';
     const API_KEY = '$2a$10$McU13F/2f3icjcr.fUB5s.FW9SAg2yxAbHQtQvI6XyamqVKFECV2i';
     const URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
@@ -902,6 +952,74 @@
         return result;
     }
 
+    function addGameEntry(date = '', opponent = '', result = 'W', notes = '') {
+        const container = document.getElementById('edit-games');
+        const row = document.createElement('div');
+        row.className = 'game-entry';
+        const today = date || new Date().toISOString().slice(0, 10);
+        row.innerHTML = `
+            <input type="date" class="game-date" value="${escapeHtml(today)}">
+            <input type="text" class="game-opponent" placeholder="Opponent name" value="${escapeHtml(opponent)}" maxlength="40">
+            <select class="game-result">
+                <option value="W"${result === 'W' ? ' selected' : ''}>Win</option>
+                <option value="L"${result === 'L' ? ' selected' : ''}>Loss</option>
+                <option value="D"${result === 'D' ? ' selected' : ''}>Draw</option>
+            </select>
+            <button type="button" class="btn-remove-game" onclick="this.parentElement.remove()" title="Remove">&#215;</button>
+            <input type="text" class="game-notes" placeholder="Notes (optional — opening, time control, etc.)" value="${escapeHtml(notes)}" maxlength="120">
+        `;
+        container.appendChild(row);
+    }
+
+    function collectGames() {
+        const rows = document.querySelectorAll('#edit-games .game-entry');
+        const games = [];
+        rows.forEach(row => {
+            const date = row.querySelector('.game-date').value;
+            const opponent = row.querySelector('.game-opponent').value.trim();
+            const result = row.querySelector('.game-result').value;
+            const notes = row.querySelector('.game-notes').value.trim();
+            if (!opponent) return; // skip entries with no opponent
+            games.push({ date, opponent, result, notes });
+        });
+        // Sort by date descending (newest first)
+        games.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+        return games;
+    }
+
+    function renderGamesInProfile(games) {
+        const container = document.getElementById('fp-games');
+        if (!games || games.length === 0) {
+            container.innerHTML = '';
+            return;
+        }
+        const resultLabel = { W: 'Win', L: 'Loss', D: 'Draw' };
+        const resultClass = { W: 'win', L: 'loss', D: 'draw' };
+        const rows = games.map(g => {
+            const dateStr = g.date ? new Date(g.date + 'T00:00:00').toLocaleDateString() : '';
+            let html = `<div class="fp-game-row">
+                <span class="fp-game-date">${escapeHtml(dateStr)}</span>
+                <span class="fp-game-opponent">vs ${escapeHtml(g.opponent)}</span>
+                <span class="fp-game-result ${resultClass[g.result] || ''}">${resultLabel[g.result] || g.result}</span>
+            </div>`;
+            if (g.notes) {
+                html += `<div class="fp-game-notes">${escapeHtml(g.notes)}</div>`;
+            }
+            return html;
+        }).join('');
+
+        const wins = games.filter(g => g.result === 'W').length;
+        const losses = games.filter(g => g.result === 'L').length;
+        const draws = games.filter(g => g.result === 'D').length;
+        const summary = `${games.length} game${games.length !== 1 ? 's' : ''} logged — ${wins}W / ${losses}L / ${draws}D`;
+
+        container.innerHTML = `
+            <h4>Game Log</h4>
+            <div style="font-size:0.8rem;color:#999;margin-bottom:0.6rem;">${summary}</div>
+            ${rows}
+        `;
+    }
+
     function openUserModal(username) {
         const user = guildData.users.find(u => u.username === username);
         if (!user) return;
@@ -913,6 +1031,17 @@
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
         document.getElementById('modal-links').innerHTML = buildLinksHtml(user.links || {});
+        const gamesStat = document.getElementById('modal-games-stat');
+        const games = user.games || [];
+        if (games.length > 0) {
+            gamesStat.style.display = '';
+            const w = games.filter(g => g.result === 'W').length;
+            const l2 = games.filter(g => g.result === 'L').length;
+            const d = games.filter(g => g.result === 'D').length;
+            document.getElementById('modal-games-count').textContent = `${games.length} (${w}W/${l2}L/${d}D)`;
+        } else {
+            gamesStat.style.display = 'none';
+        }
         document.getElementById('profile-modal-overlay').classList.add('open');
 
         // Draw mini graph after overlay is visible so offsetWidth is available
@@ -935,7 +1064,25 @@
         document.getElementById('fp-title').textContent = title.label;
         document.getElementById('fp-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('fp-variant').textContent = user.preferred_variant;
+
+        const fpGames = user.games || [];
+        const fpGamesStat = document.getElementById('fp-games-stat');
+        const fpRecordStat = document.getElementById('fp-games-record-stat');
+        if (fpGames.length > 0) {
+            fpGamesStat.style.display = '';
+            fpRecordStat.style.display = '';
+            document.getElementById('fp-games-count').textContent = fpGames.length.toLocaleString();
+            const gw = fpGames.filter(g => g.result === 'W').length;
+            const gl = fpGames.filter(g => g.result === 'L').length;
+            const gd = fpGames.filter(g => g.result === 'D').length;
+            document.getElementById('fp-games-record').textContent = `${gw} / ${gl} / ${gd}`;
+        } else {
+            fpGamesStat.style.display = 'none';
+            fpRecordStat.style.display = 'none';
+        }
+
         document.getElementById('fp-links').innerHTML = buildLinksHtml(l);
+        renderGamesInProfile(user.games || []);
         document.getElementById('fp-actions').innerHTML = isOwn
             ? `<button class="btn-main" onclick="closeFullProfile(); closeModal(); showSection('profile');">Update My Stats</button>`
             : '';
@@ -1035,6 +1182,9 @@
         const otherContainer = document.getElementById('edit-other-links');
         otherContainer.innerHTML = '';
         (l.other || []).forEach(o => addOtherLink('edit', o.label, o.url));
+        const gamesContainer = document.getElementById('edit-games');
+        gamesContainer.innerHTML = '';
+        (user.games || []).forEach(g => addGameEntry(g.date, g.opponent, g.result, g.notes));
         updateHeaderButton();
         renderForumForm();
     }
@@ -1139,7 +1289,8 @@
                 fide:     document.getElementById('register-fide').value.trim(),
                 other:    collectOtherLinks('register')
             },
-            wins_history: wins > 0 ? [{ date: new Date().toISOString(), wins }] : []
+            wins_history: wins > 0 ? [{ date: new Date().toISOString(), wins }] : [],
+            games: []
         };
 
         guildData.users.push(newUser);
@@ -1171,6 +1322,7 @@
         currentUser.links.lichess  = document.getElementById('edit-lichess').value.trim();
         currentUser.links.fide     = document.getElementById('edit-fide').value.trim();
         currentUser.links.other    = collectOtherLinks('edit');
+        currentUser.games = collectGames();
         syncToCloud();
         alert("Changes saved.");
     }
@@ -1222,11 +1374,4 @@
         </p>
         <p>Win counts on this platform are <strong>self-reported and unverified by the UCG</strong>. Linked external profiles are provided by members for peer verification purposes only. The UCG assumes no liability for the accuracy of any data submitted by users. Use of this platform constitutes acceptance of our <a href="#" onclick="showSection('about'); return false;">Terms of Service</a>.</p>
         <div class="footer-copy">
-            &copy; United Chess Guild. All rights reserved. Platform provided as-is with no warranty.<br>
-            Built by <strong style="color:#888;">BoyoLabs</strong> &mdash; inquiries: <a href="mailto:boyolabstech@gmail.com">boyolabstech@gmail.com</a>
-        </div>
-    </div>
-</footer>
-
-</body>
-</html>
+            &copy; United Chess Guild. All rights reserved. Pl
