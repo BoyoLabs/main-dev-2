@@ -226,28 +226,44 @@
         }
         .username-link:hover { color: var(--guild-gold); }
 
-        /* Public profile modal */
+        /* Profile modal */
         #profile-modal-overlay {
             display: none;
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.55);
+            background: rgba(0,0,0,0.6);
             z-index: 500;
             justify-content: center;
             align-items: center;
+            padding: 1rem;
+            box-sizing: border-box;
         }
         #profile-modal-overlay.open { display: flex; }
         #profile-modal {
             background: var(--white);
             border-top: 4px solid var(--guild-gold);
             padding: 2rem;
-            width: 90%;
-            max-width: 420px;
-            position: relative;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.2);
-            max-height: 90vh;
+            width: 100%;
+            max-width: 540px;
+            max-height: 88vh;
             overflow-y: auto;
+            position: relative;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
         }
+        #modal-close {
+            position: sticky;
+            top: 0;
+            float: right;
+            background: var(--white);
+            border: none;
+            font-size: 1.3rem;
+            cursor: pointer;
+            color: #999;
+            z-index: 2;
+            padding: 0 0 0.25rem 0.5rem;
+            line-height: 1;
+        }
+        #modal-close:hover { color: var(--text-dark); }
         #profile-modal h3 { margin: 0 0 0.25rem 0; font-size: 1.4rem; }
         #profile-modal .modal-title-tag {
             font-size: 0.85rem;
@@ -255,75 +271,13 @@
             margin-bottom: 1.2rem;
             font-style: italic;
         }
-        .modal-stat { display: flex; justify-content: space-between; padding: 0.6rem 0; border-bottom: 1px solid #eee; font-size: 0.95rem; }
-        .modal-stat:last-of-type { border-bottom: none; }
-        .modal-stat span:first-child { color: #888; }
-        .modal-links { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        #modal-close {
-            position: sticky;
-            top: 0;
-            float: right;
-            background: var(--white);
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-            color: #999;
-            z-index: 2;
-            padding: 0 0 0.25rem 0.5rem;
-        }
-        #modal-close:hover { color: var(--text-dark); }
-        .modal-graph { margin-top: 1rem; }
+        .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
+        .modal-stat-box { background: #f7f7f7; padding: 0.8rem; text-align: center; }
+        .modal-stat-box .stat-val { font-size: 1.4rem; color: var(--guild-blue); font-weight: bold; }
+        .modal-stat-box .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-links { margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .modal-graph { margin-bottom: 1rem; }
         .modal-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
-        .modal-actions { margin-top: 1rem; display: flex; gap: 0.5rem; }
-        .modal-actions button { flex: 1; padding: 0.6rem; cursor: pointer; font-family: inherit; font-size: 0.85rem; border: none; }
-        .btn-view-full { background: var(--guild-blue); color: white; }
-        .btn-view-full:hover { background: #243547; }
-
-        /* Full profile modal */
-        #full-profile-overlay {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.65);
-            z-index: 600;
-            justify-content: center;
-            align-items: center;
-            padding: 1rem;
-            box-sizing: border-box;
-        }
-        #full-profile-overlay.open { display: flex; }
-        #full-profile-modal {
-            background: var(--white);
-            border-top: 4px solid var(--guild-gold);
-            padding: 2rem;
-            width: 100%;
-            max-width: 640px;
-            max-height: 90vh;
-            overflow-y: auto;
-            position: relative;
-            box-shadow: 0 8px 40px rgba(0,0,0,0.3);
-        }
-        #full-profile-modal h2 { margin: 0 0 0.2rem 0; font-size: 1.8rem; font-weight: normal; }
-        #full-profile-modal .fp-title { color: #888; font-style: italic; margin-bottom: 1.5rem; }
-        #full-profile-modal .fp-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-        .fp-stat-box { background: #f7f7f7; padding: 1rem; text-align: center; }
-        .fp-stat-box .fp-stat-val { font-size: 1.6rem; color: var(--guild-blue); font-weight: bold; }
-        .fp-stat-box .fp-stat-label { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        #full-profile-modal .fp-graph { margin-bottom: 1.5rem; }
-        #full-profile-modal .fp-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
-        #full-profile-close {
-            position: sticky;
-            top: 0;
-            float: right;
-            background: var(--white);
-            border: none;
-            font-size: 1.4rem;
-            cursor: pointer;
-            color: #999;
-            z-index: 2;
-            padding: 0 0 0.25rem 0.5rem;
-        }
-        #full-profile-close:hover { color: var(--text-dark); }
 
         /* Game links (edit view) */
         .game-links-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
@@ -470,18 +424,8 @@
             /* Title rows in About */
             .title-row { flex-direction: column; gap: 0.2rem; }
 
-            /* Preview modal — full-width, centred */
+            /* Profile modal */
             #profile-modal {
-                width: 96%;
-                padding: 1.25rem;
-            }
-
-            /* Full-profile modal — sheet from bottom */
-            #full-profile-overlay {
-                padding: 0;
-                align-items: flex-end;
-            }
-            #full-profile-modal {
                 width: 100%;
                 max-width: 100%;
                 max-height: 92vh;
@@ -489,9 +433,13 @@
                 border-radius: 8px 8px 0 0;
                 border-top-width: 3px;
             }
-            #full-profile-modal h2 { font-size: 1.4rem; }
-            #full-profile-modal .fp-stats { gap: 0.5rem; }
-            .fp-stat-box .fp-stat-val { font-size: 1.2rem; }
+            #profile-modal-overlay {
+                padding: 0;
+                align-items: flex-end;
+            }
+            #profile-modal h3 { font-size: 1.2rem; }
+            .modal-stats { gap: 0.5rem; }
+            .modal-stat-box .stat-val { font-size: 1.1rem; }
 
             /* Game link rows */
             .game-link-row { flex-wrap: wrap; }
@@ -508,49 +456,29 @@
 
 <div id="loading-overlay">Checking Guild Archives...</div>
 
-<!-- Public profile preview modal -->
+<!-- Profile modal -->
 <div id="profile-modal-overlay" onclick="closeModal(event)">
     <div id="profile-modal">
         <button id="modal-close" onclick="closeModal()">&#x2715;</button>
         <h3 id="modal-username"></h3>
         <div class="modal-title-tag" id="modal-title-tag"></div>
-        <div class="modal-stat"><span>Verified Wins</span><strong id="modal-wins"></strong></div>
-        <div class="modal-stat"><span>Preferred Variant</span><span id="modal-variant"></span></div>
-        <div class="modal-stat" id="modal-games-stat" style="display:none;"><span>Game Links</span><strong id="modal-games-count"></strong></div>
-        <div class="modal-stat" id="modal-comments-stat" style="display:none;"><span>Comments</span><strong id="modal-comments-count"></strong></div>
-        <div class="modal-links" id="modal-links"></div>
+        <div class="modal-stats">
+            <div class="modal-stat-box">
+                <div class="stat-val" id="modal-wins"></div>
+                <div class="stat-label">Verified Wins</div>
+            </div>
+            <div class="modal-stat-box">
+                <div class="stat-val" id="modal-variant" style="font-size:0.95rem;padding-top:0.3rem;"></div>
+                <div class="stat-label">Preferred Variant</div>
+            </div>
+        </div>
         <div class="modal-graph">
-            <canvas id="modal-graph-canvas" height="100"></canvas>
+            <canvas id="modal-graph-canvas" height="140"></canvas>
         </div>
-        <div class="modal-actions">
-            <button class="btn-view-full" onclick="openFullProfile()">View Full Profile</button>
-        </div>
-    </div>
-</div>
-
-<!-- Full profile modal -->
-<div id="full-profile-overlay" onclick="closeFullProfile(event)">
-    <div id="full-profile-modal">
-        <button id="full-profile-close" onclick="closeFullProfile()">&#x2715;</button>
-        <h2 id="fp-username"></h2>
-        <div class="fp-title" id="fp-title"></div>
-        <div class="fp-stats">
-            <div class="fp-stat-box">
-                <div class="fp-stat-val" id="fp-wins"></div>
-                <div class="fp-stat-label">Verified Wins</div>
-            </div>
-            <div class="fp-stat-box">
-                <div class="fp-stat-val" id="fp-variant" style="font-size:1rem;padding-top:0.4rem;"></div>
-                <div class="fp-stat-label">Preferred Variant</div>
-            </div>
-        </div>
-        <div class="fp-graph">
-            <canvas id="fp-graph-canvas" height="180"></canvas>
-        </div>
-        <div class="modal-links" id="fp-links" style="margin-bottom:1rem;"></div>
+        <div class="modal-links" id="modal-links"></div>
         <div class="fp-game-links" id="fp-game-links"></div>
         <div class="fp-comments" id="fp-comments"></div>
-        <div id="fp-actions"></div>
+        <div id="modal-actions"></div>
     </div>
 </div>
 
@@ -1034,7 +962,7 @@
                 <textarea id="fp-comment-input" placeholder="Leave a comment on this profile..."></textarea>
                 <button onclick="submitProfileComment('${escapeHtml(user.username)}')">Post Comment</button>
             </div>`
-            : `<p style="color:#999;font-size:0.82rem;font-style:italic;margin-top:0.5rem;"><a href="#" onclick="closeFullProfile(); closeModal(); showSection('profile'); return false;">Login</a> to leave a comment.</p>`;
+            : `<p style="color:#999;font-size:0.82rem;font-style:italic;margin-top:0.5rem;"><a href="#" onclick="closeModal(); showSection('profile'); return false;">Login</a> to leave a comment.</p>`;
 
         container.innerHTML = `
             <h4>Comments (${comments.length})</h4>
@@ -1082,74 +1010,30 @@
         if (!user) return;
         modalUser = user;
         const title = getTitle(user.total_wins);
+        const l = user.links || {};
+        const isOwn = currentUser && !currentUser.isAdmin && currentUser.username === user.username;
 
         document.getElementById('modal-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
         document.getElementById('modal-title-tag').textContent = title.label;
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
-        document.getElementById('modal-links').innerHTML = buildLinksHtml(user.links || {});
-        const gameLinks = user.game_links || [];
-        const gamesStat = document.getElementById('modal-games-stat');
-        if (gameLinks.length > 0) {
-            gamesStat.style.display = '';
-            document.getElementById('modal-games-count').textContent = gameLinks.length;
-        } else {
-            gamesStat.style.display = 'none';
-        }
-        const comments = user.comments || [];
-        const commentsStat = document.getElementById('modal-comments-stat');
-        if (comments.length > 0) {
-            commentsStat.style.display = '';
-            document.getElementById('modal-comments-count').textContent = comments.length;
-        } else {
-            commentsStat.style.display = 'none';
-        }
+        document.getElementById('modal-links').innerHTML = buildLinksHtml(l);
+        renderGameLinksInProfile(user.game_links || []);
+        renderProfileComments(user);
+        document.getElementById('modal-actions').innerHTML = isOwn
+            ? `<button class="btn-main" style="margin-top:1rem;" onclick="closeModal(); showSection('profile');">Update My Stats</button>`
+            : '';
+
         document.getElementById('profile-modal-overlay').classList.add('open');
         document.body.classList.add('modal-open');
         document.getElementById('profile-modal').scrollTop = 0;
-
-        // Draw mini graph after overlay is visible so offsetWidth is available
         requestAnimationFrame(() => drawGraph('modal-graph-canvas', user.wins_history || []));
     }
 
     function closeModal(e) {
         if (e && e.target !== document.getElementById('profile-modal-overlay') && e.target !== document.getElementById('modal-close')) return;
         document.getElementById('profile-modal-overlay').classList.remove('open');
-        if (!document.getElementById('full-profile-overlay').classList.contains('open')) {
-            document.body.classList.remove('modal-open');
-        }
-    }
-
-    function openFullProfile() {
-        if (!modalUser) return;
-        const user = modalUser;
-        const title = getTitle(user.total_wins);
-        const l = user.links || {};
-        const isOwn = currentUser && !currentUser.isAdmin && currentUser.username === user.username;
-
-        document.getElementById('fp-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
-        document.getElementById('fp-title').textContent = title.label;
-        document.getElementById('fp-wins').textContent = user.total_wins.toLocaleString();
-        document.getElementById('fp-variant').textContent = user.preferred_variant;
-        document.getElementById('fp-links').innerHTML = buildLinksHtml(l);
-        renderGameLinksInProfile(user.game_links || []);
-        renderProfileComments(user);
-        document.getElementById('fp-actions').innerHTML = isOwn
-            ? `<button class="btn-main" onclick="closeFullProfile(); closeModal(); showSection('profile');">Update My Stats</button>`
-            : '';
-
-        document.getElementById('full-profile-overlay').classList.add('open');
-        document.body.classList.add('modal-open');
-        document.getElementById('full-profile-modal').scrollTop = 0;
-        requestAnimationFrame(() => drawGraph('fp-graph-canvas', user.wins_history || []));
-    }
-
-    function closeFullProfile(e) {
-        if (e && e.target !== document.getElementById('full-profile-overlay') && e.target !== document.getElementById('full-profile-close')) return;
-        document.getElementById('full-profile-overlay').classList.remove('open');
-        if (!document.getElementById('profile-modal-overlay').classList.contains('open')) {
-            document.body.classList.remove('modal-open');
-        }
+        document.body.classList.remove('modal-open');
     }
 
     function renderLeaderboard() {
