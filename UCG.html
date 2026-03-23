@@ -242,28 +242,37 @@
         #profile-modal {
             background: var(--white);
             border-top: 4px solid var(--guild-gold);
-            padding: 1.5rem;
             width: 90%;
             max-width: 420px;
             max-height: 85vh;
-            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
             position: relative;
             box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            overflow: hidden;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.5rem 0.75rem 0 0.75rem;
+            flex-shrink: 0;
         }
         #modal-close {
-            position: sticky;
-            top: 0;
-            float: right;
-            background: var(--white);
+            background: none;
             border: none;
             font-size: 1.3rem;
             cursor: pointer;
             color: #999;
-            z-index: 2;
-            padding: 0 0 0.25rem 0.5rem;
             line-height: 1;
+            padding: 0.2rem;
         }
         #modal-close:hover { color: var(--text-dark); }
+        .modal-body {
+            overflow-y: auto;
+            padding: 0 1.5rem 1.5rem 1.5rem;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
         #profile-modal h3 { margin: 0 0 0.15rem 0; font-size: 1.25rem; }
         #profile-modal .modal-title-tag {
             font-size: 0.8rem;
@@ -424,17 +433,18 @@
             .title-row { flex-direction: column; gap: 0.2rem; }
 
             /* Profile modal */
-            #profile-modal {
-                width: 96%;
-                max-height: 90vh;
-                padding: 1.1rem;
-                border-radius: 8px 8px 0 0;
-                border-top-width: 3px;
-            }
             #profile-modal-overlay {
                 padding: 0;
                 align-items: flex-end;
             }
+            #profile-modal {
+                width: 100%;
+                max-width: 100%;
+                max-height: 90vh;
+                border-radius: 8px 8px 0 0;
+                border-top-width: 3px;
+            }
+            .modal-body { padding: 0 1.1rem 1.1rem 1.1rem; }
             #profile-modal h3 { font-size: 1.15rem; }
 
             /* Game link rows */
@@ -455,26 +465,30 @@
 <!-- Profile modal -->
 <div id="profile-modal-overlay" onclick="closeModal(event)">
     <div id="profile-modal">
-        <button id="modal-close" onclick="closeModal()">&#x2715;</button>
-        <h3 id="modal-username"></h3>
-        <div class="modal-title-tag" id="modal-title-tag"></div>
-        <div class="modal-stats">
-            <div class="modal-stat-box">
-                <div class="stat-val" id="modal-wins"></div>
-                <div class="stat-label">Verified Wins</div>
-            </div>
-            <div class="modal-stat-box">
-                <div class="stat-val" id="modal-variant" style="font-size:0.85rem;padding-top:0.2rem;"></div>
-                <div class="stat-label">Preferred Variant</div>
-            </div>
+        <div class="modal-header">
+            <button id="modal-close" onclick="closeModal()">&#x2715;</button>
         </div>
-        <div class="modal-graph">
-            <canvas id="modal-graph-canvas" height="100"></canvas>
+        <div class="modal-body" id="modal-body">
+            <h3 id="modal-username"></h3>
+            <div class="modal-title-tag" id="modal-title-tag"></div>
+            <div class="modal-stats">
+                <div class="modal-stat-box">
+                    <div class="stat-val" id="modal-wins"></div>
+                    <div class="stat-label">Verified Wins</div>
+                </div>
+                <div class="modal-stat-box">
+                    <div class="stat-val" id="modal-variant" style="font-size:0.85rem;padding-top:0.2rem;"></div>
+                    <div class="stat-label">Preferred Variant</div>
+                </div>
+            </div>
+            <div class="modal-graph">
+                <canvas id="modal-graph-canvas" height="100"></canvas>
+            </div>
+            <div class="modal-links" id="modal-links"></div>
+            <div class="fp-game-links" id="fp-game-links"></div>
+            <div class="fp-comments" id="fp-comments"></div>
+            <div id="modal-actions"></div>
         </div>
-        <div class="modal-links" id="modal-links"></div>
-        <div class="fp-game-links" id="fp-game-links"></div>
-        <div class="fp-comments" id="fp-comments"></div>
-        <div id="modal-actions"></div>
     </div>
 </div>
 
@@ -1022,7 +1036,7 @@
 
         document.getElementById('profile-modal-overlay').classList.add('open');
         document.body.classList.add('modal-open');
-        document.getElementById('profile-modal').scrollTop = 0;
+        document.getElementById('modal-body').scrollTop = 0;
         requestAnimationFrame(() => drawGraph('modal-graph-canvas', user.wins_history || []));
     }
 
