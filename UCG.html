@@ -21,6 +21,7 @@
             margin: 0;
             line-height: 1.6;
         }
+        body.modal-open { overflow: hidden; }
 
         /* Header & Navigation */
         header {
@@ -244,6 +245,8 @@
             max-width: 420px;
             position: relative;
             box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+            max-height: 90vh;
+            overflow-y: auto;
         }
         #profile-modal h3 { margin: 0 0 0.25rem 0; font-size: 1.4rem; }
         #profile-modal .modal-title-tag {
@@ -257,10 +260,16 @@
         .modal-stat span:first-child { color: #888; }
         .modal-links { margin-top: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
         #modal-close {
-            position: absolute;
-            top: 0.75rem; right: 1rem;
-            background: none; border: none;
-            font-size: 1.4rem; cursor: pointer; color: #999;
+            position: sticky;
+            top: 0;
+            float: right;
+            background: var(--white);
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+            z-index: 2;
+            padding: 0 0 0.25rem 0.5rem;
         }
         #modal-close:hover { color: var(--text-dark); }
         .modal-graph { margin-top: 1rem; }
@@ -303,10 +312,16 @@
         #full-profile-modal .fp-graph { margin-bottom: 1.5rem; }
         #full-profile-modal .fp-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
         #full-profile-close {
-            position: absolute;
-            top: 0.75rem; right: 1rem;
-            background: none; border: none;
-            font-size: 1.4rem; cursor: pointer; color: #999;
+            position: sticky;
+            top: 0;
+            float: right;
+            background: var(--white);
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+            z-index: 2;
+            padding: 0 0 0.25rem 0.5rem;
         }
         #full-profile-close:hover { color: var(--text-dark); }
 
@@ -1090,6 +1105,8 @@
             commentsStat.style.display = 'none';
         }
         document.getElementById('profile-modal-overlay').classList.add('open');
+        document.body.classList.add('modal-open');
+        document.getElementById('profile-modal').scrollTop = 0;
 
         // Draw mini graph after overlay is visible so offsetWidth is available
         requestAnimationFrame(() => drawGraph('modal-graph-canvas', user.wins_history || []));
@@ -1098,6 +1115,9 @@
     function closeModal(e) {
         if (e && e.target !== document.getElementById('profile-modal-overlay') && e.target !== document.getElementById('modal-close')) return;
         document.getElementById('profile-modal-overlay').classList.remove('open');
+        if (!document.getElementById('full-profile-overlay').classList.contains('open')) {
+            document.body.classList.remove('modal-open');
+        }
     }
 
     function openFullProfile() {
@@ -1119,12 +1139,17 @@
             : '';
 
         document.getElementById('full-profile-overlay').classList.add('open');
+        document.body.classList.add('modal-open');
+        document.getElementById('full-profile-modal').scrollTop = 0;
         requestAnimationFrame(() => drawGraph('fp-graph-canvas', user.wins_history || []));
     }
 
     function closeFullProfile(e) {
         if (e && e.target !== document.getElementById('full-profile-overlay') && e.target !== document.getElementById('full-profile-close')) return;
         document.getElementById('full-profile-overlay').classList.remove('open');
+        if (!document.getElementById('profile-modal-overlay').classList.contains('open')) {
+            document.body.classList.remove('modal-open');
+        }
     }
 
     function renderLeaderboard() {
