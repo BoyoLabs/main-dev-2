@@ -183,7 +183,7 @@
         .profile-badge.cc   { background: #81b64c; color: #fff; }
         .profile-badge.li   { background: #3692e7; color: #fff; }
         .profile-badge.fide { background: var(--guild-gold); color: var(--guild-blue); }
-        .profile-badge.unverified { background: #ccc; color: #666; font-size: 0.65rem; }
+        .profile-badge.unverified { background: #ccc; color: #666; font-size: 0.65rem; margin-left: 0; margin-right: 3px; }
 
         .btn-secondary {
             background: transparent;
@@ -565,6 +565,13 @@
                     <div><em>5,000+ wins.</em> You are the craft. The prefix <strong>M</strong> appears before your name. Few reach this mark. Those who do have earned permanent respect in this registry.</div>
                 </div>
             </div>
+        </div>
+
+        <div class="about-block">
+            <h3>Verification &amp; Standings</h3>
+            <p>Because the UCG relies on self-reported win counts, we require members to provide at least one form of verification to be ranked in the main standings. This can be a linked Chess.com, Lichess, or FIDE profile, any other profile link, or one or more individual game links. Any evidence that ties your claimed wins to a real, reviewable source counts.</p>
+            <p>Members who have not added any verification links will appear at the bottom of the leaderboard with a <span class="profile-badge unverified" style="margin:0;">?</span> next to their name and are ineligible for titles (<strong>JM</strong> or <strong>M</strong>) until they add at least one link. This policy exists to preserve the integrity of the registry and ensure that the leaderboard reflects players who have made their record available for peer review.</p>
+            <p>Adding verification is easy — log in, go to your profile, and add a platform username or paste a game link. Even a single game link is enough to remove the <span class="profile-badge unverified" style="margin:0;">?</span> and restore your place in the standings.</p>
         </div>
 
         <div class="about-block">
@@ -1020,11 +1027,13 @@
         const user = guildData.users.find(u => u.username === username);
         if (!user) return;
         modalUser = user;
-        const title = getTitle(user.total_wins);
+        const verified = hasAnyLinks(user);
+        const title = verified ? getTitle(user.total_wins) : { tag: '', label: 'Unverified', description: '' };
         const l = user.links || {};
         const isOwn = currentUser && !currentUser.isAdmin && currentUser.username === user.username;
 
-        document.getElementById('modal-username').innerHTML = title.tag + ' ' + escapeHtml(user.username);
+        const prefix = verified ? title.tag + ' ' : '<span class="profile-badge unverified" style="margin-left:0;margin-right:4px;">?</span> ';
+        document.getElementById('modal-username').innerHTML = prefix + escapeHtml(user.username);
         document.getElementById('modal-title-tag').textContent = title.label;
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
@@ -1068,19 +1077,19 @@
             });
 
         body.innerHTML = sorted.map((u, i) => {
-            const title = getTitle(u.total_wins);
             const l = u.links || {};
             const safeUser = escapeHtml(u.username);
             const verified = hasAnyLinks(u);
+            const title = verified ? getTitle(u.total_wins) : { tag: '', label: 'Unverified', description: '' };
+            const prefix = verified ? title.tag : '<span class="profile-badge unverified" title="No verification links">?</span> ';
             let badges = '';
-            if (!verified) badges += `<span class="profile-badge unverified" title="No verification links">?</span>`;
             if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${escapeHtml(l.chesscom)}">CC</a>`;
             if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${escapeHtml(l.lichess)}">Li</a>`;
             if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${escapeHtml(l.fide)}">FIDE</a>`;
 
             return `<tr>
                 <td>${i + 1}</td>
-                <td>${title.tag}<span class="username-link" onclick='openUserModal(${JSON.stringify(u.username)})'>${safeUser}</span>${badges}</td>
+                <td>${prefix}<span class="username-link" onclick='openUserModal(${JSON.stringify(u.username)})'>${safeUser}</span>${badges}</td>
                 <td>${escapeHtml(u.preferred_variant)}</td>
                 <td>${u.total_wins.toLocaleString()}</td>
             </tr>`;
