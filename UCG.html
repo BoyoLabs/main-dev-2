@@ -569,9 +569,10 @@
 
         <div class="about-block">
             <h3>Verification &amp; Standings</h3>
-            <p>Because the UCG relies on self-reported win counts, we require members to provide at least one form of verification to be ranked in the main standings. This can be a linked Chess.com, Lichess, or FIDE profile, any other profile link, or one or more individual game links. Any evidence that ties your claimed wins to a real, reviewable source counts.</p>
-            <p>Members who have not added any verification links will appear at the bottom of the leaderboard with a <span class="profile-badge unverified" style="margin:0;">?</span> next to their name and are ineligible for titles (<strong>JM</strong> or <strong>M</strong>) until they add at least one link. This policy exists to preserve the integrity of the registry and ensure that the leaderboard reflects players who have made their record available for peer review.</p>
-            <p>Adding verification is easy — log in, go to your profile, and add a platform username or paste a game link. Even a single game link is enough to remove the <span class="profile-badge unverified" style="margin:0;">?</span> and restore your place in the standings.</p>
+            <p>Because the UCG relies on self-reported win counts, we require members to provide verification in order to be ranked in the main standings and to hold titles. There are two paths to verification:</p>
+            <p><strong>1. Link an account.</strong> Add at least one external profile — Chess.com, Lichess, FIDE, or any other platform link. A single linked account is enough to verify your standing.</p>
+            <p><strong>2. Submit 1,000 game links.</strong> For players who do not have an account on a major platform, you may instead verify your record by submitting at least 1,000 individual game links. This path is designed for anonymous or over-the-board players who can document their games one at a time. Reaching 1,000 game links qualifies you for the <strong>JM</strong> (Journeyman) title threshold, provided your win count also meets the requirement.</p>
+            <p>Members who have not met either verification threshold will appear at the bottom of the leaderboard with a <span class="profile-badge unverified" style="margin:0;">?</span> next to their name and are ineligible for titles (<strong>JM</strong> or <strong>M</strong>) regardless of win count. This policy exists to preserve the integrity of the registry and ensure the leaderboard reflects players whose records are available for peer review.</p>
         </div>
 
         <div class="about-block">
@@ -1060,7 +1061,7 @@
         const l = user.links || {};
         if (l.chesscom || l.lichess || l.fide) return true;
         if (l.other && l.other.length > 0) return true;
-        if (user.game_links && user.game_links.length > 0) return true;
+        if (user.game_links && user.game_links.length >= 1000) return true;
         return false;
     }
 
