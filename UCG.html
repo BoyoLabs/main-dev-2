@@ -183,6 +183,7 @@
         .profile-badge.cc   { background: #81b64c; color: #fff; }
         .profile-badge.li   { background: #3692e7; color: #fff; }
         .profile-badge.fide { background: var(--guild-gold); color: var(--guild-blue); }
+        .profile-badge.unverified { background: #ccc; color: #666; font-size: 0.65rem; }
 
         .btn-secondary {
             background: transparent;
@@ -1046,18 +1047,33 @@
         document.body.classList.remove('modal-open');
     }
 
+    function hasAnyLinks(user) {
+        const l = user.links || {};
+        if (l.chesscom || l.lichess || l.fide) return true;
+        if (l.other && l.other.length > 0) return true;
+        if (user.game_links && user.game_links.length > 0) return true;
+        return false;
+    }
+
     function renderLeaderboard() {
         const body = document.getElementById('leaderboard-body');
         const query = (document.getElementById('leaderboard-search')?.value || '').toLowerCase();
         const sorted = [...guildData.users]
-            .sort((a, b) => b.total_wins - a.total_wins)
-            .filter(u => u.username.toLowerCase().includes(query));
+            .filter(u => u.username.toLowerCase().includes(query))
+            .sort((a, b) => {
+                const aV = hasAnyLinks(a);
+                const bV = hasAnyLinks(b);
+                if (aV !== bV) return aV ? -1 : 1;
+                return b.total_wins - a.total_wins;
+            });
 
         body.innerHTML = sorted.map((u, i) => {
             const title = getTitle(u.total_wins);
             const l = u.links || {};
             const safeUser = escapeHtml(u.username);
+            const verified = hasAnyLinks(u);
             let badges = '';
+            if (!verified) badges += `<span class="profile-badge unverified" title="No verification links">?</span>`;
             if (l.chesscom) badges += `<a href="https://www.chess.com/member/${encodeURIComponent(l.chesscom)}" target="_blank" class="profile-badge cc" title="Chess.com: ${escapeHtml(l.chesscom)}">CC</a>`;
             if (l.lichess)  badges += `<a href="https://lichess.org/@/${encodeURIComponent(l.lichess)}" target="_blank" class="profile-badge li" title="Lichess: ${escapeHtml(l.lichess)}">Li</a>`;
             if (l.fide)     badges += `<a href="https://ratings.fide.com/profile/${encodeURIComponent(l.fide)}" target="_blank" class="profile-badge fide" title="FIDE ID: ${escapeHtml(l.fide)}">FIDE</a>`;
