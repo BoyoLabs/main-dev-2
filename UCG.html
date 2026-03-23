@@ -242,10 +242,10 @@
         #profile-modal {
             background: var(--white);
             border-top: 4px solid var(--guild-gold);
-            padding: 2rem;
-            width: 100%;
-            max-width: 540px;
-            max-height: 88vh;
+            padding: 1.5rem;
+            width: 90%;
+            max-width: 420px;
+            max-height: 85vh;
             overflow-y: auto;
             position: relative;
             box-shadow: 0 8px 30px rgba(0,0,0,0.25);
@@ -264,19 +264,19 @@
             line-height: 1;
         }
         #modal-close:hover { color: var(--text-dark); }
-        #profile-modal h3 { margin: 0 0 0.25rem 0; font-size: 1.4rem; }
+        #profile-modal h3 { margin: 0 0 0.15rem 0; font-size: 1.25rem; }
         #profile-modal .modal-title-tag {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: #888;
-            margin-bottom: 1.2rem;
+            margin-bottom: 0.8rem;
             font-style: italic;
         }
-        .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1.2rem; }
-        .modal-stat-box { background: #f7f7f7; padding: 0.8rem; text-align: center; }
-        .modal-stat-box .stat-val { font-size: 1.4rem; color: var(--guild-blue); font-weight: bold; }
-        .modal-stat-box .stat-label { font-size: 0.7rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-        .modal-links { margin-bottom: 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .modal-graph { margin-bottom: 1rem; }
+        .modal-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+        .modal-stat-box { background: #f7f7f7; padding: 0.6rem; text-align: center; }
+        .modal-stat-box .stat-val { font-size: 1.2rem; color: var(--guild-blue); font-weight: bold; }
+        .modal-stat-box .stat-label { font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        .modal-links { margin-bottom: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .modal-graph { margin-bottom: 0.75rem; }
         .modal-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
 
         /* Game links (edit view) */
@@ -290,27 +290,26 @@
         .btn-add-game { background: none; border: 1px dashed var(--guild-gold); color: var(--guild-gold); cursor: pointer; padding: 0.5rem 1rem; font-size: 0.8rem; width: 100%; margin-top: 0.25rem; font-family: inherit; }
         .btn-add-game:hover { background: rgba(197,160,89,0.08); }
 
-        /* Game links on full profile */
-        .fp-game-links { margin-bottom: 1.5rem; }
-        .fp-game-links h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
-        .fp-game-link-item { padding: 0.4rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.85rem; word-break: break-all; }
+        /* Game links on profile */
+        .fp-game-links { margin-bottom: 0.75rem; }
+        .fp-game-links h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; margin: 0 0 0.4rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+        .fp-game-link-item { padding: 0.3rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.8rem; word-break: break-all; }
         .fp-game-link-item:last-child { border-bottom: none; }
         .fp-game-link-item a { color: var(--guild-blue); text-decoration: none; }
         .fp-game-link-item a:hover { color: var(--guild-gold); text-decoration: underline; }
-        .fp-game-link-count { font-size: 0.8rem; color: #999; margin-bottom: 0.5rem; }
 
         /* Profile comments */
-        .fp-comments { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
-        .fp-comments h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
-        .fp-comment { padding: 0.6rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88rem; position: relative; }
+        .fp-comments { margin-top: 0.75rem; border-top: 1px solid #eee; padding-top: 0.75rem; }
+        .fp-comments h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; margin: 0 0 0.4rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.3rem; }
+        .fp-comment { padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.85rem; position: relative; }
         .fp-comment:last-child { border-bottom: none; }
-        .fp-comment-author { font-weight: bold; font-size: 0.82rem; }
-        .fp-comment-date { color: #aaa; font-size: 0.75rem; margin-left: 0.5rem; }
-        .fp-comment-text { margin-top: 0.2rem; color: #444; }
+        .fp-comment-author { font-weight: bold; font-size: 0.78rem; }
+        .fp-comment-date { color: #aaa; font-size: 0.7rem; margin-left: 0.4rem; }
+        .fp-comment-text { margin-top: 0.15rem; color: #444; font-size: 0.83rem; }
         .fp-comment-delete { position: absolute; top: 0.6rem; right: 0; background: none; border: 1px solid #ddd; color: #bbb; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 2px; }
         .fp-comment-delete:hover { border-color: #c0392b; color: #c0392b; }
-        .fp-comment-form { margin-top: 0.75rem; }
-        .fp-comment-form textarea { width: 100%; padding: 0.6rem; margin: 0 0 0.5rem 0; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; font-size: 0.85rem; resize: vertical; min-height: 60px; }
+        .fp-comment-form { margin-top: 0.5rem; }
+        .fp-comment-form textarea { width: 100%; padding: 0.5rem; margin: 0 0 0.4rem 0; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; font-size: 0.8rem; resize: vertical; min-height: 50px; }
         .fp-comment-form button { background: var(--guild-blue); color: white; border: none; padding: 0.5rem 1.2rem; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
         .fp-comment-form button:hover { background: #243547; }
         .fp-no-comments { color: #bbb; font-size: 0.85rem; font-style: italic; }
@@ -426,10 +425,9 @@
 
             /* Profile modal */
             #profile-modal {
-                width: 100%;
-                max-width: 100%;
-                max-height: 92vh;
-                padding: 1.25rem;
+                width: 96%;
+                max-height: 90vh;
+                padding: 1.1rem;
                 border-radius: 8px 8px 0 0;
                 border-top-width: 3px;
             }
@@ -437,9 +435,7 @@
                 padding: 0;
                 align-items: flex-end;
             }
-            #profile-modal h3 { font-size: 1.2rem; }
-            .modal-stats { gap: 0.5rem; }
-            .modal-stat-box .stat-val { font-size: 1.1rem; }
+            #profile-modal h3 { font-size: 1.15rem; }
 
             /* Game link rows */
             .game-link-row { flex-wrap: wrap; }
@@ -468,12 +464,12 @@
                 <div class="stat-label">Verified Wins</div>
             </div>
             <div class="modal-stat-box">
-                <div class="stat-val" id="modal-variant" style="font-size:0.95rem;padding-top:0.3rem;"></div>
+                <div class="stat-val" id="modal-variant" style="font-size:0.85rem;padding-top:0.2rem;"></div>
                 <div class="stat-label">Preferred Variant</div>
             </div>
         </div>
         <div class="modal-graph">
-            <canvas id="modal-graph-canvas" height="140"></canvas>
+            <canvas id="modal-graph-canvas" height="100"></canvas>
         </div>
         <div class="modal-links" id="modal-links"></div>
         <div class="fp-game-links" id="fp-game-links"></div>
