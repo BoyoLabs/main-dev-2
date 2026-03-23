@@ -310,33 +310,41 @@
         }
         #full-profile-close:hover { color: var(--text-dark); }
 
-        /* Game log */
-        .game-log-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
-        .game-log-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
-        .game-log-section small { color: #888; }
-        .game-entry { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.5rem; flex-wrap: wrap; }
-        .game-entry input, .game-entry select { margin: 0; }
-        .game-entry input.game-date { flex: 0 0 130px; max-width: 130px; }
-        .game-entry input.game-opponent { flex: 1; min-width: 100px; }
-        .game-entry select.game-result { flex: 0 0 72px; max-width: 72px; }
-        .game-entry input.game-notes { flex: 1 1 100%; font-size: 0.85rem; padding: 0.5rem 0.8rem; color: #666; }
+        /* Game links (edit view) */
+        .game-links-section { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .game-links-section h4 { margin: 0 0 0.5rem 0; font-weight: normal; }
+        .game-links-section small { color: #888; }
+        .game-link-row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+        .game-link-row input { margin: 0; flex: 1; }
         .btn-remove-game { background: none; border: 1px solid #ccc; color: #999; cursor: pointer; padding: 0.8rem 0.6rem; font-size: 1rem; line-height: 1; flex-shrink: 0; }
         .btn-remove-game:hover { border-color: #c0392b; color: #c0392b; }
         .btn-add-game { background: none; border: 1px dashed var(--guild-gold); color: var(--guild-gold); cursor: pointer; padding: 0.5rem 1rem; font-size: 0.8rem; width: 100%; margin-top: 0.25rem; font-family: inherit; }
         .btn-add-game:hover { background: rgba(197,160,89,0.08); }
 
-        .fp-games { margin-bottom: 1.5rem; }
-        .fp-games h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
-        .fp-game-row { display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88rem; gap: 0.5rem; }
-        .fp-game-row:last-child { border-bottom: none; }
-        .fp-game-date { color: #999; font-size: 0.8rem; flex-shrink: 0; min-width: 75px; }
-        .fp-game-opponent { flex: 1; }
-        .fp-game-result { font-weight: bold; flex-shrink: 0; font-size: 0.8rem; padding: 1px 8px; border-radius: 2px; }
-        .fp-game-result.win  { background: #d4edda; color: #155724; }
-        .fp-game-result.loss { background: #f8d7da; color: #721c24; }
-        .fp-game-result.draw { background: #e2e3e5; color: #383d41; }
-        .fp-game-notes { font-size: 0.78rem; color: #888; font-style: italic; width: 100%; padding-left: 75px; margin-top: -2px; }
-        .fp-no-games { color: #bbb; font-size: 0.85rem; font-style: italic; }
+        /* Game links on full profile */
+        .fp-game-links { margin-bottom: 1.5rem; }
+        .fp-game-links h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
+        .fp-game-link-item { padding: 0.4rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.85rem; word-break: break-all; }
+        .fp-game-link-item:last-child { border-bottom: none; }
+        .fp-game-link-item a { color: var(--guild-blue); text-decoration: none; }
+        .fp-game-link-item a:hover { color: var(--guild-gold); text-decoration: underline; }
+        .fp-game-link-count { font-size: 0.8rem; color: #999; margin-bottom: 0.5rem; }
+
+        /* Profile comments */
+        .fp-comments { margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; }
+        .fp-comments h4 { font-weight: normal; color: #555; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 1px; margin: 0 0 0.6rem 0; border-bottom: 1px solid #eee; padding-bottom: 0.4rem; }
+        .fp-comment { padding: 0.6rem 0; border-bottom: 1px solid #f5f5f5; font-size: 0.88rem; position: relative; }
+        .fp-comment:last-child { border-bottom: none; }
+        .fp-comment-author { font-weight: bold; font-size: 0.82rem; }
+        .fp-comment-date { color: #aaa; font-size: 0.75rem; margin-left: 0.5rem; }
+        .fp-comment-text { margin-top: 0.2rem; color: #444; }
+        .fp-comment-delete { position: absolute; top: 0.6rem; right: 0; background: none; border: 1px solid #ddd; color: #bbb; cursor: pointer; font-size: 0.7rem; padding: 0.15rem 0.5rem; border-radius: 2px; }
+        .fp-comment-delete:hover { border-color: #c0392b; color: #c0392b; }
+        .fp-comment-form { margin-top: 0.75rem; }
+        .fp-comment-form textarea { width: 100%; padding: 0.6rem; margin: 0 0 0.5rem 0; border: 1px solid #ccc; box-sizing: border-box; font-family: inherit; font-size: 0.85rem; resize: vertical; min-height: 60px; }
+        .fp-comment-form button { background: var(--guild-blue); color: white; border: none; padding: 0.5rem 1.2rem; cursor: pointer; font-size: 0.8rem; font-family: inherit; }
+        .fp-comment-form button:hover { background: #243547; }
+        .fp-no-comments { color: #bbb; font-size: 0.85rem; font-style: italic; }
 
         /* About section */
         .about-block { margin-bottom: 2rem; }
@@ -470,12 +478,8 @@
             #full-profile-modal .fp-stats { gap: 0.5rem; }
             .fp-stat-box .fp-stat-val { font-size: 1.2rem; }
 
-            /* Game log entries — stack on mobile */
-            .game-entry { flex-wrap: wrap; }
-            .game-entry input.game-date { flex: 1 1 100%; max-width: 100%; }
-            .game-entry input.game-opponent { flex: 1 1 calc(100% - 130px); }
-            .game-entry select.game-result { flex: 0 0 65px; }
-            .fp-game-notes { padding-left: 0; }
+            /* Game link rows */
+            .game-link-row { flex-wrap: wrap; }
 
             /* Forum posts */
             .post { padding-left: 0.75rem; }
@@ -497,7 +501,8 @@
         <div class="modal-title-tag" id="modal-title-tag"></div>
         <div class="modal-stat"><span>Verified Wins</span><strong id="modal-wins"></strong></div>
         <div class="modal-stat"><span>Preferred Variant</span><span id="modal-variant"></span></div>
-        <div class="modal-stat" id="modal-games-stat" style="display:none;"><span>Games Logged</span><strong id="modal-games-count"></strong></div>
+        <div class="modal-stat" id="modal-games-stat" style="display:none;"><span>Game Links</span><strong id="modal-games-count"></strong></div>
+        <div class="modal-stat" id="modal-comments-stat" style="display:none;"><span>Comments</span><strong id="modal-comments-count"></strong></div>
         <div class="modal-links" id="modal-links"></div>
         <div class="modal-graph">
             <canvas id="modal-graph-canvas" height="100"></canvas>
@@ -523,20 +528,13 @@
                 <div class="fp-stat-val" id="fp-variant" style="font-size:1rem;padding-top:0.4rem;"></div>
                 <div class="fp-stat-label">Preferred Variant</div>
             </div>
-            <div class="fp-stat-box" id="fp-games-stat" style="display:none;">
-                <div class="fp-stat-val" id="fp-games-count"></div>
-                <div class="fp-stat-label">Games Logged</div>
-            </div>
-            <div class="fp-stat-box" id="fp-games-record-stat" style="display:none;">
-                <div class="fp-stat-val" id="fp-games-record" style="font-size:1rem;padding-top:0.4rem;"></div>
-                <div class="fp-stat-label">W / L / D</div>
-            </div>
         </div>
         <div class="fp-graph">
             <canvas id="fp-graph-canvas" height="180"></canvas>
         </div>
         <div class="modal-links" id="fp-links" style="margin-bottom:1rem;"></div>
-        <div class="fp-games" id="fp-games"></div>
+        <div class="fp-game-links" id="fp-game-links"></div>
+        <div class="fp-comments" id="fp-comments"></div>
         <div id="fp-actions"></div>
     </div>
 </div>
@@ -623,7 +621,7 @@
         <div class="about-block">
             <h3>Impersonation &amp; Account Abuse</h3>
             <p>Because verification links are self-reported, it is possible for a bad actor to add someone else's Chess.com, Lichess, or FIDE profile to their UCG account in an attempt to impersonate them or falsely claim their win record. We take this seriously.</p>
-            <p>If you believe someone has linked your external profile without your permission, or is otherwise impersonating you on the UCG platform, please contact us immediately at <a href="/cdn-cgi/l/email-protection#24464b5d4b484546575041474c644349454d480a474b49"><span class="__cf_email__" data-cfemail="52303d2b3d3e3330212637313a12353f333b3e7c313d3f">[email&#160;protected]</span></a>. Include your UCG username (if you have one), the offending account name, and a link to the external profile being misused. We will investigate and remove the fraudulent account.</p>
+            <p>If you believe someone has linked your external profile without your permission, or is otherwise impersonating you on the UCG platform, please contact us immediately at <a href="/cdn-cgi/l/email-protection#4c2e233523202d2e3f38292f240c2b212d2520622f2321"><span class="__cf_email__" data-cfemail="84e6ebfdebe8e5e6f7f0e1e7ecc4e3e9e5ede8aae7ebe9">[email&#160;protected]</span></a>. Include your UCG username (if you have one), the offending account name, and a link to the external profile being misused. We will investigate and remove the fraudulent account.</p>
         </div>
 
         <div class="about-block" id="tos">
@@ -755,10 +753,10 @@
                 <div id="edit-other-links"></div>
                 <button type="button" class="btn-add-link" onclick="addOtherLink('edit')">+ Add a profile link</button>
             </div>
-            <div class="game-log-section">
-                <h4>Game Log <small>(record individual games — visible on your public profile)</small></h4>
-                <div id="edit-games"></div>
-                <button type="button" class="btn-add-game" onclick="addGameEntry()">+ Log a game</button>
+            <div class="game-links-section">
+                <h4>Game Links <small>(paste links to individual games for verification)</small></h4>
+                <div id="edit-game-links"></div>
+                <button type="button" class="btn-add-game" onclick="addGameLink()">+ Add a game link</button>
             </div>
             <button class="btn-main" onclick="saveProfileChanges()">Save Changes</button>
             <button class="btn-secondary" onclick="logout()">Logout</button>
@@ -952,72 +950,116 @@
         return result;
     }
 
-    function addGameEntry(date = '', opponent = '', result = 'W', notes = '') {
-        const container = document.getElementById('edit-games');
+    // ── Game Links ──────────────────────────────────────
+    function addGameLink(url = '') {
+        const container = document.getElementById('edit-game-links');
         const row = document.createElement('div');
-        row.className = 'game-entry';
-        const today = date || new Date().toISOString().slice(0, 10);
+        row.className = 'game-link-row';
         row.innerHTML = `
-            <input type="date" class="game-date" value="${escapeHtml(today)}">
-            <input type="text" class="game-opponent" placeholder="Opponent name" value="${escapeHtml(opponent)}" maxlength="40">
-            <select class="game-result">
-                <option value="W"${result === 'W' ? ' selected' : ''}>Win</option>
-                <option value="L"${result === 'L' ? ' selected' : ''}>Loss</option>
-                <option value="D"${result === 'D' ? ' selected' : ''}>Draw</option>
-            </select>
+            <input type="url" class="game-link-url" placeholder="https://lichess.org/abcdefgh or chess.com/game/live/..." value="${escapeHtml(url)}">
             <button type="button" class="btn-remove-game" onclick="this.parentElement.remove()" title="Remove">&#215;</button>
-            <input type="text" class="game-notes" placeholder="Notes (optional — opening, time control, etc.)" value="${escapeHtml(notes)}" maxlength="120">
         `;
         container.appendChild(row);
     }
 
-    function collectGames() {
-        const rows = document.querySelectorAll('#edit-games .game-entry');
-        const games = [];
+    function collectGameLinks() {
+        const rows = document.querySelectorAll('#edit-game-links .game-link-row');
+        const links = [];
         rows.forEach(row => {
-            const date = row.querySelector('.game-date').value;
-            const opponent = row.querySelector('.game-opponent').value.trim();
-            const result = row.querySelector('.game-result').value;
-            const notes = row.querySelector('.game-notes').value.trim();
-            if (!opponent) return; // skip entries with no opponent
-            games.push({ date, opponent, result, notes });
+            const url = row.querySelector('.game-link-url').value.trim();
+            if (!url) return;
+            if (!/^https?:\/\/.+/.test(url)) return;
+            links.push(url);
         });
-        // Sort by date descending (newest first)
-        games.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-        return games;
+        return links;
     }
 
-    function renderGamesInProfile(games) {
-        const container = document.getElementById('fp-games');
-        if (!games || games.length === 0) {
+    function renderGameLinksInProfile(gameLinks) {
+        const container = document.getElementById('fp-game-links');
+        if (!gameLinks || gameLinks.length === 0) {
             container.innerHTML = '';
             return;
         }
-        const resultLabel = { W: 'Win', L: 'Loss', D: 'Draw' };
-        const resultClass = { W: 'win', L: 'loss', D: 'draw' };
-        const rows = games.map(g => {
-            const dateStr = g.date ? new Date(g.date + 'T00:00:00').toLocaleDateString() : '';
-            let html = `<div class="fp-game-row">
-                <span class="fp-game-date">${escapeHtml(dateStr)}</span>
-                <span class="fp-game-opponent">vs ${escapeHtml(g.opponent)}</span>
-                <span class="fp-game-result ${resultClass[g.result] || ''}">${resultLabel[g.result] || g.result}</span>
-            </div>`;
-            if (g.notes) {
-                html += `<div class="fp-game-notes">${escapeHtml(g.notes)}</div>`;
-            }
-            return html;
+        const items = gameLinks.map(url => {
+            let label = url;
+            try { label = new URL(url).hostname + new URL(url).pathname; } catch(e) {}
+            if (label.length > 60) label = label.substring(0, 57) + '...';
+            return `<div class="fp-game-link-item"><a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(label)}</a></div>`;
         }).join('');
+        container.innerHTML = `
+            <h4>Game Links (${gameLinks.length})</h4>
+            ${items}
+        `;
+    }
 
-        const wins = games.filter(g => g.result === 'W').length;
-        const losses = games.filter(g => g.result === 'L').length;
-        const draws = games.filter(g => g.result === 'D').length;
-        const summary = `${games.length} game${games.length !== 1 ? 's' : ''} logged — ${wins}W / ${losses}L / ${draws}D`;
+    // ── Profile Comments ────────────────────────────────
+    function renderProfileComments(user) {
+        const container = document.getElementById('fp-comments');
+        const comments = user.comments || [];
+        const isOwner = currentUser && !currentUser.isAdmin && currentUser.username === user.username;
+        const isAdmin = currentUser && currentUser.isAdmin;
+        const canDelete = isOwner || isAdmin;
+
+        const commentsHtml = comments.length > 0
+            ? [...comments].reverse().map(c => {
+                const deleteBtn = canDelete
+                    ? `<button class="fp-comment-delete" onclick="deleteProfileComment('${escapeHtml(user.username)}', '${escapeHtml(c.id)}')">delete</button>`
+                    : '';
+                return `<div class="fp-comment">
+                    ${deleteBtn}
+                    <span class="fp-comment-author">${escapeHtml(c.author)}</span>
+                    <span class="fp-comment-date">${new Date(c.timestamp).toLocaleDateString()}</span>
+                    <div class="fp-comment-text">${escapeHtml(c.text)}</div>
+                </div>`;
+            }).join('')
+            : '<p class="fp-no-comments">No comments yet.</p>';
+
+        const formHtml = currentUser
+            ? `<div class="fp-comment-form">
+                <textarea id="fp-comment-input" placeholder="Leave a comment on this profile..."></textarea>
+                <button onclick="submitProfileComment('${escapeHtml(user.username)}')">Post Comment</button>
+            </div>`
+            : `<p style="color:#999;font-size:0.82rem;font-style:italic;margin-top:0.5rem;"><a href="#" onclick="closeFullProfile(); closeModal(); showSection('profile'); return false;">Login</a> to leave a comment.</p>`;
 
         container.innerHTML = `
-            <h4>Game Log</h4>
-            <div style="font-size:0.8rem;color:#999;margin-bottom:0.6rem;">${summary}</div>
-            ${rows}
+            <h4>Comments (${comments.length})</h4>
+            ${formHtml}
+            ${commentsHtml}
         `;
+    }
+
+    function submitProfileComment(username) {
+        if (!currentUser) return;
+        const input = document.getElementById('fp-comment-input');
+        const text = input.value.trim();
+        if (!text) return alert("Comment cannot be empty.");
+        if (text.length > 500) return alert("Comments cannot exceed 500 characters.");
+
+        const user = guildData.users.find(u => u.username === username);
+        if (!user) return;
+        if (!user.comments) user.comments = [];
+        user.comments.push({
+            id: 'cmt_' + Date.now(),
+            author: currentUser.username,
+            text: text,
+            timestamp: new Date().toISOString()
+        });
+        syncToCloud().then(() => {
+            // Re-render comments in the still-open modal
+            const freshUser = guildData.users.find(u => u.username === username);
+            if (freshUser) renderProfileComments(freshUser);
+        });
+    }
+
+    function deleteProfileComment(username, commentId) {
+        if (!confirm("Delete this comment?")) return;
+        const user = guildData.users.find(u => u.username === username);
+        if (!user || !user.comments) return;
+        user.comments = user.comments.filter(c => c.id !== commentId);
+        syncToCloud().then(() => {
+            const freshUser = guildData.users.find(u => u.username === username);
+            if (freshUser) renderProfileComments(freshUser);
+        });
     }
 
     function openUserModal(username) {
@@ -1031,16 +1073,21 @@
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
         document.getElementById('modal-links').innerHTML = buildLinksHtml(user.links || {});
+        const gameLinks = user.game_links || [];
         const gamesStat = document.getElementById('modal-games-stat');
-        const games = user.games || [];
-        if (games.length > 0) {
+        if (gameLinks.length > 0) {
             gamesStat.style.display = '';
-            const w = games.filter(g => g.result === 'W').length;
-            const l2 = games.filter(g => g.result === 'L').length;
-            const d = games.filter(g => g.result === 'D').length;
-            document.getElementById('modal-games-count').textContent = `${games.length} (${w}W/${l2}L/${d}D)`;
+            document.getElementById('modal-games-count').textContent = gameLinks.length;
         } else {
             gamesStat.style.display = 'none';
+        }
+        const comments = user.comments || [];
+        const commentsStat = document.getElementById('modal-comments-stat');
+        if (comments.length > 0) {
+            commentsStat.style.display = '';
+            document.getElementById('modal-comments-count').textContent = comments.length;
+        } else {
+            commentsStat.style.display = 'none';
         }
         document.getElementById('profile-modal-overlay').classList.add('open');
 
@@ -1064,25 +1111,9 @@
         document.getElementById('fp-title').textContent = title.label;
         document.getElementById('fp-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('fp-variant').textContent = user.preferred_variant;
-
-        const fpGames = user.games || [];
-        const fpGamesStat = document.getElementById('fp-games-stat');
-        const fpRecordStat = document.getElementById('fp-games-record-stat');
-        if (fpGames.length > 0) {
-            fpGamesStat.style.display = '';
-            fpRecordStat.style.display = '';
-            document.getElementById('fp-games-count').textContent = fpGames.length.toLocaleString();
-            const gw = fpGames.filter(g => g.result === 'W').length;
-            const gl = fpGames.filter(g => g.result === 'L').length;
-            const gd = fpGames.filter(g => g.result === 'D').length;
-            document.getElementById('fp-games-record').textContent = `${gw} / ${gl} / ${gd}`;
-        } else {
-            fpGamesStat.style.display = 'none';
-            fpRecordStat.style.display = 'none';
-        }
-
         document.getElementById('fp-links').innerHTML = buildLinksHtml(l);
-        renderGamesInProfile(user.games || []);
+        renderGameLinksInProfile(user.game_links || []);
+        renderProfileComments(user);
         document.getElementById('fp-actions').innerHTML = isOwn
             ? `<button class="btn-main" onclick="closeFullProfile(); closeModal(); showSection('profile');">Update My Stats</button>`
             : '';
@@ -1182,9 +1213,9 @@
         const otherContainer = document.getElementById('edit-other-links');
         otherContainer.innerHTML = '';
         (l.other || []).forEach(o => addOtherLink('edit', o.label, o.url));
-        const gamesContainer = document.getElementById('edit-games');
-        gamesContainer.innerHTML = '';
-        (user.games || []).forEach(g => addGameEntry(g.date, g.opponent, g.result, g.notes));
+        const gameLinksContainer = document.getElementById('edit-game-links');
+        gameLinksContainer.innerHTML = '';
+        (user.game_links || []).forEach(url => addGameLink(url));
         updateHeaderButton();
         renderForumForm();
     }
@@ -1290,7 +1321,8 @@
                 other:    collectOtherLinks('register')
             },
             wins_history: wins > 0 ? [{ date: new Date().toISOString(), wins }] : [],
-            games: []
+            game_links: [],
+            comments: []
         };
 
         guildData.users.push(newUser);
@@ -1322,7 +1354,7 @@
         currentUser.links.lichess  = document.getElementById('edit-lichess').value.trim();
         currentUser.links.fide     = document.getElementById('edit-fide').value.trim();
         currentUser.links.other    = collectOtherLinks('edit');
-        currentUser.games = collectGames();
+        currentUser.game_links = collectGameLinks();
         syncToCloud();
         alert("Changes saved.");
     }
