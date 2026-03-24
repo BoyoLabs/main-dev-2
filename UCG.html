@@ -286,6 +286,8 @@
         .modal-stat-box .stat-val { font-size: 1.2rem; color: var(--guild-blue); font-weight: bold; }
         .modal-stat-box .stat-label { font-size: 0.65rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
         .modal-links { margin-bottom: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap; }
+        .modal-wins-breakdown { text-align: center; font-size: 0.78rem; color: #777; margin-bottom: 0.75rem; padding: 0.4rem 0; background: #f9f9f9; border: 1px solid #eee; }
+        .modal-wins-breakdown .breakdown-item { white-space: nowrap; }
         .modal-graph { margin-bottom: 0.75rem; }
         .modal-graph canvas { width: 100%; background: #fafafa; border: 1px solid #eee; display: block; }
 
@@ -365,6 +367,14 @@
             margin: 0.5rem 0 1rem 0;
             line-height: 1.5;
         }
+
+        /* Wins breakdown */
+        .wins-breakdown { margin: 0.5rem 0 1rem 0; border: 1px solid #e0e0e0; padding: 1rem; background: #fafafa; }
+        .wins-breakdown h4 { font-size: 0.9rem; }
+        .wins-row label { font-size: 0.9rem; margin-bottom: 0.2rem; display: block; }
+        .wins-row input[type="number"] { margin-bottom: 0.75rem; }
+        .wins-total-display { background: var(--guild-blue); color: var(--guild-gold); padding: 0.7rem 1rem; text-align: center; font-size: 0.95rem; letter-spacing: 1px; margin-top: 0.25rem; }
+        .wins-total-display strong { font-size: 1.15rem; }
         .tos-agree input[type="checkbox"] {
             width: auto;
             margin: 0.2rem 0 0 0;
@@ -482,6 +492,7 @@
                     <div class="stat-label">Preferred Variant</div>
                 </div>
             </div>
+            <div class="modal-wins-breakdown" id="modal-wins-breakdown" style="display:none;"></div>
             <div class="modal-graph">
                 <canvas id="modal-graph-canvas" height="100"></canvas>
             </div>
@@ -650,8 +661,24 @@
                 <option value="Racing Kings">Racing Kings</option>
                 <option value="Other">Other</option>
             </select>
-            <label>Total Wins (self-reported):</label>
-            <input type="number" id="register-wins" value="0" min="0">
+            <div class="wins-breakdown">
+                <h4 style="margin:0 0 0.3rem 0;font-weight:normal;">Win Count by Source <small style="color:#888;">(the site totals these for you)</small></h4>
+                <div class="wins-row">
+                    <label>Chess.com Wins:</label>
+                    <input type="number" id="register-wins-chesscom" value="0" min="0" oninput="updateRegisterTotal()">
+                </div>
+                <div class="wins-row">
+                    <label>Lichess Wins:</label>
+                    <input type="number" id="register-wins-lichess" value="0" min="0" oninput="updateRegisterTotal()">
+                </div>
+                <div class="wins-row">
+                    <label>Other Site Wins:</label>
+                    <input type="number" id="register-wins-other" value="0" min="0" oninput="updateRegisterTotal()">
+                </div>
+                <div class="wins-total-display" id="register-wins-total">
+                    Calculated Total: <strong>0</strong>
+                </div>
+            </div>
             <div class="link-section">
                 <h4>Verification Links <small>(optional — lets others confirm your win count)</small></h4>
                 <label>Chess.com Username:</label>
@@ -684,8 +711,29 @@
         <!-- Account (logged in) -->
         <div id="edit-view" style="display:none;">
             <h3 id="edit-title-name">My Account</h3>
-            <label>Verified Wins:</label>
-            <input type="number" id="edit-wins">
+            <div class="wins-breakdown">
+                <h4 style="margin:0 0 0.3rem 0;font-weight:normal;">Win Count by Source <small style="color:#888;">(the site totals these for you)</small></h4>
+                <div class="wins-row">
+                    <label>Chess.com Wins:</label>
+                    <input type="number" id="edit-wins-chesscom" value="0" min="0" oninput="updateEditTotal()">
+                </div>
+                <div class="wins-row">
+                    <label>Lichess Wins:</label>
+                    <input type="number" id="edit-wins-lichess" value="0" min="0" oninput="updateEditTotal()">
+                </div>
+                <div class="wins-row">
+                    <label>Other Site Wins:</label>
+                    <input type="number" id="edit-wins-other" value="0" min="0" oninput="updateEditTotal()">
+                </div>
+                <div class="wins-row">
+                    <label>Individual Game Wins:</label>
+                    <input type="number" id="edit-wins-games" value="0" min="0" readonly disabled style="background:#f0f0f0;color:#888;cursor:not-allowed;" title="Auto-counted from your game links below">
+                    <small style="color:#888;display:block;margin-top:-0.7rem;margin-bottom:0.5rem;">Counted from your game links below</small>
+                </div>
+                <div class="wins-total-display" id="edit-wins-total">
+                    Calculated Total: <strong>0</strong>
+                </div>
+            </div>
             <label>Preferred Variant:</label>
             <select id="edit-variant">
                 <option value="Ultrabullet">Ultrabullet</option>
@@ -918,10 +966,11 @@
         const row = document.createElement('div');
         row.className = 'game-link-row';
         row.innerHTML = `
-            <input type="url" class="game-link-url" placeholder="https://lichess.org/abcdefgh or chess.com/game/live/..." value="${escapeHtml(url)}">
-            <button type="button" class="btn-remove-game" onclick="this.parentElement.remove()" title="Remove">&#215;</button>
+            <input type="url" class="game-link-url" placeholder="https://lichess.org/abcdefgh or chess.com/game/live/..." value="${escapeHtml(url)}" oninput="recountEditGameWins()">
+            <button type="button" class="btn-remove-game" onclick="this.parentElement.remove(); recountEditGameWins();" title="Remove">&#215;</button>
         `;
         container.appendChild(row);
+        recountEditGameWins();
     }
 
     function collectGameLinks() {
@@ -934,6 +983,34 @@
             links.push(url);
         });
         return links;
+    }
+
+    // ── Wins Calculation ────────────────────────────────
+    function calcTotalWins(wChesscom, wLichess, wOther, wGames) {
+        return (parseInt(wChesscom) || 0) + (parseInt(wLichess) || 0) + (parseInt(wOther) || 0) + (parseInt(wGames) || 0);
+    }
+
+    function updateRegisterTotal() {
+        const cc = document.getElementById('register-wins-chesscom').value;
+        const li = document.getElementById('register-wins-lichess').value;
+        const ot = document.getElementById('register-wins-other').value;
+        const total = calcTotalWins(cc, li, ot, 0);
+        document.getElementById('register-wins-total').innerHTML = `Calculated Total: <strong>${total.toLocaleString()}</strong>`;
+    }
+
+    function updateEditTotal() {
+        const cc = document.getElementById('edit-wins-chesscom').value;
+        const li = document.getElementById('edit-wins-lichess').value;
+        const ot = document.getElementById('edit-wins-other').value;
+        const gm = document.getElementById('edit-wins-games').value;
+        const total = calcTotalWins(cc, li, ot, gm);
+        document.getElementById('edit-wins-total').innerHTML = `Calculated Total: <strong>${total.toLocaleString()}</strong>`;
+    }
+
+    function recountEditGameWins() {
+        const links = collectGameLinks();
+        document.getElementById('edit-wins-games').value = links.length;
+        updateEditTotal();
     }
 
     function renderGameLinksInProfile(gameLinks) {
@@ -1038,6 +1115,26 @@
         document.getElementById('modal-title-tag').textContent = title.label;
         document.getElementById('modal-wins').textContent = user.total_wins.toLocaleString();
         document.getElementById('modal-variant').textContent = user.preferred_variant;
+
+        // Build wins breakdown
+        const wCC = user.wins_chesscom || 0;
+        const wLi = user.wins_lichess || 0;
+        const wOt = user.wins_other || 0;
+        const wGm = (user.game_links || []).length;
+        const hasBreakdown = wCC || wLi || wOt || wGm;
+        const breakdownEl = document.getElementById('modal-wins-breakdown');
+        if (hasBreakdown) {
+            let parts = [];
+            if (wCC) parts.push(`<span class="breakdown-item"><span class="profile-badge cc" style="font-size:0.6rem;">CC</span> ${wCC.toLocaleString()}</span>`);
+            if (wLi) parts.push(`<span class="breakdown-item"><span class="profile-badge li" style="font-size:0.6rem;">Li</span> ${wLi.toLocaleString()}</span>`);
+            if (wOt) parts.push(`<span class="breakdown-item">Other: ${wOt.toLocaleString()}</span>`);
+            if (wGm) parts.push(`<span class="breakdown-item">Games: ${wGm.toLocaleString()}</span>`);
+            breakdownEl.innerHTML = parts.join(' &middot; ');
+            breakdownEl.style.display = 'block';
+        } else {
+            breakdownEl.style.display = 'none';
+        }
+
         document.getElementById('modal-links').innerHTML = buildLinksHtml(l);
         renderGameLinksInProfile(user.game_links || []);
         renderProfileComments(user);
@@ -1150,7 +1247,9 @@
         document.getElementById('login-view').style.display = 'none';
         document.getElementById('edit-view').style.display = 'block';
         document.getElementById('edit-title-name').innerText = `Welcome, ${user.username}`;
-        document.getElementById('edit-wins').value = user.total_wins;
+        document.getElementById('edit-wins-chesscom').value = user.wins_chesscom || 0;
+        document.getElementById('edit-wins-lichess').value = user.wins_lichess || 0;
+        document.getElementById('edit-wins-other').value = user.wins_other || 0;
         document.getElementById('edit-variant').value = user.preferred_variant;
         document.getElementById('edit-chesscom').value = l.chesscom || '';
         document.getElementById('edit-lichess').value = l.lichess || '';
@@ -1161,6 +1260,9 @@
         const gameLinksContainer = document.getElementById('edit-game-links');
         gameLinksContainer.innerHTML = '';
         (user.game_links || []).forEach(url => addGameLink(url));
+        // Set game wins count and update total display
+        document.getElementById('edit-wins-games').value = (user.game_links || []).length;
+        updateEditTotal();
         updateHeaderButton();
         renderForumForm();
     }
@@ -1246,18 +1348,25 @@
         if (name.toLowerCase() === 'admin') return alert("That username is reserved.");
         if (pass.length < 6) return alert("Password must be at least 6 characters.");
         if (pass !== confirm) return alert("Passwords do not match.");
-        const wins = parseInt(document.getElementById('register-wins').value) || 0;
-        if (wins < 0 || wins > 999999) return alert("Win count must be between 0 and 999,999.");
         if (!document.getElementById('register-tos').checked) return alert("You must agree to the Terms of Service to register.");
         if (guildData.users.find(u => u.username.toLowerCase() === name.toLowerCase())) {
             return alert("That username is already taken.");
         }
+
+        const wCC = Math.max(0, parseInt(document.getElementById('register-wins-chesscom').value) || 0);
+        const wLi = Math.max(0, parseInt(document.getElementById('register-wins-lichess').value) || 0);
+        const wOt = Math.max(0, parseInt(document.getElementById('register-wins-other').value) || 0);
+        const wins = wCC + wLi + wOt;
+        if (wins > 999999) return alert("Combined win count must not exceed 999,999.");
 
         const newUser = {
             id: 'user_' + Date.now(),
             username: name,
             password: await hashPassword(name, pass),
             total_wins: wins,
+            wins_chesscom: wCC,
+            wins_lichess: wLi,
+            wins_other: wOt,
             preferred_variant: document.getElementById('register-variant').value,
             links: {
                 chesscom: document.getElementById('register-chesscom').value.trim(),
@@ -1286,20 +1395,28 @@
     }
 
     function saveProfileChanges() {
-        const wins = parseInt(document.getElementById('edit-wins').value) || 0;
-        if (wins < 0 || wins > 999999) return alert("Win count must be between 0 and 999,999.");
+        const wCC = Math.max(0, parseInt(document.getElementById('edit-wins-chesscom').value) || 0);
+        const wLi = Math.max(0, parseInt(document.getElementById('edit-wins-lichess').value) || 0);
+        const wOt = Math.max(0, parseInt(document.getElementById('edit-wins-other').value) || 0);
+        const gameLinks = collectGameLinks();
+        const wGm = gameLinks.length;
+        const wins = wCC + wLi + wOt + wGm;
+        if (wins < 0 || wins > 999999) return alert("Combined win count must not exceed 999,999.");
         if (wins !== currentUser.total_wins) {
             if (!currentUser.wins_history) currentUser.wins_history = [];
             currentUser.wins_history.push({ date: new Date().toISOString(), wins });
         }
         currentUser.total_wins = wins;
+        currentUser.wins_chesscom = wCC;
+        currentUser.wins_lichess = wLi;
+        currentUser.wins_other = wOt;
         currentUser.preferred_variant = document.getElementById('edit-variant').value;
         if (!currentUser.links) currentUser.links = {};
         currentUser.links.chesscom = document.getElementById('edit-chesscom').value.trim();
         currentUser.links.lichess  = document.getElementById('edit-lichess').value.trim();
         currentUser.links.fide     = document.getElementById('edit-fide').value.trim();
         currentUser.links.other    = collectOtherLinks('edit');
-        currentUser.game_links = collectGameLinks();
+        currentUser.game_links = gameLinks;
         syncToCloud();
         alert("Changes saved.");
     }
