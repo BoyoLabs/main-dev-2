@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PORTFOLIO // TOTAL RETURN MONITOR</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap');
+
+  :root {
+    --bg-root: #0a0c0f;
+    --bg-panel: #0f1318;
+    --bg-panel-alt: #131920;
+    --bg-input: #0c1015;
+    --border: #1c2430;
+    --border-focus: #2a3a4e;
+    --text-primary: #c8d0dc;
+    --text-secondary: #6a7a8e;
+    --text-dim: #3e4e5e;
+    --accent-green: #00e676;
+    --accent-green-dim: rgba(0, 230, 118, 0.08);
+    --accent-green-glow: rgba(0, 230, 118, 0.15);
+    --accent-red: #ff5252;
+    --accent-red-dim: rgba(255, 82, 82, 0.08);
+    --accent-amber: #ffc107;
+    --accent-amber-dim: rgba(255, 193, 7, 0.08);
+    --accent-cyan: #00bcd4;
+    --accent-cyan-dim: rgba(0, 188, 212, 0.08);
+    --accent-blue: #448aff;
+    --font-mono: 'JetBrains Mono', 'IBM Plex Mono', 'Courier New', monospace;
+    --font-body: 'IBM Plex Mono', monospace;
+    --radius: 4px;
+    --transition: 180ms ease;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { font-size: 14px; }
+
+  body {
+    background: var(--bg-root);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-root); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--border-focus); }
+
+  /* ── LAYOUT ── */
+  .app-shell { max-width: 1200px; margin: 0 auto; padding: 16px; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 0 16px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 8px var(--accent-green-glow);
+    animation: pulse-dot 2.5s ease-in-out infinite;
+  }
+  .status-dot.offline { background: var(--accent-red); box-shadow: 0 0 8px rgba(255,82,82,0.2); }
+  .status-dot.syncing { background: var(--accent-amber); box-shadow: 0 0 8px rgba(255,193,7,0.2); animation: pulse-dot 0.8s ease-in-out infinite; }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .logo {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--text-primary);
+  }
+  .logo span { color: var(--text-dim); font-weight: 300; }
+
+  .header-meta {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-align: right;
+    font-family: var(--font-mono);
+  }
+  .header-meta .sync-status { color: var(--text-secondary); }
+
+  /* ── NAVIGATION ── */
+  .nav-bar {
+    display: flex;
+    gap: 2px;
+    margin-bottom: 20px;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px;
+    overflow-x: auto;
+  }
+
+  .nav-tab {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    text-transform: uppercase;
+  }
+  .nav-tab:hover { color: var(--text-primary); background: var(--bg-panel-alt); }
+  .nav-tab.active {
+    color: var(--accent-green);
+    background: var(--accent-green-dim);
+  }
+
+  /* ── PANELS ── */
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .panel-title {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+  }
+
+  .panel-body { padding: 18px; }
+
+  /* ── SUMMARY GRID ── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .summary-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+  .summary-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+  }
+  .summary-card.green::before { background: var(--accent-green); }
+  .summary-card.red::before { background: var(--accent-red); }
+  .summary-card.amber::before { background: var(--accent-amber); }
+  .summary-card.cyan::before { background: var(--accent-cyan); }
+
+  .summary-label {
+    font-size: 0.68rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-weight: 500;
+    margin-bottom: 6px;
+  }
+
+  .summary-value {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .summary-value.positive { color: var(--accent-green); }
+  .summary-value.negative { color: var(--accent-red); }
+  .summary-value.neutral { color: var(--text-primary); }
+
+  .summary-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ── FORMS ── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 4px; }
+
+  .form-group.full-width { grid-column: 1 / -1; }
+
+  .form-label {
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  .form-input, .form-select {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    padding: 9px 12px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color var(--transition);
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--accent-green); }
+  .form-input::placeholder { color: var(--text-dim); }
+
+  .form-select option { background: var(--bg-panel); color: var(--text-primary); }
+
+  .form-actions {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    padding: 9px 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-panel-alt);
+    color: var(--text-secondary);
+  }
+  .btn:hover { border-color: var(--border-focus); color: var(--text-primary); }
+
+  .btn-primary {
+    background: var(--accent-green-dim);
+    border-color: rgba(0, 230, 118, 0.25);
+    color: var(--accent-green);
+  }
+  .btn-primary:hover { background: rgba(0, 230, 118, 0.15); border-color: var(--accent-green); }
+
+  .btn-danger {
+    background: var(--accent-red-dim);
+    border-color: rgba(255, 82, 82, 0.2);
+    color: var(--accent-red);
+  }
+  .btn-danger:hover { background: rgba(255, 82, 82, 0.15); border-color: var(--accent-red); }
+
+  .btn-sm { padding: 5px 12px; font-size: 0.68rem; }
+
+  /* ── TABLES ── */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.82rem;
+  }
+
+  th {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(28, 36, 48, 0.5);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+  }
+
+  tr:hover td { background: rgba(255,255,255,0.015); }
+
+  .text-green { color: var(--accent-green); }
+  .text-red { color: var(--accent-red); }
+  .text-amber { color: var(--accent-amber); }
+  .text-cyan { color: var(--accent-cyan); }
+  .text-dim { color: var(--text-dim); }
+  .text-secondary { color: var(--text-secondary); }
+
+  /* ── STATUS BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 4px 10px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-green { background: var(--accent-green-dim); color: var(--accent-green); border: 1px solid rgba(0,230,118,0.15); }
+  .badge-red { background: var(--accent-red-dim); color: var(--accent-red); border: 1px solid rgba(255,82,82,0.15); }
+  .badge-amber { background: var(--accent-amber-dim); color: var(--accent-amber); border: 1px solid rgba(255,193,7,0.15); }
+  .badge-cyan { background: var(--accent-cyan-dim); color: var(--accent-cyan); border: 1px solid rgba(0,188,212,0.15); }
+
+  .badge-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  /* ── VIEW SECTIONS ── */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* ── TICKER TABS ── */
+  .ticker-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .ticker-tab {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 5px 14px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .ticker-tab:hover { border-color: var(--border-focus); color: var(--text-primary); }
+  .ticker-tab.active { border-color: var(--accent-cyan); color: var(--accent-cyan); background: var(--accent-cyan-dim); }
+
+  /* ── TOAST ── */
+  .toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .toast {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 12px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    animation: toast-in 300ms ease forwards;
+    max-width: 340px;
+  }
+  .toast.success { border-left: 3px solid var(--accent-green); }
+  .toast.error { border-left: 3px solid var(--accent-red); }
+  .toast.info { border-left: 3px solid var(--accent-cyan); }
+
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── LOADING ── */
+  .loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 40px;
+    color: var(--text-dim);
+    font-size: 0.82rem;
+  }
+
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent-green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: var(--text-dim);
+  }
+  .empty-state-icon {
+    font-size: 2rem;
+    margin-bottom: 12px;
+    opacity: 0.3;
+  }
+  .empty-state-text {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+  }
+  .empty-state-sub { font-size: 0.72rem; }
+
+  /* ── MODAL/CONFIRM ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9998;
+    backdrop-filter: blur(2px);
+  }
+  .modal-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    max-width: 400px;
+    width: 90%;
+  }
+  .modal-box h3 {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .modal-box p {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 768px) {
+    html { font-size: 13px; }
+    .app-shell { padding: 10px; }
+    .header { padding: 14px 0 12px; }
+    .summary-grid { grid-template-columns: repeat(2, 1fr); }
+    .form-grid { grid-template-columns: 1fr 1fr; }
+    .panel-body { padding: 14px; }
+  }
+
+  @media (max-width: 480px) {
+    .summary-grid { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── LOGIN SCREEN ── */
+  .login-overlay {
+    position: fixed; inset: 0;
+    background: var(--bg-root);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  .login-overlay.hidden { display: none; }
+
+  .login-box {
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 36px 32px 32px;
+    width: 90%;
+    max-width: 380px;
+    text-align: center;
+  }
+
+  .login-icon {
+    width: 48px; height: 48px;
+    border: 2px solid var(--border);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 20px;
+    color: var(--accent-green);
+    font-size: 1.2rem;
+  }
+
+  .login-title {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .login-sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .login-input {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    width: 100%;
+    padding: 11px 14px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    outline: none;
+    text-align: center;
+    letter-spacing: 2px;
+    transition: border-color var(--transition);
+    margin-bottom: 16px;
+  }
+  .login-input:focus { border-color: var(--accent-green); }
+  .login-input.error { border-color: var(--accent-red); animation: shake 0.4s ease; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+
+  .login-btn {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    width: 100%;
+    padding: 11px;
+    border: 1px solid rgba(0, 230, 118, 0.25);
+    border-radius: var(--radius);
+    background: var(--accent-green-dim);
+    color: var(--accent-green);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .login-btn:hover { background: rgba(0, 230, 118, 0.15); border-color: var(--accent-green); }
+
+  .login-error {
+    font-size: 0.72rem;
+    color: var(--accent-red);
+    margin-top: 12px;
+    min-height: 1.2em;
+  }
+
+  .login-attempts {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="login-icon">◈</div>
+    <div class="login-title">Authentication</div>
+    <div class="login-sub">Enter credentials to access the portfolio monitor</div>
+    <input type="password" class="login-input" id="loginInput" placeholder="••••••••" autocomplete="off" autofocus>
+    <button class="login-btn" id="loginBtn">Authenticate</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-attempts" id="loginAttempts"></div>
+  </div>
+</div>
+
+<div class="app-shell" id="appShell" style="display:none;">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="logo">PORTFOLIO <span>// TOTAL RETURN MONITOR</span></div>
+    </div>
+    <div class="header-meta">
+      <div class="sync-status" id="syncStatus">INITIALIZING...</div>
+      <div id="lastSync" class="text-dim"></div>
+    </div>
+  </header>
+
+  <!-- NAVIGATION -->
+  <nav class="nav-bar">
+    <button class="nav-tab active" data-view="dashboard">Dashboard</button>
+    <button class="nav-tab" data-view="snapshot">+ Snapshot</button>
+    <button class="nav-tab" data-view="quarterly">Quarterly</button>
+    <button class="nav-tab" data-view="history">History</button>
+    <button class="nav-tab" data-view="manage">Manage</button>
+  </nav>
+
+  <!-- ═══════════════════════ DASHBOARD VIEW ═══════════════════════ -->
+  <div class="view active" id="view-dashboard">
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Holdings — Monthly Return</div>
+        <div class="ticker-tabs" id="dashTickerTabs"></div>
+      </div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table id="dashTable">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Price</th>
+                <th>NAV Δ</th>
+                <th>Div/Share</th>
+                <th>Total Return</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="dashBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="dashEmpty" style="display:none;">
+          <div class="empty-state-icon">◇</div>
+          <div class="empty-state-text">No holdings tracked yet</div>
+          <div class="empty-state-sub">Add a snapshot to begin monitoring returns</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ SNAPSHOT VIEW ═══════════════════════ -->
+  <div class="view" id="view-snapshot">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Record Monthly Snapshot</div>
+      </div>
+      <div class="panel-body">
+        <div class="form-grid" id="snapshotForm">
+          <div class="form-group">
+            <label class="form-label">Ticker</label>
+            <div style="display:flex;gap:6px;">
+              <select class="form-select" id="tickerSelect" style="flex:1;">
+                <option value="">Select...</option>
+              </select>
+              <button class="btn btn-sm" onclick="promptNewTicker()" title="Add new ticker">+</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date</label>
+            <input type="date" class="form-input" id="snapDate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Share Price ($)</label>
+            <input type="number" step="0.01" class="form-input" id="snapPrice" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Shares Owned</label>
+            <input type="number" step="0.0001" class="form-input" id="snapShares" placeholder="0.0000">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dividend Received ($)</label>
+            <input type="number" step="0.01" class="form-input" id="snapDividend" placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Funding Injected ($)</label>
+            <input type="number" step="0.01" class="form-input" id="snapFunding" placeholder="0.00">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="submitSnapshot()">Record Snapshot</button>
+            <button class="btn" onclick="clearSnapshotForm()">Clear</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="panel" id="previewPanel" style="display:none;">
+      <div class="panel-header">
+        <div class="panel-title">Preview — Projected Return</div>
+      </div>
+      <div class="panel-body" id="previewBody"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ QUARTERLY VIEW ═══════════════════════ -->
+  <div class="view" id="view-quarterly">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Quarterly Aggregation</div>
+        <div class="ticker-tabs" id="qtrTickerTabs"></div>
+      </div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table id="qtrTable">
+            <thead>
+              <tr>
+                <th>Quarter</th>
+                <th>Ticker</th>
+                <th>NAV Start</th>
+                <th>NAV End</th>
+                <th>NAV Δ %</th>
+                <th>Total Dividends</th>
+                <th>Avg Monthly Return</th>
+              </tr>
+            </thead>
+            <tbody id="qtrBody"></tbody>
+          </table>
+        </div>
+        <div class="empty-state" id="qtrEmpty" style="display:none;">
+          <div class="empty-state-icon">◇</div>
+          <div class="empty-state-text">Need at least 3 snapshots for quarterly data</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ HISTORY VIEW ═══════════════════════ -->
+  <div class="view" id="view-history">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Snapshot History</div>
+        <div class="ticker-tabs" id="histTickerTabs"></div>
+      </div>
+      <div class="panel-body">
+        <div class="table-wrap">
+          <table id="histTable">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Price</th>
+                <th>Shares</th>
+                <th>Dividend</th>
+                <th>Funding</th>
+                <th>Value</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════ MANAGE VIEW ═══════════════════════ -->
+  <div class="view" id="view-manage">
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">Manage Holdings</div>
+      </div>
+      <div class="panel-body">
+        <div class="form-grid" style="max-width:400px;">
+          <div class="form-group">
+            <label class="form-label">Add New Ticker</label>
+            <input type="text" class="form-input" id="newTickerInput" placeholder="e.g. JEPQ" style="text-transform:uppercase;">
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" onclick="addTicker()">Add Ticker</button>
+          </div>
+        </div>
+        <div style="margin-top:24px;">
+          <div class="panel-title" style="margin-bottom:12px;">Active Tickers</div>
+          <div id="tickerList"></div>
+        </div>
+        <div style="margin-top:32px; padding-top:20px; border-top:1px solid var(--border);">
+          <div class="panel-title" style="margin-bottom:12px; color:var(--accent-red);">Danger Zone</div>
+          <button class="btn btn-danger" onclick="confirmResetAll()">Reset All Data</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// AUTHENTICATION
+// ═══════════════════════════════════════════════════════════════════
+const _k = [0x6a,0xc5,0x5f,0x5b,0xb8,0x11,0xe2,0x1d,0x4b,0x0b,0x05,0xbc,0x89,0xd4,0x29,0x7f,0xa8,0xa3,0xd1,0x04,0xa9,0x65,0x76,0x8c,0x46,0x49,0x8e,0x73,0x3b,0xbd,0xf1,0x40];
+let _at = 0;
+const _mx = 5;
+
+async function _h(s) {
+  const d = new TextEncoder().encode(s);
+  const buf = await crypto.subtle.digest('SHA-256', d);
+  return Array.from(new Uint8Array(buf));
+}
+
+function _cmp(a, b) {
+  if (a.length !== b.length) return false;
+  let r = 0;
+  for (let i = 0; i < a.length; i++) r |= a[i] ^ b[i];
+  return r === 0;
+}
+
+async function _auth(pw) {
+  if (_at >= _mx) {
+    document.getElementById('loginError').textContent = 'Too many attempts. Reload to retry.';
+    return;
+  }
+  const h = await _h(pw);
+  if (_cmp(h, _k)) {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.getElementById('appShell').style.display = '';
+    _boot();
+  } else {
+    _at++;
+    const inp = document.getElementById('loginInput');
+    inp.classList.add('error');
+    inp.value = '';
+    setTimeout(() => inp.classList.remove('error'), 500);
+    document.getElementById('loginError').textContent = 'Access denied';
+    document.getElementById('loginAttempts').textContent = `${_mx - _at} attempt${_mx - _at !== 1 ? 's' : ''} remaining`;
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click', () => _auth(document.getElementById('loginInput').value));
+document.getElementById('loginInput').addEventListener('keydown', e => { if (e.key === 'Enter') _auth(e.target.value); });
+
+function _boot() {
+  _initApp();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════
+const CONFIG = {
+  BIN_ID: '69c34c56aa77b81da917f7f1',
+  API_KEY: '$2a$10$McU13F/2f3icjcr.fUB5s.FW9SAg2yxAbHQtQvI6XyamqVKFECV2i',
+  BASE_URL: 'https://api.jsonbin.io/v3/b'
+};
+
+const DEFAULT_DATA = { holdings: {} };
+
+let appData = null;
+let currentDashFilter = 'ALL';
+let currentQtrFilter = 'ALL';
+let currentHistFilter = 'ALL';
+
+// ═══════════════════════════════════════════════════════════════════
+// JSONBIN API
+// ═══════════════════════════════════════════════════════════════════
+async function apiFetch(method, body) {
+  const url = `${CONFIG.BASE_URL}/${CONFIG.BIN_ID}`;
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Access-Key': CONFIG.API_KEY
+    }
+  };
+  if (body) opts.body = JSON.stringify(body);
+
+  setSync('syncing');
+  try {
+    const res = await fetch(url + (method === 'GET' ? '/latest' : ''), opts);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const json = await res.json();
+    setSync('online');
+    return json;
+  } catch (err) {
+    setSync('offline');
+    throw err;
+  }
+}
+
+async function loadData() {
+  try {
+    const json = await apiFetch('GET');
+    const record = json.record;
+    if (!record || !record.holdings) {
+      appData = { ...DEFAULT_DATA };
+      await saveData();
+    } else {
+      appData = record;
+    }
+  } catch (err) {
+    console.error('Load failed:', err);
+    toast('Failed to load data from JSONBin', 'error');
+    appData = { ...DEFAULT_DATA };
+  }
+  renderAll();
+}
+
+async function saveData() {
+  try {
+    await apiFetch('PUT', appData);
+    document.getElementById('lastSync').textContent = 'Last sync: ' + new Date().toLocaleTimeString();
+    return true;
+  } catch (err) {
+    console.error('Save failed:', err);
+    toast('Failed to save — check connection', 'error');
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SYNC STATUS UI
+// ═══════════════════════════════════════════════════════════════════
+function setSync(state) {
+  const dot = document.getElementById('statusDot');
+  const label = document.getElementById('syncStatus');
+  dot.className = 'status-dot ' + (state === 'online' ? '' : state);
+  const labels = { online: 'CONNECTED', offline: 'OFFLINE', syncing: 'SYNCING...' };
+  label.textContent = labels[state] || '';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TOAST NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 300); }, 3500);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + tab.dataset.view).classList.add('active');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════
+// CALCULATION ENGINE
+// ═══════════════════════════════════════════════════════════════════
+
+function calcMonthlyReturn(current, previous) {
+  // Total Monthly Return % = ((Current_Price - Previous_Price) + Dividend_Per_Share) / Previous_Price * 100
+  // Dividend_Per_Share = dividend_received / shares_owned (from PREVIOUS snapshot, before funding changes)
+  // Funding does NOT count as gain — it only increases shares_owned
+
+  const priceDelta = current.share_price - previous.share_price;
+  const divPerShare = current.shares_owned > 0
+    ? current.dividend_received / current.shares_owned
+    : 0;
+  const totalReturnPct = previous.share_price !== 0
+    ? ((priceDelta + divPerShare) / previous.share_price) * 100
+    : 0;
+
+  const navChange = priceDelta;
+  const navChangePct = previous.share_price !== 0
+    ? (priceDelta / previous.share_price) * 100
+    : 0;
+
+  // NAV Health
+  let status = '';
+  let statusType = '';
+  if (priceDelta < 0 && totalReturnPct > 0) {
+    status = 'Yield-Buffered Growth';
+    statusType = 'amber';
+  } else if (priceDelta < 0 && totalReturnPct <= 0) {
+    status = 'NAV Stress';
+    statusType = 'red';
+  } else if (priceDelta >= 0 && totalReturnPct > 0) {
+    status = 'Healthy';
+    statusType = 'green';
+  } else {
+    status = 'Flat';
+    statusType = 'cyan';
+  }
+
+  return { totalReturnPct, navChange, navChangePct, divPerShare, status, statusType };
+}
+
+function getLatestReturns() {
+  const results = [];
+  if (!appData || !appData.holdings) return results;
+
+  for (const [ticker, data] of Object.entries(appData.holdings)) {
+    const snaps = (data.snapshots || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (snaps.length < 2) {
+      results.push({
+        ticker,
+        currentPrice: snaps.length ? snaps[snaps.length - 1].share_price : 0,
+        shares: snaps.length ? snaps[snaps.length - 1].shares_owned : 0,
+        totalReturnPct: null,
+        navChange: null,
+        navChangePct: null,
+        divPerShare: null,
+        status: 'Awaiting Data',
+        statusType: 'cyan',
+        snapCount: snaps.length
+      });
+      continue;
+    }
+    const curr = snaps[snaps.length - 1];
+    const prev = snaps[snaps.length - 2];
+    const calc = calcMonthlyReturn(curr, prev);
+    results.push({
+      ticker,
+      currentPrice: curr.share_price,
+      shares: curr.shares_owned,
+      ...calc,
+      snapCount: snaps.length
+    });
+  }
+  return results;
+}
+
+function getQuarterlyData(filterTicker) {
+  const results = [];
+  if (!appData || !appData.holdings) return results;
+
+  const tickers = filterTicker && filterTicker !== 'ALL'
+    ? [filterTicker]
+    : Object.keys(appData.holdings);
+
+  for (const ticker of tickers) {
+    const data = appData.holdings[ticker];
+    if (!data) continue;
+    const snaps = (data.snapshots || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (snaps.length < 3) continue;
+
+    // Group into quarters (every 3 snapshots)
+    for (let i = 2; i < snaps.length; i += 3) {
+      const qSnaps = snaps.slice(Math.max(0, i - 2), i + 1);
+      if (qSnaps.length < 3) continue;
+
+      const first = qSnaps[0];
+      const last = qSnaps[qSnaps.length - 1];
+      const totalDivs = qSnaps.reduce((s, sn) => s + (sn.dividend_received || 0), 0);
+      const navDelta = last.share_price - first.share_price;
+      const navDeltaPct = first.share_price ? (navDelta / first.share_price) * 100 : 0;
+
+      // Average monthly return across the quarter
+      let monthlyReturns = [];
+      for (let j = 1; j < qSnaps.length; j++) {
+        const c = calcMonthlyReturn(qSnaps[j], qSnaps[j - 1]);
+        monthlyReturns.push(c.totalReturnPct);
+      }
+      const avgReturn = monthlyReturns.length
+        ? monthlyReturns.reduce((a, b) => a + b, 0) / monthlyReturns.length
+        : 0;
+
+      const qLabel = `${first.date.slice(0, 7)} → ${last.date.slice(0, 7)}`;
+
+      results.push({
+        quarter: qLabel,
+        ticker,
+        navStart: first.share_price,
+        navEnd: last.share_price,
+        navDeltaPct,
+        totalDivs,
+        avgReturn
+      });
+    }
+  }
+  return results;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════════
+function renderAll() {
+  renderSummary();
+  renderDashboard();
+  renderQuarterly();
+  renderHistory();
+  renderManage();
+  populateTickerSelect();
+  renderSnapshotPreview();
+}
+
+// ── SUMMARY CARDS ──
+function renderSummary() {
+  const grid = document.getElementById('summaryGrid');
+  const returns = getLatestReturns();
+  const tickers = Object.keys(appData?.holdings || {});
+
+  const totalValue = returns.reduce((s, r) => s + (r.currentPrice * r.shares), 0);
+  const avgReturn = returns.filter(r => r.totalReturnPct !== null);
+  const avg = avgReturn.length
+    ? avgReturn.reduce((s, r) => s + r.totalReturnPct, 0) / avgReturn.length
+    : 0;
+  const yieldBuffered = returns.filter(r => r.status === 'Yield-Buffered Growth').length;
+  const stressed = returns.filter(r => r.status === 'NAV Stress').length;
+
+  grid.innerHTML = `
+    <div class="summary-card cyan">
+      <div class="summary-label">Holdings</div>
+      <div class="summary-value neutral">${tickers.length}</div>
+      <div class="summary-sub">${returns.reduce((s, r) => s + r.snapCount, 0)} total snapshots</div>
+    </div>
+    <div class="summary-card ${avg >= 0 ? 'green' : 'red'}">
+      <div class="summary-label">Avg Monthly Return</div>
+      <div class="summary-value ${avg >= 0 ? 'positive' : 'negative'}">${avg !== 0 ? (avg > 0 ? '+' : '') + avg.toFixed(2) + '%' : '—'}</div>
+      <div class="summary-sub">across ${avgReturn.length} ticker${avgReturn.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="summary-card green">
+      <div class="summary-label">Portfolio Value</div>
+      <div class="summary-value neutral">$${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      <div class="summary-sub">mark-to-market</div>
+    </div>
+    <div class="summary-card ${stressed > 0 ? 'red' : yieldBuffered > 0 ? 'amber' : 'green'}">
+      <div class="summary-label">NAV Health</div>
+      <div class="summary-value ${stressed > 0 ? 'negative' : 'neutral'}">${stressed > 0 ? stressed + ' STRESS' : yieldBuffered > 0 ? yieldBuffered + ' BUFFERED' : 'ALL CLEAR'}</div>
+      <div class="summary-sub">${returns.filter(r => r.status === 'Healthy').length} healthy</div>
+    </div>
+  `;
+}
+
+// ── DASHBOARD TABLE ──
+function renderDashboard() {
+  const returns = getLatestReturns();
+  const tickers = returns.map(r => r.ticker);
+  renderTickerTabs('dashTickerTabs', tickers, currentDashFilter, f => { currentDashFilter = f; renderDashboard(); });
+
+  const filtered = currentDashFilter === 'ALL' ? returns : returns.filter(r => r.ticker === currentDashFilter);
+  const body = document.getElementById('dashBody');
+  const empty = document.getElementById('dashEmpty');
+
+  if (filtered.length === 0) {
+    body.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = filtered.map(r => `
+    <tr>
+      <td style="font-weight:600;">${r.ticker}</td>
+      <td>$${r.currentPrice.toFixed(2)}</td>
+      <td class="${r.navChangePct !== null ? (r.navChangePct >= 0 ? 'text-green' : 'text-red') : 'text-dim'}">
+        ${r.navChangePct !== null ? (r.navChangePct > 0 ? '+' : '') + r.navChangePct.toFixed(2) + '%' : '—'}
+      </td>
+      <td class="text-secondary">${r.divPerShare !== null ? '$' + r.divPerShare.toFixed(4) : '—'}</td>
+      <td class="${r.totalReturnPct !== null ? (r.totalReturnPct >= 0 ? 'text-green' : 'text-red') : 'text-dim'}" style="font-weight:600;">
+        ${r.totalReturnPct !== null ? (r.totalReturnPct > 0 ? '+' : '') + r.totalReturnPct.toFixed(2) + '%' : '—'}
+      </td>
+      <td><span class="badge badge-${r.statusType}"><span class="badge-dot"></span>${r.status}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── QUARTERLY TABLE ──
+function renderQuarterly() {
+  const tickers = Object.keys(appData?.holdings || {});
+  renderTickerTabs('qtrTickerTabs', tickers, currentQtrFilter, f => { currentQtrFilter = f; renderQuarterly(); });
+
+  const data = getQuarterlyData(currentQtrFilter);
+  const body = document.getElementById('qtrBody');
+  const empty = document.getElementById('qtrEmpty');
+
+  if (data.length === 0) {
+    body.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = data.map(q => `
+    <tr>
+      <td>${q.quarter}</td>
+      <td style="font-weight:600;">${q.ticker}</td>
+      <td>$${q.navStart.toFixed(2)}</td>
+      <td>$${q.navEnd.toFixed(2)}</td>
+      <td class="${q.navDeltaPct >= 0 ? 'text-green' : 'text-red'}">${(q.navDeltaPct > 0 ? '+' : '') + q.navDeltaPct.toFixed(2)}%</td>
+      <td class="text-amber">$${q.totalDivs.toFixed(2)}</td>
+      <td class="${q.avgReturn >= 0 ? 'text-green' : 'text-red'}" style="font-weight:600;">${(q.avgReturn > 0 ? '+' : '') + q.avgReturn.toFixed(2)}%</td>
+    </tr>
+  `).join('');
+}
+
+// ── HISTORY TABLE ──
+function renderHistory() {
+  const tickers = Object.keys(appData?.holdings || {});
+  renderTickerTabs('histTickerTabs', tickers, currentHistFilter, f => { currentHistFilter = f; renderHistory(); });
+
+  const body = document.getElementById('histBody');
+  let allSnaps = [];
+
+  for (const [ticker, data] of Object.entries(appData?.holdings || {})) {
+    if (currentHistFilter !== 'ALL' && ticker !== currentHistFilter) continue;
+    for (const snap of (data.snapshots || [])) {
+      allSnaps.push({ ticker, ...snap });
+    }
+  }
+  allSnaps.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (allSnaps.length === 0) {
+    body.innerHTML = `<tr><td colspan="8" class="text-dim" style="text-align:center;padding:30px;">No snapshots recorded</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = allSnaps.map(s => `
+    <tr>
+      <td>${s.date}</td>
+      <td style="font-weight:600;">${s.ticker}</td>
+      <td>$${s.share_price.toFixed(2)}</td>
+      <td>${s.shares_owned.toFixed(4)}</td>
+      <td class="text-amber">$${(s.dividend_received || 0).toFixed(2)}</td>
+      <td class="text-cyan">$${(s.funding_injected || 0).toFixed(2)}</td>
+      <td>$${(s.share_price * s.shares_owned).toFixed(2)}</td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteSnapshot('${s.ticker}','${s.date}')">×</button></td>
+    </tr>
+  `).join('');
+}
+
+// ── MANAGE ──
+function renderManage() {
+  const list = document.getElementById('tickerList');
+  const tickers = Object.keys(appData?.holdings || {});
+  if (tickers.length === 0) {
+    list.innerHTML = '<div class="text-dim" style="font-size:0.82rem;">No tickers added yet</div>';
+    return;
+  }
+  list.innerHTML = tickers.map(t => {
+    const count = (appData.holdings[t].snapshots || []).length;
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+        <div>
+          <span style="font-weight:600;font-family:var(--font-mono);">${t}</span>
+          <span class="text-dim" style="font-size:0.72rem;margin-left:8px;">${count} snapshot${count !== 1 ? 's' : ''}</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="confirmDeleteTicker('${t}')">Remove</button>
+      </div>`;
+  }).join('');
+}
+
+// ── TICKER FILTER TABS ──
+function renderTickerTabs(containerId, tickers, current, onSelect) {
+  const container = document.getElementById(containerId);
+  const items = ['ALL', ...tickers];
+  container.innerHTML = items.map(t =>
+    `<button class="ticker-tab ${t === current ? 'active' : ''}" data-ticker="${t}">${t}</button>`
+  ).join('');
+  container.querySelectorAll('.ticker-tab').forEach(btn => {
+    btn.addEventListener('click', () => onSelect(btn.dataset.ticker));
+  });
+}
+
+// ── TICKER SELECT IN FORM ──
+function populateTickerSelect() {
+  const sel = document.getElementById('tickerSelect');
+  const tickers = Object.keys(appData?.holdings || {});
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Select...</option>' +
+    tickers.map(t => `<option value="${t}" ${t === current ? 'selected' : ''}>${t}</option>`).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SNAPSHOT FORM
+// ═══════════════════════════════════════════════════════════════════
+function setDefaultDate() {
+  const d = new Date();
+  document.getElementById('snapDate').value = d.toISOString().slice(0, 10);
+}
+
+function clearSnapshotForm() {
+  document.getElementById('tickerSelect').value = '';
+  document.getElementById('snapPrice').value = '';
+  document.getElementById('snapShares').value = '';
+  document.getElementById('snapDividend').value = '';
+  document.getElementById('snapFunding').value = '';
+  setDefaultDate();
+  document.getElementById('previewPanel').style.display = 'none';
+}
+
+// Live preview
+['snapPrice', 'snapShares', 'snapDividend', 'snapFunding', 'tickerSelect'].forEach(id => {
+  document.getElementById(id).addEventListener('input', renderSnapshotPreview);
+  document.getElementById(id).addEventListener('change', renderSnapshotPreview);
+});
+
+function renderSnapshotPreview() {
+  const panel = document.getElementById('previewPanel');
+  const body = document.getElementById('previewBody');
+  const ticker = document.getElementById('tickerSelect').value;
+  const price = parseFloat(document.getElementById('snapPrice').value);
+
+  if (!ticker || !price || !appData?.holdings?.[ticker]) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  const snaps = (appData.holdings[ticker].snapshots || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  if (snaps.length === 0) {
+    panel.style.display = '';
+    body.innerHTML = '<div class="text-dim">First snapshot — no previous data to compare</div>';
+    return;
+  }
+
+  const prev = snaps[snaps.length - 1];
+  const shares = parseFloat(document.getElementById('snapShares').value) || prev.shares_owned;
+  const div = parseFloat(document.getElementById('snapDividend').value) || 0;
+
+  const tempCurr = { share_price: price, shares_owned: shares, dividend_received: div };
+  const calc = calcMonthlyReturn(tempCurr, prev);
+
+  panel.style.display = '';
+  body.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;">
+      <div>
+        <div class="summary-label">Prev Price</div>
+        <div style="font-family:var(--font-mono);font-size:1.1rem;">$${prev.share_price.toFixed(2)}</div>
+      </div>
+      <div>
+        <div class="summary-label">NAV Δ</div>
+        <div class="${calc.navChangePct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);font-size:1.1rem;">${(calc.navChangePct > 0 ? '+' : '') + calc.navChangePct.toFixed(2)}%</div>
+      </div>
+      <div>
+        <div class="summary-label">Div/Share</div>
+        <div class="text-amber" style="font-family:var(--font-mono);font-size:1.1rem;">$${calc.divPerShare.toFixed(4)}</div>
+      </div>
+      <div>
+        <div class="summary-label">Total Return</div>
+        <div class="${calc.totalReturnPct >= 0 ? 'text-green' : 'text-red'}" style="font-family:var(--font-mono);font-size:1.1rem;font-weight:700;">${(calc.totalReturnPct > 0 ? '+' : '') + calc.totalReturnPct.toFixed(2)}%</div>
+      </div>
+      <div>
+        <div class="summary-label">Status</div>
+        <span class="badge badge-${calc.statusType}"><span class="badge-dot"></span>${calc.status}</span>
+      </div>
+    </div>
+  `;
+}
+
+async function submitSnapshot() {
+  const ticker = document.getElementById('tickerSelect').value;
+  const date = document.getElementById('snapDate').value;
+  const price = parseFloat(document.getElementById('snapPrice').value);
+  const shares = parseFloat(document.getElementById('snapShares').value);
+  const dividend = parseFloat(document.getElementById('snapDividend').value) || 0;
+  const funding = parseFloat(document.getElementById('snapFunding').value) || 0;
+
+  if (!ticker) { toast('Select a ticker', 'error'); return; }
+  if (!date) { toast('Enter a date', 'error'); return; }
+  if (isNaN(price) || price <= 0) { toast('Enter a valid share price', 'error'); return; }
+  if (isNaN(shares) || shares <= 0) { toast('Enter shares owned', 'error'); return; }
+
+  if (!appData.holdings[ticker]) {
+    appData.holdings[ticker] = { snapshots: [] };
+  }
+
+  // Check for duplicate date
+  const existing = appData.holdings[ticker].snapshots.findIndex(s => s.date === date);
+  if (existing !== -1) {
+    appData.holdings[ticker].snapshots[existing] = { date, share_price: price, shares_owned: shares, dividend_received: dividend, funding_injected: funding };
+    toast(`Updated snapshot for ${ticker} on ${date}`, 'success');
+  } else {
+    appData.holdings[ticker].snapshots.push({ date, share_price: price, shares_owned: shares, dividend_received: dividend, funding_injected: funding });
+    toast(`Snapshot recorded for ${ticker}`, 'success');
+  }
+
+  // Sort snapshots by date
+  appData.holdings[ticker].snapshots.sort((a, b) => a.date.localeCompare(b.date));
+
+  const saved = await saveData();
+  if (saved) {
+    clearSnapshotForm();
+    renderAll();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// TICKER MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+function promptNewTicker() {
+  const input = prompt('Enter new ticker symbol (e.g. JEPQ):');
+  if (input) {
+    const t = input.trim().toUpperCase();
+    if (t && !appData.holdings[t]) {
+      appData.holdings[t] = { snapshots: [] };
+      saveData().then(() => { renderAll(); toast(`Added ${t}`, 'success'); });
+    } else if (appData.holdings[t]) {
+      toast(`${t} already exists`, 'error');
+    }
+  }
+}
+
+function addTicker() {
+  const input = document.getElementById('newTickerInput');
+  const t = input.value.trim().toUpperCase();
+  if (!t) { toast('Enter a ticker symbol', 'error'); return; }
+  if (appData.holdings[t]) { toast(`${t} already exists`, 'error'); return; }
+  appData.holdings[t] = { snapshots: [] };
+  input.value = '';
+  saveData().then(() => { renderAll(); toast(`Added ${t}`, 'success'); });
+}
+
+function confirmDeleteTicker(ticker) {
+  showModal(
+    `Remove ${ticker}?`,
+    `This will delete all ${(appData.holdings[ticker]?.snapshots || []).length} snapshots for ${ticker}. This cannot be undone.`,
+    () => {
+      delete appData.holdings[ticker];
+      saveData().then(() => { renderAll(); toast(`Removed ${ticker}`, 'success'); });
+    }
+  );
+}
+
+function deleteSnapshot(ticker, date) {
+  showModal(
+    'Delete Snapshot?',
+    `Remove the ${date} snapshot for ${ticker}?`,
+    () => {
+      if (appData.holdings[ticker]) {
+        appData.holdings[ticker].snapshots = appData.holdings[ticker].snapshots.filter(s => s.date !== date);
+        saveData().then(() => { renderAll(); toast('Snapshot deleted', 'success'); });
+      }
+    }
+  );
+}
+
+function confirmResetAll() {
+  showModal(
+    'Reset All Data?',
+    'This will permanently erase all holdings and snapshots from the remote bin. This cannot be undone.',
+    () => {
+      appData = { ...DEFAULT_DATA, holdings: {} };
+      saveData().then(() => { renderAll(); toast('All data reset', 'success'); });
+    }
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// MODAL
+// ═══════════════════════════════════════════════════════════════════
+function showModal(title, message, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay';
+  overlay.innerHTML = `
+    <div class="modal-box">
+      <h3>${title}</h3>
+      <p>${message}</p>
+      <div class="modal-actions">
+        <button class="btn" id="modalCancel">Cancel</button>
+        <button class="btn btn-danger" id="modalConfirm">Confirm</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#modalCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#modalConfirm').onclick = () => { overlay.remove(); onConfirm(); };
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════════
+function _initApp() {
+  setDefaultDate();
+  loadData();
+}
+</script>
+</body>
+</html>
