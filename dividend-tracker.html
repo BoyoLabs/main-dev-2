@@ -427,8 +427,8 @@ function renderTickers() {
         legend: {
           position: "bottom",
           labels: {
-            color: "#d4d4dc",
-            font: { family: "'Azeret Mono',monospace", size: 10, weight: "600" },
+            color: "#e4e4eb",
+            font: { family: "'Azeret Mono',monospace", size: 11, weight: "600" },
             padding: 14,
             boxWidth: 10,
             boxHeight: 10,
@@ -441,6 +441,7 @@ function renderTickers() {
                 return {
                   text: label + "  " + pct + "%",
                   fillStyle: data.datasets[0].backgroundColor[i],
+                  fontColor: "#e4e4eb",
                   strokeStyle: "transparent",
                   hidden: false,
                   index: i
