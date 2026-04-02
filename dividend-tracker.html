@@ -65,16 +65,7 @@
   .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 10px 10px;margin-bottom:16px}
   .chart-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin-bottom:10px;padding-left:4px}
   .chart-container{position:relative;width:100%;height:200px}
-
-  /* ── Top tickers ── */
-  .tickers{margin-bottom:16px}
-  .tickers-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin-bottom:8px}
-  .ticker-row{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;margin-bottom:5px;
-    display:flex;align-items:center;justify-content:space-between;transition:background .15s}
-  .ticker-row:hover{background:var(--card-hover)}
-  .ticker-name{font-family:var(--font-display);font-weight:700;font-size:.88rem}
-  .ticker-count{font-size:.65rem;color:var(--text-dim);margin-left:8px}
-  .ticker-amt{font-family:var(--font-display);font-weight:600;font-size:.88rem;color:var(--green)}
+  .pie-container{height:260px}
 
   /* ── Historical tables ── */
   .hist-section{margin-bottom:24px}
@@ -186,9 +177,9 @@
       <div class="chart-container"><canvas id="mainChart"></canvas></div>
     </div>
 
-    <div class="tickers" id="tickers-wrap">
-      <div class="tickers-title">By Holding</div>
-      <div id="tickers-list"></div>
+    <div class="chart-wrap" id="tickers-wrap">
+      <div class="chart-title">Dividends by Holding</div>
+      <div class="chart-container pie-container"><canvas id="pieChart"></canvas></div>
     </div>
 
     <div class="empty" id="dash-empty" style="display:none">
@@ -300,6 +291,7 @@
 const SKEY = "div-tracker-v2";
 let dividends = []; // { id, ticker, date, amount }
 let mainChart = null;
+let pieChart = null;
 
 function loadState() {
   try {
@@ -399,19 +391,83 @@ function renderChart() {
 }
 
 function renderTickers() {
+  const ctx = document.getElementById("pieChart").getContext("2d");
+  if (pieChart) pieChart.destroy();
+  if (!dividends.length) { pieChart = null; return; }
+
   const map = {};
-  dividends.forEach(d => {
-    if (!map[d.ticker]) map[d.ticker] = { total: 0, count: 0 };
-    map[d.ticker].total += d.amount;
-    map[d.ticker].count++;
+  dividends.forEach(d => { map[d.ticker] = (map[d.ticker] || 0) + d.amount; });
+  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
+  const total = sorted.reduce((s, e) => s + e[1], 0);
+
+  const palette = [
+    "#34d399","#fbbf24","#60a5fa","#f87171","#a78bfa",
+    "#fb923c","#2dd4bf","#e879f9","#facc15","#4ade80",
+    "#f472b6","#38bdf8","#c084fc","#fb7185","#34d399"
+  ];
+
+  pieChart = new Chart(ctx, {
+    type: "doughnut",
+    data: {
+      labels: sorted.map(e => e[0]),
+      datasets: [{
+        data: sorted.map(e => +e[1].toFixed(2)),
+        backgroundColor: sorted.map((_, i) => palette[i % palette.length]),
+        borderColor: "#14141b",
+        borderWidth: 2,
+        hoverBorderColor: "#d4d4dc",
+        hoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: "55%",
+      plugins: {
+        legend: {
+          position: "bottom",
+          labels: {
+            color: "#d4d4dc",
+            font: { family: "'Azeret Mono',monospace", size: 10, weight: "600" },
+            padding: 14,
+            boxWidth: 10,
+            boxHeight: 10,
+            borderRadius: 2,
+            generateLabels: function(chart) {
+              const data = chart.data;
+              return data.labels.map((label, i) => {
+                const value = data.datasets[0].data[i];
+                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
+                return {
+                  text: label + "  " + pct + "%",
+                  fillStyle: data.datasets[0].backgroundColor[i],
+                  strokeStyle: "transparent",
+                  hidden: false,
+                  index: i
+                };
+              });
+            }
+          }
+        },
+        tooltip: {
+          backgroundColor: "#14141b",
+          borderColor: "#2a2a38",
+          borderWidth: 1,
+          titleFont: { family: "'Azeret Mono',monospace", size: 11 },
+          bodyFont: { family: "'Azeret Mono',monospace", size: 11 },
+          titleColor: "#d4d4dc",
+          bodyColor: "#d4d4dc",
+          padding: 10,
+          callbacks: {
+            label: function(c) {
+              const pct = total > 0 ? ((c.parsed / total) * 100).toFixed(1) : "0.0";
+              return " " + fmt$(c.parsed) + "  ·  " + pct + "%";
+            }
+          }
+        }
+      }
+    }
   });
-  const list = Object.entries(map).map(([ticker, v]) => ({ ticker, ...v })).sort((a, b) => b.total - a.total);
-  document.getElementById("tickers-list").innerHTML = list.map(t =>
-    `<div class="ticker-row">
-      <div><span class="ticker-name">${t.ticker}</span><span class="ticker-count">${t.count}×</span></div>
-      <div class="ticker-amt">${fmt$(t.total)}</div>
-    </div>`
-  ).join("");
 }
 
 /* ═══ HISTORICAL ═══ */
