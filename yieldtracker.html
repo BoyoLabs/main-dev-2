@@ -269,7 +269,7 @@
     </div>
     <div class="backup-card">
       <h3>Import Data</h3>
-      <p>Upload a previously exported JSON backup. Merges with existing data — duplicates are skipped.</p>
+      <p>Upload a previously exported JSON backup. This will replace your current data with the backup.</p>
       <div class="file-input-wrap">
         <button class="btn btn-outline">Choose .json File</button>
         <input type="file" accept=".json,application/json" onchange="importJSON(event)">
@@ -308,11 +308,11 @@ let txType = "buy";
 let filterType = "all";
 let mainChart = null;
 
-async function loadState() {
+function loadState() {
   try {
-    const r = await window.storage.get(SKEY);
-    if (r) {
-      const d = JSON.parse(r.value);
+    const raw = localStorage.getItem(SKEY);
+    if (raw) {
+      const d = JSON.parse(raw);
       if (d.transactions) { transactions = d.transactions; }
       else {
         transactions = [];
@@ -322,8 +322,8 @@ async function loadState() {
     }
   } catch {}
 }
-async function saveState() {
-  try { await window.storage.set(SKEY, JSON.stringify({transactions})); } catch {}
+function saveState() {
+  try { localStorage.setItem(SKEY, JSON.stringify({transactions})); } catch {}
 }
 function uid() { return Math.random().toString(36).slice(2,10); }
 
@@ -551,13 +551,14 @@ function importJSON(e) {
   reader.onload = ev => {
     try {
       const d = JSON.parse(ev.target.result);
-      const ids = new Set(transactions.map(t=>t.id));
-      let added = 0;
       const incoming = d.transactions ? [...d.transactions] : [];
       if (d.purchases) d.purchases.forEach(p=>incoming.push({id:p.id,type:"buy",ticker:p.ticker,date:p.date,shares:p.shares,price:p.price}));
       if (d.dividends) d.dividends.forEach(v=>incoming.push({id:v.id,type:"dividend",ticker:v.ticker,date:v.date,amount:v.amount}));
-      for (const t of incoming) if (!ids.has(t.id)){transactions.push(t);added++;}
-      saveState(); renderAll(); toast("Imported — "+added+" new records");
+      if (!incoming.length) return toast("No transactions found in file");
+      transactions = incoming;
+      saveState();
+      renderAll();
+      toast("Restored " + incoming.length + " transactions");
     } catch{toast("Invalid file");}
   };
   reader.readAsText(file);
@@ -584,9 +585,9 @@ function toast(msg) {
   clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove("show"),2200);
 }
 
-(async()=>{
+(function init(){
   document.getElementById("tx-date").value=new Date().toISOString().split("T")[0];
-  await loadState(); renderAll();
+  loadState(); renderAll();
 })();
 </script>
 </body>
