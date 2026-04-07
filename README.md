@@ -3,6 +3,10 @@ SPA's mostly. My first repo for development was main-dev, but now that one is ge
 
 Note: just because something is in prod does not mean it is working necessarily, it just means that I am out of the initial attempts to get it running at all whatsoever. If its not working the way I want, it may still end up abandoned here.
 
+## editor.html
+* a simple text editor for coding
+* github.io link: https://boyolabs.github.io/prod-2/editor.html
+
 ## dividend-tracker.html
 * an income dividend traders tracker
 * github.io link: https://boyolabs.github.io/prod-2/dividend-tracker.html
