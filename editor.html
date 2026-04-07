@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Void Editor</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --gutter: #1e1e2c;
+    --border: #2a2a3a;
+    --text: #c8c8d8;
+    --text-dim: #5a5a72;
+    --accent: #7b6ff0;
+    --accent-glow: #7b6ff033;
+    --line-num: #3a3a50;
+    --line-active: #7b6ff0;
+    --scrollbar: #2a2a3a;
+    --scrollbar-thumb: #3a3a50;
+    --danger: #f05a6a;
+    --success: #5af0a0;
+    --toolbar-h: 54px;
+    --status-h: 32px;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body {
+    height: 100%; width: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--toolbar-h);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding: 0 10px; gap: 6px;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .toolbar .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700; font-size: 15px;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+    margin-right: auto;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  .logo-dot {
+    width: 8px; height: 8px;
+    background: var(--accent);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--accent), 0 0 20px var(--accent-glow);
+    animation: pulse 2.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .toolbar button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 10px;
+    width: 38px; height: 38px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .toolbar button:active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    transform: scale(0.92);
+  }
+
+  .toolbar button svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ── EDITOR AREA ── */
+  .editor-wrap {
+    position: fixed;
+    top: var(--toolbar-h);
+    bottom: var(--status-h);
+    left: 0; right: 0;
+    display: flex;
+    overflow: hidden;
+  }
+
+  .line-numbers {
+    width: 48px; min-width: 48px;
+    background: var(--gutter);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+    padding: 12px 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .line-numbers pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--line-num);
+    text-align: right;
+    padding-right: 10px;
+    margin: 0;
+  }
+
+  .editor-container {
+    flex: 1;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .editor-container::-webkit-scrollbar { width: 6px; height: 6px; }
+  .editor-container::-webkit-scrollbar-track { background: transparent; }
+  .editor-container::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+
+  textarea#editor {
+    width: 100%;
+    min-height: 100%;
+    background: transparent;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    border: none; outline: none;
+    resize: none;
+    padding: 12px 14px;
+    tab-size: 2;
+    -moz-tab-size: 2;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+    caret-color: var(--accent);
+  }
+
+  textarea#editor::selection { background: var(--accent-glow); }
+  textarea#editor::-moz-selection { background: var(--accent-glow); }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: var(--status-h);
+    padding-bottom: var(--safe-bottom);
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center;
+    padding-left: 12px; padding-right: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+    gap: 14px;
+    z-index: 100;
+  }
+
+  .status-bar .sep { color: var(--border); }
+  .status-bar .filename { color: var(--accent); font-weight: 500; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s;
+  }
+
+  .modal-overlay.active { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: calc(100% - 40px);
+    max-width: 340px;
+    padding: 24px;
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.25s;
+  }
+
+  .modal-overlay.active .modal { transform: translateY(0) scale(1); }
+
+  .modal h3 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 600;
+    color: var(--text); margin-bottom: 6px;
+  }
+
+  .modal p { font-size: 12px; color: var(--text-dim); margin-bottom: 16px; }
+
+  .modal input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 12px 14px;
+    outline: none;
+    margin-bottom: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .modal input[type="text"]:focus { border-color: var(--accent); }
+
+  .modal-actions {
+    display: flex; gap: 10px;
+  }
+
+  .modal-actions button {
+    flex: 1;
+    padding: 11px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+
+  .modal-actions .cancel { background: var(--surface2); color: var(--text-dim); }
+  .modal-actions .confirm { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .modal-actions button:active { transform: scale(0.95); }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed;
+    top: calc(var(--toolbar-h) + 10px);
+    left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--success);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 300;
+    pointer-events: none;
+  }
+
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* hidden file input */
+  #file-input { display: none; }
+</style>
+</head>
+<body>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="logo"><div class="logo-dot"></div>void</div>
+  <button id="btn-upload" aria-label="Upload file">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  </button>
+  <button id="btn-download" aria-label="Download file">
+    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+  </button>
+  <button id="btn-new" aria-label="New file">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- Editor -->
+<div class="editor-wrap">
+  <div class="line-numbers"><pre id="line-nums">1</pre></div>
+  <div class="editor-container" id="editor-scroll">
+    <textarea id="editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" placeholder="// start typing..."></textarea>
+  </div>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar">
+  <span id="stat-lines">Ln 1</span>
+  <span class="sep">·</span>
+  <span id="stat-col">Col 1</span>
+  <span class="sep">·</span>
+  <span id="stat-chars">0 chars</span>
+  <span class="filename" id="stat-file">untitled</span>
+</div>
+
+<!-- Download Modal -->
+<div class="modal-overlay" id="modal-download">
+  <div class="modal">
+    <h3>Save file</h3>
+    <p>Enter the full filename with extension</p>
+    <input type="text" id="download-name" placeholder="script.js" />
+    <div class="modal-actions">
+      <button class="cancel" id="modal-cancel">Cancel</button>
+      <button class="confirm" id="modal-confirm">Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Hidden upload input -->
+<input type="file" id="file-input" />
+
+<script>
+const editor = document.getElementById('editor');
+const lineNums = document.getElementById('line-nums');
+const editorScroll = document.getElementById('editor-scroll');
+const lineNumbersDiv = document.querySelector('.line-numbers');
+const statLines = document.getElementById('stat-lines');
+const statCol = document.getElementById('stat-col');
+const statChars = document.getElementById('stat-chars');
+const statFile = document.getElementById('stat-file');
+const modalOverlay = document.getElementById('modal-download');
+const downloadNameInput = document.getElementById('download-name');
+const fileInput = document.getElementById('file-input');
+const toastEl = document.getElementById('toast');
+
+let currentFilename = 'untitled';
+
+function updateLineNumbers() {
+  const count = editor.value.split('\n').length;
+  let html = '';
+  for (let i = 1; i <= count; i++) html += i + '\n';
+  lineNums.textContent = html;
+}
+
+function updateStatus() {
+  const val = editor.value;
+  const lines = val.split('\n').length;
+  const pos = editor.selectionStart;
+  const before = val.substring(0, pos);
+  const lineNum = before.split('\n').length;
+  const colNum = pos - before.lastIndexOf('\n');
+  statLines.textContent = `Ln ${lineNum}`;
+  statCol.textContent = `Col ${colNum}`;
+  statChars.textContent = `${val.length} chars`;
+}
+
+function syncScroll() {
+  lineNumbersDiv.scrollTop = editorScroll.scrollTop;
+}
+
+// Sync scroll between line numbers and editor
+editorScroll.addEventListener('scroll', syncScroll);
+
+editor.addEventListener('input', () => { updateLineNumbers(); updateStatus(); });
+editor.addEventListener('keyup', updateStatus);
+editor.addEventListener('click', updateStatus);
+editor.addEventListener('scroll', () => { lineNumbersDiv.scrollTop = editor.scrollTop; });
+
+// Tab key support
+editor.addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    updateLineNumbers();
+    updateStatus();
+  }
+});
+
+// Upload
+document.getElementById('btn-upload').addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    editor.value = ev.target.result;
+    currentFilename = file.name;
+    statFile.textContent = currentFilename;
+    updateLineNumbers();
+    updateStatus();
+    showToast('Opened ' + file.name);
+  };
+  reader.readAsText(file);
+  fileInput.value = '';
+});
+
+// Download modal
+document.getElementById('btn-download').addEventListener('click', () => {
+  downloadNameInput.value = currentFilename === 'untitled' ? '' : currentFilename;
+  modalOverlay.classList.add('active');
+  setTimeout(() => downloadNameInput.focus(), 300);
+});
+
+document.getElementById('modal-cancel').addEventListener('click', () => modalOverlay.classList.remove('active'));
+modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) modalOverlay.classList.remove('active'); });
+
+document.getElementById('modal-confirm').addEventListener('click', doDownload);
+downloadNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doDownload(); });
+
+function doDownload() {
+  const name = downloadNameInput.value.trim();
+  if (!name) { downloadNameInput.style.borderColor = 'var(--danger)'; setTimeout(() => downloadNameInput.style.borderColor = '', 1000); return; }
+  const blob = new Blob([editor.value], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  currentFilename = name;
+  statFile.textContent = name;
+  modalOverlay.classList.remove('active');
+  showToast('Saved ' + name);
+}
+
+// New file
+document.getElementById('btn-new').addEventListener('click', () => {
+  editor.value = '';
+  currentFilename = 'untitled';
+  statFile.textContent = 'untitled';
+  updateLineNumbers();
+  updateStatus();
+  editor.focus();
+  showToast('New file');
+});
+
+function showToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2000);
+}
+
+// Init
+updateLineNumbers();
+updateStatus();
+</script>
+</body>
+</html>
