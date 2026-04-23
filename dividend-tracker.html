@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Dividend Tracker</title>
+<title>Trade Tracker</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Azeret+Mono:wght@400;500;600;700&family=Nunito+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -15,6 +15,7 @@
     --green:#34d399;--green-dim:#065f46;--green-glow:rgba(52,211,153,.12);
     --amber:#fbbf24;--amber-dim:#78350f;--amber-glow:rgba(251,191,36,.10);
     --red:#f87171;--red-dim:#7f1d1d;--red-glow:rgba(248,113,113,.10);
+    --blue:#60a5fa;--blue-glow:rgba(96,165,250,.12);
     --font-display:'Azeret Mono',monospace;
     --font-body:'Nunito Sans',sans-serif;
     --radius:10px;--radius-sm:6px;
@@ -52,19 +53,32 @@
   /* ── Hero stat ── */
   .hero{text-align:center;padding:28px 0 8px}
   .hero-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:600;margin-bottom:6px}
-  .hero-value{font-family:var(--font-display);font-size:2.6rem;font-weight:700;letter-spacing:-.04em;color:var(--green);line-height:1}
+  .hero-value{font-family:var(--font-display);font-size:2.6rem;font-weight:700;letter-spacing:-.04em;color:var(--green);line-height:1;transition:color .2s}
+  .hero-value.negative{color:var(--red)}
   .hero-sub{font-size:.72rem;color:var(--text-dim);margin-top:8px;font-family:var(--font-display)}
+
+  /* ── Breakdown row (dedicated to hero) ── */
+  .breakdown{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+  .breakdown-cell{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;text-align:left}
+  .breakdown-cell .bc-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.08em;color:var(--text-dim);font-weight:600;display:flex;align-items:center;gap:6px}
+  .breakdown-cell .bc-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+  .breakdown-cell .bc-value{font-family:var(--font-display);font-size:1.05rem;font-weight:700;letter-spacing:-.02em;margin-top:4px}
+  .bc-value.green{color:var(--green)}
+  .bc-value.red{color:var(--red)}
+  .bc-value.amber{color:var(--amber)}
 
   /* ── Stat row ── */
   .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:16px 0}
   .stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 10px;text-align:center}
   .stat-label{font-size:.58rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin-bottom:3px}
   .stat-value{font-family:var(--font-display);font-size:1rem;font-weight:700;letter-spacing:-.02em}
+  .stat-value.green{color:var(--green)}
+  .stat-value.red{color:var(--red)}
 
   /* ── Chart ── */
   .chart-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px 10px 10px;margin-bottom:16px}
   .chart-title{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:600;margin-bottom:10px;padding-left:4px}
-  .chart-container{position:relative;width:100%;height:200px}
+  .chart-container{position:relative;width:100%;height:220px}
   .pie-container{height:260px}
 
   /* ── Historical tables ── */
@@ -75,11 +89,22 @@
     background:var(--card);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:4px;transition:background .15s}
   .hist-row:hover{background:var(--card-hover)}
   .hist-label{font-family:var(--font-display);font-size:.8rem;font-weight:600}
-  .hist-bar-wrap{flex:1;margin:0 14px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden}
-  .hist-bar{height:100%;background:var(--green);border-radius:3px;transition:width .4s ease}
-  .hist-amt{font-family:var(--font-display);font-size:.8rem;font-weight:600;color:var(--green);min-width:70px;text-align:right}
+  .hist-bar-wrap{flex:1;margin:0 14px;height:6px;background:var(--surface);border-radius:3px;overflow:hidden;position:relative}
+  .hist-bar{height:100%;border-radius:3px;transition:width .4s ease;position:absolute;top:0;left:0}
+  .hist-bar.pos{background:var(--green)}
+  .hist-bar.neg{background:var(--red)}
+  .hist-amt{font-family:var(--font-display);font-size:.8rem;font-weight:600;min-width:80px;text-align:right}
+  .hist-amt.green{color:var(--green)}
+  .hist-amt.red{color:var(--red)}
 
-  /* ── Transactions ── */
+  /* ── Add form: type toggle ── */
+  .type-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:4px;margin-bottom:14px}
+  .type-toggle button{background:none;border:none;color:var(--text-dim);font-family:var(--font-display);
+    font-size:.75rem;font-weight:600;letter-spacing:-.01em;padding:9px 10px;border-radius:var(--radius-sm);cursor:pointer;
+    transition:color .2s,background .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+  .type-toggle button.active{background:var(--card);color:var(--text);box-shadow:0 1px 0 rgba(255,255,255,.03)}
+  .type-toggle button .dot{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.6}
+
   .form-section{margin-bottom:20px}
   .section-title{font-family:var(--font-display);font-size:.78rem;font-weight:600;letter-spacing:-.01em;margin-bottom:12px;display:flex;align-items:center;gap:8px}
   .section-title::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -92,6 +117,9 @@
     -webkit-appearance:none;appearance:none}
   .field input:focus{border-color:var(--green)}
   .field input::placeholder{color:var(--text-faint)}
+  .field-hint{font-size:.65rem;color:var(--text-dim);margin-top:4px;font-family:var(--font-display)}
+  .field-hint.green{color:var(--green)}
+  .field-hint.red{color:var(--red)}
 
   .btn{font-family:var(--font-display);font-weight:600;font-size:.78rem;letter-spacing:-.01em;
     border:none;border-radius:var(--radius-sm);padding:11px 16px;cursor:pointer;transition:all .2s;width:100%}
@@ -103,18 +131,36 @@
   .btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(248,113,113,.2)}
   .btn-danger:hover{background:rgba(127,29,29,.8)}
 
+  /* ── Transaction list ── */
   .tx-list{display:flex;flex-direction:column;gap:5px}
   .tx{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px;
     display:flex;align-items:center;gap:10px;transition:background .15s}
   .tx:hover{background:var(--card-hover)}
-  .tx-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+  .tx-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+  .tx-dot.trade-pos{background:var(--green)}
+  .tx-dot.trade-neg{background:var(--red)}
+  .tx-dot.div{background:var(--amber)}
   .tx-info{flex:1;min-width:0}
-  .tx-primary{font-family:var(--font-display);font-weight:600;font-size:.82rem}
-  .tx-secondary{font-size:.68rem;color:var(--text-dim)}
-  .tx-amount{font-family:var(--font-display);font-weight:600;font-size:.88rem;color:var(--green);white-space:nowrap}
+  .tx-primary{font-family:var(--font-display);font-weight:600;font-size:.82rem;display:flex;align-items:center;gap:6px}
+  .tx-tag{font-size:.55rem;text-transform:uppercase;letter-spacing:.06em;padding:2px 5px;border-radius:3px;font-weight:700;font-family:var(--font-display)}
+  .tx-tag.trade{background:var(--green-glow);color:var(--green)}
+  .tx-tag.div{background:var(--amber-glow);color:var(--amber)}
+  .tx-secondary{font-size:.68rem;color:var(--text-dim);margin-top:2px}
+  .tx-amount{font-family:var(--font-display);font-weight:600;font-size:.88rem;white-space:nowrap;text-align:right}
+  .tx-amount.green{color:var(--green)}
+  .tx-amount.red{color:var(--red)}
+  .tx-amount-sub{font-size:.62rem;color:var(--text-dim);font-weight:500}
   .tx-delete{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:4px;border-radius:4px;transition:color .15s;flex-shrink:0}
   .tx-delete:hover{color:var(--red)}
   .tx-delete svg{width:14px;height:14px;stroke-width:2;fill:none;stroke:currentColor}
+
+  /* ── Filter chips ── */
+  .filter-chips{display:flex;gap:6px;margin-bottom:10px}
+  .chip{background:var(--card);border:1px solid var(--border);color:var(--text-dim);
+    font-family:var(--font-display);font-size:.68rem;font-weight:600;letter-spacing:.02em;
+    padding:6px 12px;border-radius:999px;cursor:pointer;transition:all .15s}
+  .chip.active{background:var(--green-glow);border-color:var(--green);color:var(--green)}
+  .chip:not(.active):hover{color:var(--text);border-color:var(--border-lit)}
 
   /* ── Backup ── */
   .backup-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px}
@@ -146,7 +192,7 @@
   .modal.show{display:flex;align-items:flex-end;justify-content:center}
   @keyframes fadeIn{from{opacity:0}to{opacity:1}}
   .modal-content{background:var(--card);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;
-    width:100%;max-height:80dvh;overflow-y:auto;padding:20px 12px 32px;animation:slideUp .3s ease}
+    width:100%;max-width:520px;max-height:80dvh;overflow-y:auto;padding:20px 12px 32px;animation:slideUp .3s ease}
   @keyframes slideUp{from{transform:translateY(100%)}to{transform:none}}
   .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
   .modal-title{font-family:var(--font-display);font-size:.95rem;font-weight:600;color:var(--text)}
@@ -155,11 +201,14 @@
   .modal-close:hover{color:var(--text)}
   .modal-details{display:flex;flex-direction:column;gap:8px}
   .detail-tx{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;
-    display:flex;justify-content:space-between;align-items:center}
-  .detail-tx-left{flex:1}
-  .detail-ticker{font-family:var(--font-display);font-weight:600;font-size:.8rem;color:var(--text)}
+    display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .detail-tx-left{flex:1;min-width:0}
+  .detail-ticker{font-family:var(--font-display);font-weight:600;font-size:.8rem;color:var(--text);display:flex;align-items:center;gap:6px}
   .detail-date{font-size:.68rem;color:var(--text-dim);margin-top:2px}
-  .detail-amount{font-family:var(--font-display);font-weight:600;font-size:.85rem;color:var(--green)}
+  .detail-amount{font-family:var(--font-display);font-weight:600;font-size:.85rem;white-space:nowrap;text-align:right}
+  .detail-amount.green{color:var(--green)}
+  .detail-amount.red{color:var(--red)}
+  .detail-amount-sub{font-size:.62rem;color:var(--text-dim);font-weight:500}
 
   .hist-row.clickable{cursor:pointer;transition:background .15s,border-color .15s}
   .hist-row.clickable:hover{background:var(--card-hover);border-color:var(--green)}
@@ -170,15 +219,26 @@
 <div class="app">
   <header>
     <div class="logo">$</div>
-    <h1><span>Dividend</span>Tracker</h1>
+    <h1><span>Trade</span>Tracker</h1>
   </header>
 
   <!-- ═══ DASHBOARD ═══ -->
   <div id="tab-dash" class="screen active">
     <div class="hero">
-      <div class="hero-label">Total Dividends Received</div>
+      <div class="hero-label">Total Realized P/L</div>
       <div class="hero-value" id="h-total">$0.00</div>
       <div class="hero-sub" id="h-sub"></div>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-cell">
+        <div class="bc-label"><span class="bc-dot" style="background:var(--green)"></span>Trade P/L</div>
+        <div class="bc-value green" id="h-trades">$0.00</div>
+      </div>
+      <div class="breakdown-cell">
+        <div class="bc-label"><span class="bc-dot" style="background:var(--amber)"></span>Dividends</div>
+        <div class="bc-value amber" id="h-divs">$0.00</div>
+      </div>
     </div>
 
     <div class="stats">
@@ -187,28 +247,28 @@
         <div class="stat-value green" id="s-year">$0</div>
       </div>
       <div class="stat">
-        <div class="stat-label">This Month</div>
-        <div class="stat-value" id="s-month">$0</div>
+        <div class="stat-label">Win Rate</div>
+        <div class="stat-value" id="s-winrate">—</div>
       </div>
       <div class="stat">
-        <div class="stat-label">Payments</div>
+        <div class="stat-label">Entries</div>
         <div class="stat-value" id="s-count">0</div>
       </div>
     </div>
 
     <div class="chart-wrap" id="chart-wrap">
-      <div class="chart-title">Cumulative Dividends Over Time</div>
+      <div class="chart-title">Cumulative P/L Over Time</div>
       <div class="chart-container"><canvas id="mainChart"></canvas></div>
     </div>
 
     <div class="chart-wrap" id="tickers-wrap">
-      <div class="chart-title">Dividends by Holding</div>
+      <div class="chart-title">P/L by Holding</div>
       <div class="chart-container pie-container"><canvas id="pieChart"></canvas></div>
     </div>
 
     <div class="empty" id="dash-empty" style="display:none">
       <div class="empty-icon">◇</div>
-      <p>Add dividend payments to start<br>tracking your income.</p>
+      <p>Log a trade or dividend to start<br>tracking your P/L.</p>
     </div>
   </div>
 
@@ -232,35 +292,77 @@
     </div>
   </div>
 
-  <!-- ═══ ADD DIVIDENDS ═══ -->
+  <!-- ═══ ADD ═══ -->
   <div id="tab-add" class="screen">
-    <div class="tab-label">Dividends</div>
+    <div class="tab-label">Log Entry</div>
 
     <div class="form-section">
-      <div class="section-title">Add Dividend</div>
-      <div class="form-row">
-        <div class="field">
-          <label>Ticker</label>
-          <input type="text" id="tx-ticker" placeholder="AAPL" autocapitalize="characters" maxlength="6">
-        </div>
-        <div class="field">
-          <label>Date</label>
-          <input type="date" id="tx-date">
-        </div>
+      <div class="type-toggle" role="tablist">
+        <button type="button" id="type-trade" class="active" onclick="setEntryType('trade')">
+          <span class="dot"></span>Trade
+        </button>
+        <button type="button" id="type-div" onclick="setEntryType('dividend')">
+          <span class="dot"></span>Dividend
+        </button>
       </div>
-      <div class="form-row full">
-        <div class="field">
-          <label>Amount ($)</label>
-          <input type="number" id="tx-amount" placeholder="12.50" step="any" min="0">
+
+      <!-- TRADE FORM -->
+      <div id="form-trade">
+        <div class="form-row">
+          <div class="field">
+            <label>Ticker</label>
+            <input type="text" id="tr-ticker" placeholder="AAPL" autocapitalize="characters" maxlength="6">
+          </div>
+          <div class="field">
+            <label>Exit Date</label>
+            <input type="date" id="tr-date">
+          </div>
         </div>
+        <div class="form-row">
+          <div class="field">
+            <label>Entry ($)</label>
+            <input type="number" id="tr-entry" placeholder="1000.00" step="any" min="0" inputmode="decimal">
+          </div>
+          <div class="field">
+            <label>Exit ($)</label>
+            <input type="number" id="tr-exit" placeholder="1150.00" step="any" min="0" inputmode="decimal">
+          </div>
+        </div>
+        <div class="field-hint" id="tr-preview">Enter amounts to preview P/L</div>
+        <button class="btn btn-green" style="margin-top:10px" onclick="addTrade()">Log Trade</button>
       </div>
-      <button class="btn btn-green" onclick="addDividend()">Add Dividend</button>
+
+      <!-- DIVIDEND FORM -->
+      <div id="form-div" style="display:none">
+        <div class="form-row">
+          <div class="field">
+            <label>Ticker</label>
+            <input type="text" id="dv-ticker" placeholder="AAPL" autocapitalize="characters" maxlength="6">
+          </div>
+          <div class="field">
+            <label>Date</label>
+            <input type="date" id="dv-date">
+          </div>
+        </div>
+        <div class="form-row full">
+          <div class="field">
+            <label>Amount ($)</label>
+            <input type="number" id="dv-amount" placeholder="12.50" step="any" min="0" inputmode="decimal">
+          </div>
+        </div>
+        <button class="btn btn-green" style="margin-top:10px" onclick="addDividend()">Log Dividend</button>
+      </div>
     </div>
 
     <div>
-      <div class="section-title">All Payments</div>
+      <div class="section-title">All Entries</div>
+      <div class="filter-chips">
+        <button class="chip active" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="chip" data-filter="trade" onclick="setFilter('trade')">Trades</button>
+        <button class="chip" data-filter="dividend" onclick="setFilter('dividend')">Dividends</button>
+      </div>
       <div class="tx-list" id="tx-list"></div>
-      <div class="empty" id="tx-empty" style="display:none"><p>No dividends yet.</p></div>
+      <div class="empty" id="tx-empty" style="display:none"><p>No entries yet.</p></div>
     </div>
   </div>
 
@@ -269,12 +371,12 @@
     <div class="tab-label">Backup &amp; Restore</div>
     <div class="backup-card">
       <h3>Export Data</h3>
-      <p>Download all dividend records as a JSON file.</p>
+      <p>Download all trades &amp; dividends as a JSON file.</p>
       <button class="btn btn-outline" onclick="exportJSON()">Download .json Backup</button>
     </div>
     <div class="backup-card">
       <h3>Import Data</h3>
-      <p>Upload a JSON backup. This replaces your current data.</p>
+      <p>Upload a JSON backup. This replaces your current data. Also accepts old dividend-only backups.</p>
       <div class="file-input-wrap">
         <button class="btn btn-outline">Choose .json File</button>
         <input type="file" accept=".json,application/json" onchange="importJSON(event)">
@@ -310,49 +412,118 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- ═══ MONTH DETAILS MODAL ═══ -->
+<div id="month-modal" class="modal" onclick="closeMonthModal(event)">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-month-label"></div>
+        <div class="modal-subtitle" id="modal-month-total"></div>
+      </div>
+      <button class="modal-close" onclick="closeMonthModal()">×</button>
+    </div>
+    <div class="modal-details" id="modal-details-list"></div>
+  </div>
+</div>
+
 <script>
-/* ═══ STATE ═══ */
-const SKEY = "div-tracker-v2";
-let dividends = []; // { id, ticker, date, amount }
+/* ═══ STATE ═══
+   Unified "entries" array. Each entry is either:
+     trade:    { id, type:'trade',    ticker, date, entry, exit }
+     dividend: { id, type:'dividend', ticker, date, amount }
+   Legacy records without a `type` are migrated to dividends on load.
+*/
+const SKEY = "trade-tracker-v1";
+const LEGACY_KEY = "div-tracker-v2";
+let entries = [];
 let mainChart = null;
 let pieChart = null;
+let currentFilter = "all";
+let entryType = "trade";
 
 function loadState() {
   try {
     const raw = localStorage.getItem(SKEY);
     if (raw) {
       const d = JSON.parse(raw);
-      dividends = d.dividends || [];
+      entries = (d.entries || []).map(normalizeEntry);
+      return;
+    }
+    // Migrate old dividend-tracker-v2 data if present
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const d = JSON.parse(legacy);
+      entries = (d.dividends || []).map(x => ({
+        id: x.id || uid(), type: "dividend", ticker: x.ticker, date: x.date, amount: x.amount
+      }));
+      saveState();
     }
   } catch {}
 }
+function normalizeEntry(e) {
+  // Back-compat: treat untyped records as dividends
+  if (!e.type) return { id: e.id || uid(), type: "dividend", ticker: e.ticker, date: e.date, amount: e.amount };
+  return e;
+}
 function saveState() {
-  try { localStorage.setItem(SKEY, JSON.stringify({ dividends })); } catch {}
+  try { localStorage.setItem(SKEY, JSON.stringify({ entries })); } catch {}
 }
 function uid() { return Math.random().toString(36).slice(2, 10); }
 const fmt$ = v => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v || 0);
+const fmt$signed = v => (v >= 0 ? "+" : "") + fmt$(v);
 const fmtD = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) : "";
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
+/* Returns the P/L contribution of any entry (trade: exit-entry, dividend: amount) */
+function pl(e) {
+  if (e.type === "trade") return (e.exit || 0) - (e.entry || 0);
+  return e.amount || 0;
+}
+
 /* ═══ DASHBOARD ═══ */
 function renderDash() {
-  const total = dividends.reduce((s, d) => s + d.amount, 0);
+  const trades = entries.filter(e => e.type === "trade");
+  const divs = entries.filter(e => e.type === "dividend");
+
+  const tradePL = trades.reduce((s, e) => s + pl(e), 0);
+  const divTotal = divs.reduce((s, e) => s + pl(e), 0);
+  const total = tradePL + divTotal;
+
   const now = new Date();
   const yr = now.getFullYear().toString();
-  const mo = yr + "-" + String(now.getMonth() + 1).padStart(2, "0");
+  const thisYear = entries.filter(e => e.date.startsWith(yr)).reduce((s, e) => s + pl(e), 0);
 
-  const thisYear = dividends.filter(d => d.date.startsWith(yr)).reduce((s, d) => s + d.amount, 0);
-  const thisMonth = dividends.filter(d => d.date.startsWith(mo)).reduce((s, d) => s + d.amount, 0);
+  const wins = trades.filter(e => pl(e) > 0).length;
+  const winRate = trades.length ? Math.round((wins / trades.length) * 100) : null;
 
-  document.getElementById("h-total").textContent = fmt$(total);
-  document.getElementById("h-sub").textContent = dividends.length
-    ? dividends.length + " payment" + (dividends.length === 1 ? "" : "s") + " across " + new Set(dividends.map(d => d.ticker)).size + " holding" + (new Set(dividends.map(d => d.ticker)).size === 1 ? "" : "s")
+  // Hero
+  const hTotal = document.getElementById("h-total");
+  hTotal.textContent = fmt$signed(total);
+  hTotal.classList.toggle("negative", total < 0);
+
+  const tickers = new Set(entries.map(e => e.ticker)).size;
+  document.getElementById("h-sub").textContent = entries.length
+    ? entries.length + " entr" + (entries.length === 1 ? "y" : "ies") + " across " + tickers + " ticker" + (tickers === 1 ? "" : "s")
     : "";
-  document.getElementById("s-year").textContent = fmt$(thisYear);
-  document.getElementById("s-month").textContent = fmt$(thisMonth);
-  document.getElementById("s-count").textContent = dividends.length;
 
-  const hasData = dividends.length > 0;
+  // Breakdown
+  const hTrades = document.getElementById("h-trades");
+  hTrades.textContent = fmt$signed(tradePL);
+  hTrades.classList.toggle("red", tradePL < 0);
+  hTrades.classList.toggle("green", tradePL >= 0);
+
+  document.getElementById("h-divs").textContent = fmt$(divTotal);
+
+  // Stats
+  const sYear = document.getElementById("s-year");
+  sYear.textContent = fmt$signed(thisYear);
+  sYear.classList.toggle("red", thisYear < 0);
+  sYear.classList.toggle("green", thisYear >= 0);
+
+  document.getElementById("s-winrate").textContent = winRate === null ? "—" : winRate + "%";
+  document.getElementById("s-count").textContent = entries.length;
+
+  const hasData = entries.length > 0;
   document.getElementById("chart-wrap").style.display = hasData ? "" : "none";
   document.getElementById("tickers-wrap").style.display = hasData ? "" : "none";
   document.getElementById("dash-empty").style.display = hasData ? "none" : "";
@@ -364,32 +535,44 @@ function renderDash() {
 function renderChart() {
   const ctx = document.getElementById("mainChart").getContext("2d");
   if (mainChart) mainChart.destroy();
-  if (!dividends.length) { mainChart = null; return; }
+  if (!entries.length) { mainChart = null; return; }
 
-  const sorted = [...dividends].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date));
   let cum = 0;
-  const points = sorted.map(d => {
-    cum += d.amount;
+  const points = sorted.map(e => {
+    cum += pl(e);
     return {
-      date: d.date,
-      label: new Date(d.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
-      value: +cum.toFixed(2)
+      date: e.date,
+      label: new Date(e.date + "T00:00:00").toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+      value: +cum.toFixed(2),
+      entry: e
     };
   });
+
+  const finalPositive = cum >= 0;
+  const lineColor = finalPositive ? "#34d399" : "#f87171";
+  const fillColor = finalPositive ? "rgba(52,211,153,.10)" : "rgba(248,113,113,.10)";
+
+  // Color points by entry type so user sees where trades vs divs hit the line
+  const pointColors = points.map(p => p.entry.type === "trade"
+    ? (pl(p.entry) >= 0 ? "#34d399" : "#f87171")
+    : "#fbbf24");
 
   mainChart = new Chart(ctx, {
     type: "line",
     data: {
       labels: points.map(p => p.label),
       datasets: [{
-        label: "Total Dividends",
+        label: "Cumulative P/L",
         data: points.map(p => p.value),
-        borderColor: "#34d399",
-        backgroundColor: "rgba(52,211,153,.10)",
+        borderColor: lineColor,
+        backgroundColor: fillColor,
         fill: true,
         tension: .3,
-        pointRadius: points.length < 40 ? 3.5 : 0,
-        pointBackgroundColor: "#34d399",
+        pointRadius: points.length < 40 ? 4 : 0,
+        pointHoverRadius: 6,
+        pointBackgroundColor: pointColors,
+        pointBorderColor: pointColors,
         borderWidth: 2.5
       }]
     },
@@ -402,8 +585,19 @@ function renderChart() {
           backgroundColor: "#14141b", borderColor: "#2a2a38", borderWidth: 1,
           titleFont: { family: "'Azeret Mono',monospace", size: 11 },
           bodyFont: { family: "'Azeret Mono',monospace", size: 11 },
-          titleColor: "#d4d4dc", bodyColor: "#34d399", padding: 10,
-          callbacks: { label: c => fmt$(c.parsed.y) }
+          titleColor: "#d4d4dc", bodyColor: "#d4d4dc", padding: 10,
+          callbacks: {
+            title: items => {
+              const p = points[items[0].dataIndex];
+              return p.entry.ticker + " · " + (p.entry.type === "trade" ? "Trade" : "Dividend");
+            },
+            label: c => {
+              const p = points[c.dataIndex];
+              const change = pl(p.entry);
+              const changeStr = (change >= 0 ? "+" : "") + fmt$(change);
+              return ["Total: " + fmt$signed(p.value), "Δ " + changeStr];
+            }
+          }
         }
       },
       scales: {
@@ -417,79 +611,45 @@ function renderChart() {
 function renderTickers() {
   const ctx = document.getElementById("pieChart").getContext("2d");
   if (pieChart) pieChart.destroy();
-  if (!dividends.length) { pieChart = null; return; }
+  if (!entries.length) { pieChart = null; return; }
 
-  const map = {};
-  dividends.forEach(d => { map[d.ticker] = (map[d.ticker] || 0) + d.amount; });
-  const sorted = Object.entries(map).sort((a, b) => b[1] - a[1]);
-  const total = sorted.reduce((s, e) => s + e[1], 0);
+  // Sum P/L per ticker (can be negative — bar chart handles this cleanly)
+  const byTicker = {};
+  entries.forEach(e => { byTicker[e.ticker] = (byTicker[e.ticker] || 0) + pl(e); });
+  const rows = Object.entries(byTicker).sort((a, b) => b[1] - a[1]);
 
-  const palette = [
-    "#34d399","#fbbf24","#60a5fa","#f87171","#a78bfa",
-    "#fb923c","#2dd4bf","#e879f9","#facc15","#4ade80",
-    "#f472b6","#38bdf8","#c084fc","#fb7185","#34d399"
-  ];
+  const labels = rows.map(r => r[0]);
+  const values = rows.map(r => +r[1].toFixed(2));
+  const colors = values.map(v => v >= 0 ? "#34d399" : "#f87171");
 
   pieChart = new Chart(ctx, {
-    type: "doughnut",
+    type: "bar",
     data: {
-      labels: sorted.map(e => e[0]),
+      labels,
       datasets: [{
-        data: sorted.map(e => +e[1].toFixed(2)),
-        backgroundColor: sorted.map((_, i) => palette[i % palette.length]),
-        borderColor: "#14141b",
-        borderWidth: 2,
-        hoverBorderColor: "#d4d4dc",
-        hoverBorderWidth: 2
+        data: values,
+        backgroundColor: colors,
+        borderColor: colors,
+        borderWidth: 1,
+        borderRadius: 4
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: "55%",
+      indexAxis: "y",
+      responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: "#e4e4eb",
-            font: { family: "'Azeret Mono',monospace", size: 11, weight: "600" },
-            padding: 14,
-            boxWidth: 10,
-            boxHeight: 10,
-            borderRadius: 2,
-            generateLabels: function(chart) {
-              const data = chart.data;
-              return data.labels.map((label, i) => {
-                const value = data.datasets[0].data[i];
-                const pct = total > 0 ? ((value / total) * 100).toFixed(1) : "0.0";
-                return {
-                  text: label + "  " + pct + "%",
-                  fillStyle: data.datasets[0].backgroundColor[i],
-                  fontColor: "#e4e4eb",
-                  strokeStyle: "transparent",
-                  hidden: false,
-                  index: i
-                };
-              });
-            }
-          }
-        },
+        legend: { display: false },
         tooltip: {
-          backgroundColor: "#14141b",
-          borderColor: "#2a2a38",
-          borderWidth: 1,
+          backgroundColor: "#14141b", borderColor: "#2a2a38", borderWidth: 1,
           titleFont: { family: "'Azeret Mono',monospace", size: 11 },
           bodyFont: { family: "'Azeret Mono',monospace", size: 11 },
-          titleColor: "#d4d4dc",
-          bodyColor: "#d4d4dc",
-          padding: 10,
-          callbacks: {
-            label: function(c) {
-              const pct = total > 0 ? ((c.parsed / total) * 100).toFixed(1) : "0.0";
-              return " " + fmt$(c.parsed) + "  ·  " + pct + "%";
-            }
-          }
+          titleColor: "#d4d4dc", bodyColor: "#d4d4dc", padding: 10,
+          callbacks: { label: c => fmt$signed(c.parsed.x) }
         }
+      },
+      scales: {
+        x: { ticks: { color: "#3e3e4e", font: { family: "'Azeret Mono',monospace", size: 9 }, callback: v => "$" + v }, grid: { color: "rgba(255,255,255,.04)" } },
+        y: { ticks: { color: "#d4d4dc", font: { family: "'Azeret Mono',monospace", size: 10, weight: "600" } }, grid: { display: false } }
       }
     }
   });
@@ -497,43 +657,47 @@ function renderTickers() {
 
 /* ═══ HISTORICAL ═══ */
 function renderHistorical() {
-  const hasData = dividends.length > 0;
+  const hasData = entries.length > 0;
   document.getElementById("yearly-section").style.display = hasData ? "" : "none";
   document.getElementById("monthly-section").style.display = hasData ? "" : "none";
   document.getElementById("hist-empty").style.display = hasData ? "none" : "";
   if (!hasData) return;
 
-  // By year
-  const yearMap = {};
-  dividends.forEach(d => {
-    const y = d.date.slice(0, 4);
-    yearMap[y] = (yearMap[y] || 0) + d.amount;
+  // Yearly
+  const yrMap = {};
+  entries.forEach(e => {
+    const y = e.date.slice(0, 4);
+    yrMap[y] = (yrMap[y] || 0) + pl(e);
   });
-  const years = Object.entries(yearMap).sort((a, b) => b[0].localeCompare(a[0]));
-  const maxYear = Math.max(...years.map(y => y[1]), 1);
-  document.getElementById("yearly-list").innerHTML = years.map(([yr, amt]) =>
-    `<div class="hist-row">
-      <div class="hist-label">${yr}</div>
-      <div class="hist-bar-wrap"><div class="hist-bar" style="width:${(amt / maxYear * 100).toFixed(1)}%"></div></div>
-      <div class="hist-amt">${fmt$(amt)}</div>
-    </div>`
-  ).join("");
+  const years = Object.entries(yrMap).sort((a, b) => b[0].localeCompare(a[0]));
+  const maxYrAbs = Math.max(...years.map(y => Math.abs(y[1])), 1);
+  document.getElementById("yearly-list").innerHTML = years.map(([y, amt]) => {
+    const pct = (Math.abs(amt) / maxYrAbs * 100).toFixed(1);
+    const cls = amt >= 0 ? "pos" : "neg";
+    return `<div class="hist-row">
+      <div class="hist-label">${y}</div>
+      <div class="hist-bar-wrap"><div class="hist-bar ${cls}" style="width:${pct}%"></div></div>
+      <div class="hist-amt ${amt >= 0 ? 'green' : 'red'}">${fmt$signed(amt)}</div>
+    </div>`;
+  }).join("");
 
-  // By month (last 24 months that have data)
+  // Monthly
   const moMap = {};
-  dividends.forEach(d => {
-    const key = d.date.slice(0, 7); // YYYY-MM
-    moMap[key] = (moMap[key] || 0) + d.amount;
+  entries.forEach(e => {
+    const k = e.date.slice(0, 7);
+    moMap[k] = (moMap[k] || 0) + pl(e);
   });
   const months = Object.entries(moMap).sort((a, b) => b[0].localeCompare(a[0])).slice(0, 24);
-  const maxMo = Math.max(...months.map(m => m[1]), 1);
+  const maxMoAbs = Math.max(...months.map(m => Math.abs(m[1])), 1);
   document.getElementById("monthly-list").innerHTML = months.map(([key, amt]) => {
     const [y, m] = key.split("-");
     const label = MONTHS[parseInt(m) - 1] + " " + y;
+    const pct = (Math.abs(amt) / maxMoAbs * 100).toFixed(1);
+    const cls = amt >= 0 ? "pos" : "neg";
     return `<div class="hist-row clickable" onclick="showMonthDetails('${key}')">
       <div class="hist-label">${label}</div>
-      <div class="hist-bar-wrap"><div class="hist-bar" style="width:${(amt / maxMo * 100).toFixed(1)}%"></div></div>
-      <div class="hist-amt">${fmt$(amt)}</div>
+      <div class="hist-bar-wrap"><div class="hist-bar ${cls}" style="width:${pct}%"></div></div>
+      <div class="hist-amt ${amt >= 0 ? 'green' : 'red'}">${fmt$signed(amt)}</div>
     </div>`;
   }).join("");
 }
@@ -541,47 +705,119 @@ function renderHistorical() {
 /* ═══ TRANSACTIONS ═══ */
 function renderTx() {
   const el = document.getElementById("tx-list");
-  const sorted = [...dividends].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
-  el.innerHTML = sorted.map(d =>
-    `<div class="tx">
-      <div class="tx-dot"></div>
-      <div class="tx-info">
-        <div class="tx-primary">${d.ticker}</div>
-        <div class="tx-secondary">${fmtD(d.date)}</div>
-      </div>
-      <div class="tx-amount">${fmt$(d.amount)}</div>
-      <button class="tx-delete" onclick="deleteTx('${d.id}')">
-        <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      </button>
-    </div>`
-  ).join("");
-  document.getElementById("tx-empty").style.display = sorted.length ? "none" : "";
+  let list = [...entries];
+  if (currentFilter !== "all") list = list.filter(e => e.type === currentFilter);
+  list.sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+  el.innerHTML = list.map(e => {
+    if (e.type === "trade") {
+      const p = pl(e);
+      const posNeg = p >= 0;
+      const pct = e.entry > 0 ? ((p / e.entry) * 100) : 0;
+      return `<div class="tx">
+        <div class="tx-dot ${posNeg ? 'trade-pos' : 'trade-neg'}"></div>
+        <div class="tx-info">
+          <div class="tx-primary">${e.ticker}<span class="tx-tag trade">Trade</span></div>
+          <div class="tx-secondary">${fmtD(e.date)} · ${fmt$(e.entry)} → ${fmt$(e.exit)}</div>
+        </div>
+        <div>
+          <div class="tx-amount ${posNeg ? 'green' : 'red'}">${fmt$signed(p)}</div>
+          <div class="tx-amount-sub" style="text-align:right">${(pct >= 0 ? "+" : "")}${pct.toFixed(1)}%</div>
+        </div>
+        <button class="tx-delete" onclick="deleteTx('${e.id}')">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    } else {
+      return `<div class="tx">
+        <div class="tx-dot div"></div>
+        <div class="tx-info">
+          <div class="tx-primary">${e.ticker}<span class="tx-tag div">Div</span></div>
+          <div class="tx-secondary">${fmtD(e.date)}</div>
+        </div>
+        <div class="tx-amount green">${fmt$(e.amount)}</div>
+        <button class="tx-delete" onclick="deleteTx('${e.id}')">
+          <svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>`;
+    }
+  }).join("");
+
+  document.getElementById("tx-empty").style.display = list.length ? "none" : "";
 }
 
 function renderAll() { renderDash(); renderHistorical(); renderTx(); }
 
+/* ═══ ENTRY TYPE TOGGLE ═══ */
+function setEntryType(t) {
+  entryType = t;
+  document.getElementById("type-trade").classList.toggle("active", t === "trade");
+  document.getElementById("type-div").classList.toggle("active", t === "dividend");
+  document.getElementById("form-trade").style.display = t === "trade" ? "" : "none";
+  document.getElementById("form-div").style.display = t === "dividend" ? "" : "none";
+}
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll(".chip").forEach(c => c.classList.toggle("active", c.dataset.filter === f));
+  renderTx();
+}
+
+/* Live P/L preview as user types */
+function updateTradePreview() {
+  const entry = parseFloat(document.getElementById("tr-entry").value);
+  const exit = parseFloat(document.getElementById("tr-exit").value);
+  const el = document.getElementById("tr-preview");
+  if (isNaN(entry) || isNaN(exit) || entry <= 0) {
+    el.textContent = "Enter amounts to preview P/L";
+    el.className = "field-hint";
+    return;
+  }
+  const p = exit - entry;
+  const pct = (p / entry) * 100;
+  el.textContent = `P/L: ${fmt$signed(p)}  (${pct >= 0 ? "+" : ""}${pct.toFixed(2)}%)`;
+  el.className = "field-hint " + (p >= 0 ? "green" : "red");
+}
+
 /* ═══ ACTIONS ═══ */
-function addDividend() {
-  const ticker = document.getElementById("tx-ticker").value.trim().toUpperCase();
-  const date = document.getElementById("tx-date").value;
-  const amount = parseFloat(document.getElementById("tx-amount").value);
-  if (!ticker || !date) return toast("Fill in all fields");
-  if (!amount || amount <= 0) return toast("Enter a valid amount");
-  dividends.push({ id: uid(), ticker, date, amount });
+function addTrade() {
+  const ticker = document.getElementById("tr-ticker").value.trim().toUpperCase();
+  const date = document.getElementById("tr-date").value;
+  const entry = parseFloat(document.getElementById("tr-entry").value);
+  const exitAmt = parseFloat(document.getElementById("tr-exit").value);
+  if (!ticker || !date) return toast("Fill in ticker and date");
+  if (!entry || entry <= 0) return toast("Enter a valid entry amount");
+  if (isNaN(exitAmt) || exitAmt < 0) return toast("Enter a valid exit amount");
+  entries.push({ id: uid(), type: "trade", ticker, date, entry, exit: exitAmt });
   saveState(); renderAll();
-  document.getElementById("tx-amount").value = "";
-  toast("Dividend added");
+  document.getElementById("tr-ticker").value = "";
+  document.getElementById("tr-entry").value = "";
+  document.getElementById("tr-exit").value = "";
+  updateTradePreview();
+  toast("Trade logged");
+}
+
+function addDividend() {
+  const ticker = document.getElementById("dv-ticker").value.trim().toUpperCase();
+  const date = document.getElementById("dv-date").value;
+  const amount = parseFloat(document.getElementById("dv-amount").value);
+  if (!ticker || !date) return toast("Fill in ticker and date");
+  if (!amount || amount <= 0) return toast("Enter a valid amount");
+  entries.push({ id: uid(), type: "dividend", ticker, date, amount });
+  saveState(); renderAll();
+  document.getElementById("dv-amount").value = "";
+  toast("Dividend logged");
 }
 
 function deleteTx(id) {
-  dividends = dividends.filter(d => d.id !== id);
+  entries = entries.filter(e => e.id !== id);
   saveState(); renderAll(); toast("Deleted");
 }
 
 /* ═══ BACKUP ═══ */
 function exportJSON() {
-  const blob = new Blob([JSON.stringify({ dividends }, null, 2)], { type: "application/json" });
-  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "dividend-tracker-backup.json"; a.click();
+  const blob = new Blob([JSON.stringify({ entries }, null, 2)], { type: "application/json" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "trade-tracker-backup.json"; a.click();
   URL.revokeObjectURL(a.href); toast("Backup downloaded");
 }
 
@@ -591,12 +827,20 @@ function importJSON(e) {
   reader.onload = ev => {
     try {
       const d = JSON.parse(ev.target.result);
-      const incoming = d.dividends || [];
-      if (!incoming.length) return toast("No dividends found in file");
-      dividends = incoming;
+      let incoming = [];
+      if (Array.isArray(d.entries)) {
+        incoming = d.entries.map(normalizeEntry);
+      } else if (Array.isArray(d.dividends)) {
+        // Legacy dividend-only backup
+        incoming = d.dividends.map(x => ({
+          id: x.id || uid(), type: "dividend", ticker: x.ticker, date: x.date, amount: x.amount
+        }));
+      }
+      if (!incoming.length) return toast("No entries found in file");
+      entries = incoming;
       saveState();
       renderAll();
-      toast("Restored " + incoming.length + " dividends");
+      toast("Restored " + incoming.length + " entr" + (incoming.length === 1 ? "y" : "ies"));
     } catch { toast("Invalid file"); }
   };
   reader.readAsText(file);
@@ -605,7 +849,7 @@ function importJSON(e) {
 
 function clearAll() {
   if (!confirm("Erase ALL data? This cannot be undone.")) return;
-  dividends = []; saveState(); renderAll(); toast("All data erased");
+  entries = []; saveState(); renderAll(); toast("All data erased");
 }
 
 /* ═══ NAV & TOAST ═══ */
@@ -624,34 +868,41 @@ function toast(msg) {
   clearTimeout(_tt); _tt = setTimeout(() => el.classList.remove("show"), 2200);
 }
 
-(function init() {
-  document.getElementById("tx-date").value = new Date().toISOString().split("T")[0];
-  loadState(); renderAll();
-})();
-
 /* ═══ MONTH DETAILS MODAL ═══ */
 function showMonthDetails(monthKey) {
   const [y, m] = monthKey.split("-");
   const monthName = MONTHS[parseInt(m) - 1];
   const monthLabel = monthName + " " + y;
-  
-  // Get all transactions for this month
-  const monthTxs = dividends.filter(d => d.date.slice(0, 7) === monthKey).sort((a, b) => b.date.localeCompare(a.date));
-  const total = monthTxs.reduce((s, d) => s + d.amount, 0);
-  
-  // Build HTML
-  const detailsHTML = monthTxs.map(d =>
-    `<div class="detail-tx">
+
+  const monthEntries = entries
+    .filter(e => e.date.slice(0, 7) === monthKey)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  const total = monthEntries.reduce((s, e) => s + pl(e), 0);
+
+  const detailsHTML = monthEntries.map(e => {
+    if (e.type === "trade") {
+      const p = pl(e);
+      return `<div class="detail-tx">
+        <div class="detail-tx-left">
+          <div class="detail-ticker">${e.ticker}<span class="tx-tag trade">Trade</span></div>
+          <div class="detail-date">${fmtD(e.date)} · ${fmt$(e.entry)} → ${fmt$(e.exit)}</div>
+        </div>
+        <div>
+          <div class="detail-amount ${p >= 0 ? 'green' : 'red'}">${fmt$signed(p)}</div>
+        </div>
+      </div>`;
+    }
+    return `<div class="detail-tx">
       <div class="detail-tx-left">
-        <div class="detail-ticker">${d.ticker}</div>
-        <div class="detail-date">${fmtD(d.date)}</div>
+        <div class="detail-ticker">${e.ticker}<span class="tx-tag div">Div</span></div>
+        <div class="detail-date">${fmtD(e.date)}</div>
       </div>
-      <div class="detail-amount">${fmt$(d.amount)}</div>
-    </div>`
-  ).join("");
-  
+      <div class="detail-amount green">${fmt$(e.amount)}</div>
+    </div>`;
+  }).join("");
+
   document.getElementById("modal-month-label").textContent = monthLabel;
-  document.getElementById("modal-month-total").textContent = fmt$(total) + " total";
+  document.getElementById("modal-month-total").textContent = fmt$signed(total) + " total";
   document.getElementById("modal-details-list").innerHTML = detailsHTML;
   document.getElementById("month-modal").classList.add("show");
 }
@@ -660,21 +911,21 @@ function closeMonthModal(e) {
   if (e && e.target !== e.currentTarget) return;
   document.getElementById("month-modal").classList.remove("show");
 }
-</script>
 
-<!-- ═══ MONTH DETAILS MODAL ═══ -->
-<div id="month-modal" class="modal" onclick="closeMonthModal(event)">
-  <div class="modal-content" onclick="event.stopPropagation()">
-    <div class="modal-header">
-      <div>
-        <div class="modal-title" id="modal-month-label"></div>
-        <div class="modal-subtitle" id="modal-month-total"></div>
-      </div>
-      <button class="modal-close" onclick="closeMonthModal()">×</button>
-    </div>
-    <div class="modal-details" id="modal-details-list"></div>
-  </div>
-</div>
+/* ═══ INIT ═══ */
+(function init() {
+  const today = new Date().toISOString().split("T")[0];
+  document.getElementById("tr-date").value = today;
+  document.getElementById("dv-date").value = today;
+
+  // Live preview listeners
+  document.getElementById("tr-entry").addEventListener("input", updateTradePreview);
+  document.getElementById("tr-exit").addEventListener("input", updateTradePreview);
+
+  loadState();
+  renderAll();
+})();
+</script>
 
 </body>
 </html>
