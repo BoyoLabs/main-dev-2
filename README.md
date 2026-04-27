@@ -3,8 +3,12 @@ SPA's mostly. My first repo for development was main-dev, but now that one is ge
 
 Note: just because something is in prod does not mean it is working necessarily, it just means that I am out of the initial attempts to get it running at all whatsoever. If its not working the way I want, it may still end up abandoned here.
 
+## orlog.html
+* a game inspired by orlog from assassins creed valhalla
+* github.io link: https://boyolabs.github.io/prod-2/orlog.html
+
 ## editor.html
-* a simple text editor for coding
+* a simple text editor for coding: developed for mobile development.
 * github.io link: https://boyolabs.github.io/prod-2/editor.html
 
 ## dividend-tracker.html
