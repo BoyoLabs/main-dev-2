@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TICKER TYCOON</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --emerald: #10b981;
+    --emerald-bright: #34d399;
+    --amber: #f59e0b;
+    --amber-bright: #fbbf24;
+    --red: #ef4444;
+    --slate-950: #020617;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Share Tech Mono', monospace;
+    background: var(--slate-950);
+    color: var(--slate-300);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Scanline overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.03) 2px,
+      rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* CRT corner vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.6) 100%);
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  .font-orbitron { font-family: 'Orbitron', monospace; }
+
+  /* HUD */
+  #hud {
+    background: linear-gradient(180deg, rgba(15,23,42,0.98) 0%, rgba(15,23,42,0.95) 100%);
+    border-bottom: 1px solid rgba(16,185,129,0.3);
+    box-shadow: 0 0 30px rgba(16,185,129,0.1), 0 4px 20px rgba(0,0,0,0.5);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .hud-stat {
+    position: relative;
+  }
+
+  .hud-stat::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--emerald), transparent);
+    opacity: 0.4;
+  }
+
+  /* Glow effects */
+  .glow-emerald { text-shadow: 0 0 10px rgba(52,211,153,0.5), 0 0 20px rgba(52,211,153,0.2); }
+  .glow-amber { text-shadow: 0 0 10px rgba(251,191,36,0.5), 0 0 20px rgba(251,191,36,0.2); }
+  .glow-red { text-shadow: 0 0 10px rgba(239,68,68,0.5); }
+
+  .border-glow-emerald {
+    border-color: rgba(16,185,129,0.4);
+    box-shadow: 0 0 15px rgba(16,185,129,0.1), inset 0 0 15px rgba(16,185,129,0.03);
+  }
+
+  /* Clock In Button */
+  #clockInBtn {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+    border: 2px solid rgba(16,185,129,0.5);
+    box-shadow: 0 0 20px rgba(16,185,129,0.15), inset 0 0 20px rgba(16,185,129,0.05);
+    transition: all 0.1s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+
+  #clockInBtn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(52,211,153,0.2), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  #clockInBtn:hover::before { opacity: 1; }
+
+  #clockInBtn:active {
+    transform: scale(0.96);
+    box-shadow: 0 0 40px rgba(16,185,129,0.4), inset 0 0 30px rgba(16,185,129,0.15);
+    border-color: rgba(52,211,153,0.8);
+  }
+
+  #clockInBtn.clicked {
+    animation: btnFlash 0.15s ease;
+  }
+
+  @keyframes btnFlash {
+    0% { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+    50% { box-shadow: 0 0 60px rgba(52,211,153,0.6), inset 0 0 30px rgba(52,211,153,0.2); }
+    100% { box-shadow: 0 0 20px rgba(16,185,129,0.15); }
+  }
+
+  /* Asset Cards */
+  .asset-card {
+    background: linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.9));
+    border: 1px solid rgba(51,65,85,0.6);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .asset-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(16,185,129,0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .asset-card:hover::before { opacity: 1; }
+
+  .asset-card.affordable {
+    border-color: rgba(16,185,129,0.3);
+    box-shadow: 0 0 10px rgba(16,185,129,0.05);
+  }
+
+  .asset-card.affordable:hover {
+    border-color: rgba(16,185,129,0.6);
+    box-shadow: 0 0 20px rgba(16,185,129,0.15);
+    transform: translateY(-1px);
+  }
+
+  .asset-card.affordable:active {
+    transform: scale(0.98);
+  }
+
+  .asset-card.unaffordable {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    background: rgba(51,65,85,0.4);
+    border-radius: 2px;
+    overflow: hidden;
+    height: 3px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--emerald), var(--emerald-bright));
+    transition: width 0.3s ease;
+    box-shadow: 0 0 6px rgba(52,211,153,0.5);
+  }
+
+  /* Floating text */
+  .float-text {
+    position: fixed;
+    font-family: 'Orbitron', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--emerald-bright);
+    text-shadow: 0 0 10px rgba(52,211,153,0.8);
+    pointer-events: none;
+    z-index: 9997;
+    animation: floatUp 1.2s ease-out forwards;
+  }
+
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    50%  { opacity: 1; transform: translateY(-30px) scale(1.1); }
+    100% { opacity: 0; transform: translateY(-70px) scale(0.8); }
+  }
+
+  /* Ticker tape */
+  #ticker-tape {
+    background: rgba(16,185,129,0.08);
+    border-top: 1px solid rgba(16,185,129,0.2);
+    border-bottom: 1px solid rgba(16,185,129,0.2);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .ticker-inner {
+    display: inline-block;
+    animation: tickerScroll 30s linear infinite;
+    font-size: 11px;
+    color: rgba(52,211,153,0.7);
+    padding: 4px 0;
+  }
+
+  @keyframes tickerScroll {
+    0%   { transform: translateX(100vw); }
+    100% { transform: translateX(-100%); }
+  }
+
+  /* Log */
+  #log {
+    background: rgba(2,6,23,0.7);
+    border: 1px solid rgba(51,65,85,0.5);
+    border-radius: 4px;
+    font-size: 11px;
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(16,185,129,0.3) transparent;
+  }
+
+  #log::-webkit-scrollbar { width: 4px; }
+  #log::-webkit-scrollbar-track { background: transparent; }
+  #log::-webkit-scrollbar-thumb { background: rgba(16,185,129,0.3); border-radius: 2px; }
+
+  .log-entry {
+    padding: 2px 8px;
+    border-bottom: 1px solid rgba(51,65,85,0.2);
+    animation: logFade 0.3s ease;
+  }
+
+  @keyframes logFade {
+    from { background: rgba(16,185,129,0.1); }
+    to   { background: transparent; }
+  }
+
+  /* Buttons */
+  .btn-save {
+    background: rgba(245,158,11,0.1);
+    border: 1px solid rgba(245,158,11,0.4);
+    color: var(--amber-bright);
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .btn-save:hover {
+    background: rgba(245,158,11,0.2);
+    box-shadow: 0 0 15px rgba(245,158,11,0.2);
+  }
+
+  .btn-reset {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: rgba(239,68,68,0.8);
+    transition: all 0.2s;
+    cursor: pointer;
+    font-size: 10px;
+  }
+  .btn-reset:hover {
+    background: rgba(239,68,68,0.2);
+  }
+
+  /* Milestone flash */
+  @keyframes milestoneFlash {
+    0%   { opacity: 0; transform: scale(0.8); }
+    20%  { opacity: 1; transform: scale(1.02); }
+    80%  { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(0.95); }
+  }
+
+  #milestone-banner {
+    animation: milestoneFlash 3s ease forwards;
+  }
+
+  /* Number pulse */
+  .pulse-green {
+    animation: pulseG 0.4s ease;
+  }
+
+  @keyframes pulseG {
+    0%   { color: var(--emerald-bright); text-shadow: 0 0 20px rgba(52,211,153,1); }
+    100% { color: inherit; text-shadow: inherit; }
+  }
+
+  /* Grid layout */
+  .assets-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  @media (min-width: 640px) {
+    .assets-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  @media (min-width: 1024px) {
+    .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+    .assets-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Blinking cursor */
+  .blink {
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  /* Scrollbar for main */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--slate-950); }
+  ::-webkit-scrollbar-thumb { background: rgba(51,65,85,0.6); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud" class="px-3 py-3">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex items-center justify-between mb-2">
+      <div class="flex items-center gap-2">
+        <span class="font-orbitron text-xs font-900 text-emerald-400 tracking-widest glow-emerald">TICKER</span>
+        <span class="font-orbitron text-xs text-slate-500">TYCOON</span>
+        <span class="blink text-emerald-500 text-xs">▮</span>
+      </div>
+      <div class="flex gap-2">
+        <button onclick="saveGame(true)" class="btn-save font-orbitron text-xs px-3 py-1 rounded">SAVE</button>
+        <button onclick="confirmReset()" class="btn-reset font-orbitron px-2 py-1 rounded">RST</button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div class="hud-stat">
+        <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">NET WORTH</div>
+        <div id="hud-cash" class="font-orbitron text-lg sm:text-2xl font-bold text-emerald-400 glow-emerald">$0.00</div>
+      </div>
+      <div class="hud-stat">
+        <div class="text-xs text-slate-500 uppercase tracking-widest mb-1">PASSIVE VELOCITY</div>
+        <div id="hud-cps" class="font-orbitron text-lg sm:text-2xl font-bold text-amber-400 glow-amber">$0.00/s</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ticker Tape -->
+<div id="ticker-tape" class="py-0.5">
+  <span class="ticker-inner" id="ticker-text">Loading market data...</span>
+</div>
+
+<!-- Milestone Banner -->
+<div id="milestone-banner" class="hidden fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-800 border border-emerald-500 rounded px-6 py-3 text-center shadow-2xl" style="box-shadow: 0 0 40px rgba(16,185,129,0.4);">
+  <div class="font-orbitron text-xs text-slate-400 mb-1">MILESTONE UNLOCKED</div>
+  <div id="milestone-text" class="font-orbitron text-emerald-400 font-bold text-sm glow-emerald"></div>
+</div>
+
+<!-- Main Content -->
+<div class="max-w-4xl mx-auto px-3 py-4">
+  <div class="main-layout">
+
+    <!-- Left: Action + Log -->
+    <div class="space-y-4">
+
+      <!-- Clock In Button -->
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+          <span class="text-emerald-600">▶</span> ACTIVE INCOME
+        </div>
+        <button id="clockInBtn" onclick="clockIn(event)" class="w-full rounded-lg p-6 sm:p-8 flex flex-col items-center gap-3">
+          <div class="font-orbitron text-3xl sm:text-4xl text-emerald-400 glow-emerald">💼</div>
+          <div class="font-orbitron text-base sm:text-lg font-bold text-emerald-300 tracking-widest">CLOCK IN</div>
+          <div class="text-slate-400 text-xs">+<span id="click-value">$1.00</span> per click</div>
+          <div class="text-slate-600 text-xs" id="click-count">0 shifts worked</div>
+        </button>
+      </div>
+
+      <!-- Stats Panel -->
+      <div class="border border-glow-emerald rounded-lg p-4 space-y-2" style="border-color: rgba(16,185,129,0.2);">
+        <div class="text-xs text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+          <span class="text-amber-500">◈</span> PORTFOLIO STATS
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <div>
+            <span class="text-slate-500">Total Earned:</span><br>
+            <span id="stat-total" class="text-emerald-400 font-bold">$0.00</span>
+          </div>
+          <div>
+            <span class="text-slate-500">Assets Owned:</span><br>
+            <span id="stat-assets" class="text-amber-400 font-bold">0</span>
+          </div>
+          <div>
+            <span class="text-slate-500">Clicks:</span><br>
+            <span id="stat-clicks" class="text-slate-300">0</span>
+          </div>
+          <div>
+            <span class="text-slate-500">Uptime:</span><br>
+            <span id="stat-time" class="text-slate-300">00:00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div>
+        <div class="text-xs text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
+          <span class="text-slate-600">◦</span> ACTIVITY LOG
+        </div>
+        <div id="log"></div>
+      </div>
+
+    </div>
+
+    <!-- Right: Investment Farm -->
+    <div>
+      <div class="text-xs text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <span class="text-amber-500">▲</span> INVESTMENT FARM
+        <span class="text-slate-600 text-xs">— click to acquire</span>
+      </div>
+      <div class="assets-grid" id="assets-container"></div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-600">
+    <span>TICKER TYCOON v1.0</span>
+    <span id="save-status">Last saved: never</span>
+    <span>AUTO-SAVE 30s</span>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  GAME STATE
+// ─────────────────────────────────────────
+const ASSETS = [
+  {
+    id: 'savings',
+    name: 'Savings Account',
+    icon: '🏦',
+    desc: 'FDIC insured. Safe and boring.',
+    baseCost: 15,
+    baseCps: 0.1,
+    color: 'emerald',
+  },
+  {
+    id: 'bonds',
+    name: 'Treasury Bonds',
+    icon: '📜',
+    desc: 'Gov-backed fixed income.',
+    baseCost: 100,
+    baseCps: 0.5,
+    color: 'emerald',
+  },
+  {
+    id: 'etf',
+    name: 'Dividend ETF',
+    icon: '📊',
+    desc: 'Monthly dividends, diversified.',
+    baseCost: 500,
+    baseCps: 2,
+    color: 'amber',
+  },
+  {
+    id: 'index',
+    name: 'Index Fund',
+    icon: '📈',
+    desc: 'Market tracking. Long game.',
+    baseCost: 2000,
+    baseCps: 8,
+    color: 'amber',
+  },
+  {
+    id: 'reit',
+    name: 'REIT Portfolio',
+    icon: '🏢',
+    desc: 'Real estate without the tenants.',
+    baseCost: 10000,
+    baseCps: 35,
+    color: 'amber',
+  },
+  {
+    id: 'hedge',
+    name: 'Hedge Fund',
+    icon: '🎯',
+    desc: 'Exclusive. High risk. High yield.',
+    baseCost: 50000,
+    baseCps: 150,
+    color: 'amber',
+  },
+  {
+    id: 'vc',
+    name: 'Venture Capital',
+    icon: '🚀',
+    desc: '10x or bust. Silicon Valley style.',
+    baseCost: 250000,
+    baseCps: 600,
+    color: 'amber',
+  },
+  {
+    id: 'pe',
+    name: 'Private Equity',
+    icon: '💎',
+    desc: 'Buy companies. Strip assets.',
+    baseCost: 1500000,
+    baseCps: 3000,
+    color: 'amber',
+  },
+  {
+    id: 'sovereign',
+    name: 'Sovereign Wealth',
+    icon: '👑',
+    desc: 'You are the economy.',
+    baseCost: 10000000,
+    baseCps: 15000,
+    color: 'amber',
+  },
+];
+
+const MILESTONES = [
+  { value: 100,         label: 'First Hundred!',        emoji: '💸' },
+  { value: 1000,        label: 'Four Figures!',          emoji: '📊' },
+  { value: 10000,       label: 'Five Figures!',          emoji: '🎯' },
+  { value: 100000,      label: 'Six Figures!',           emoji: '💰' },
+  { value: 1000000,     label: 'MILLIONAIRE!',           emoji: '🏆' },
+  { value: 1e9,         label: 'BILLIONAIRE!',           emoji: '🚀' },
+  { value: 1e12,        label: 'TRILLIONAIRE!',          emoji: '👑' },
+];
+
+let game = {
+  cash: 0,
+  totalEarned: 0,
+  cps: 0,
+  clicks: 0,
+  clickValue: 1,
+  owned: {},      // id -> count
+  startTime: Date.now(),
+  milestonesHit: new Set(),
+};
+
+// ─────────────────────────────────────────
+//  FORMAT
+// ─────────────────────────────────────────
+function formatCurrency(n, short = true) {
+  if (!short || n < 1000) return '$' + n.toFixed(2);
+  const tiers = [
+    [1e18, 'Qi'], [1e15, 'Qa'], [1e12, 'T'],
+    [1e9, 'B'], [1e6, 'M'], [1e3, 'K']
+  ];
+  for (const [thresh, suffix] of tiers) {
+    if (n >= thresh) return '$' + (n / thresh).toFixed(2) + suffix;
+  }
+}
+
+function formatTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+}
+
+// ─────────────────────────────────────────
+//  COST SCALING
+// ─────────────────────────────────────────
+function getAssetCost(asset) {
+  const owned = game.owned[asset.id] || 0;
+  return asset.baseCost * Math.pow(1.15, owned);
+}
+
+function calcTotalCps() {
+  return ASSETS.reduce((sum, a) => {
+    return sum + a.baseCps * (game.owned[a.id] || 0);
+  }, 0);
+}
+
+function calcClickValue() {
+  // Click value scales with total CPS (10% of CPS, min $1)
+  return Math.max(1, game.cps * 0.1);
+}
+
+// ─────────────────────────────────────────
+//  ACTIONS
+// ─────────────────────────────────────────
+function clockIn(event) {
+  const earned = game.clickValue;
+  game.cash += earned;
+  game.totalEarned += earned;
+  game.clicks++;
+
+  // Float text
+  spawnFloat(event.clientX, event.clientY, '+' + formatCurrency(earned));
+
+  // Button animation
+  const btn = document.getElementById('clockInBtn');
+  btn.classList.remove('clicked');
+  void btn.offsetWidth; // reflow
+  btn.classList.add('clicked');
+
+  addLog(`Clocked in: +${formatCurrency(earned)}`);
+  checkMilestones();
+  updateUI();
+}
+
+function buyAsset(assetId) {
+  const asset = ASSETS.find(a => a.id === assetId);
+  const cost = getAssetCost(asset);
+  if (game.cash < cost) return;
+
+  game.cash -= cost;
+  game.owned[assetId] = (game.owned[assetId] || 0) + 1;
+  game.cps = calcTotalCps();
+  game.clickValue = calcClickValue();
+
+  addLog(`Acquired: ${asset.name} #${game.owned[assetId]} for ${formatCurrency(cost)}`);
+  checkMilestones();
+  renderAssets();
+  updateUI();
+}
+
+// ─────────────────────────────────────────
+//  FLOATING TEXT
+// ─────────────────────────────────────────
+function spawnFloat(x, y, text) {
+  const el = document.createElement('div');
+  el.className = 'float-text';
+  el.textContent = text;
+  el.style.left = (x - 30 + Math.random() * 20) + 'px';
+  el.style.top = (y - 10) + 'px';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1300);
+}
+
+// ─────────────────────────────────────────
+//  LOG
+// ─────────────────────────────────────────
+function addLog(msg) {
+  const log = document.getElementById('log');
+  const now = new Date();
+  const time = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const el = document.createElement('div');
+  el.className = 'log-entry text-slate-400';
+  el.innerHTML = `<span class="text-slate-600">[${time}]</span> ${msg}`;
+  log.insertBefore(el, log.firstChild);
+  // Keep max 50 entries
+  while (log.children.length > 50) log.removeChild(log.lastChild);
+}
+
+// ─────────────────────────────────────────
+//  MILESTONES
+// ─────────────────────────────────────────
+function checkMilestones() {
+  for (const m of MILESTONES) {
+    if (!game.milestonesHit.has(m.value) && game.totalEarned >= m.value) {
+      game.milestonesHit.add(m.value);
+      showMilestone(`${m.emoji} ${m.label}`);
+    }
+  }
+}
+
+function showMilestone(text) {
+  const banner = document.getElementById('milestone-banner');
+  document.getElementById('milestone-text').textContent = text;
+  banner.classList.remove('hidden');
+  banner.style.animation = 'none';
+  void banner.offsetWidth;
+  banner.style.animation = 'milestoneFlash 3s ease forwards';
+  addLog(`🏆 MILESTONE: ${text}`);
+  setTimeout(() => banner.classList.add('hidden'), 3100);
+}
+
+// ─────────────────────────────────────────
+//  RENDER ASSETS
+// ─────────────────────────────────────────
+function renderAssets() {
+  const container = document.getElementById('assets-container');
+  container.innerHTML = '';
+
+  ASSETS.forEach(asset => {
+    const owned = game.owned[asset.id] || 0;
+    const cost = getAssetCost(asset);
+    const canAfford = game.cash >= cost;
+    const progress = Math.min(1, game.cash / cost);
+    const totalCps = asset.baseCps * owned;
+    const isAmber = asset.color === 'amber';
+
+    const card = document.createElement('div');
+    card.className = `asset-card rounded-lg p-3 ${canAfford ? 'affordable' : 'unaffordable'}`;
+    card.onclick = () => buyAsset(asset.id);
+
+    card.innerHTML = `
+      <div class="flex items-start gap-3">
+        <div class="text-2xl leading-none mt-0.5">${asset.icon}</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-1">
+            <div class="font-orbitron text-xs font-bold text-slate-200 truncate">${asset.name}</div>
+            <div class="font-orbitron text-xs font-bold shrink-0 ${isAmber ? 'text-amber-400' : 'text-emerald-400'}">×${owned}</div>
+          </div>
+          <div class="text-xs text-slate-500 mb-2 truncate">${asset.desc}</div>
+          <div class="progress-bar mb-2">
+            <div class="progress-fill" style="width: ${(progress * 100).toFixed(1)}%"></div>
+          </div>
+          <div class="flex items-center justify-between text-xs">
+            <div class="text-amber-400 font-bold">${formatCurrency(cost)}</div>
+            <div class="text-slate-400">${formatCurrency(asset.baseCps)}/s each</div>
+          </div>
+          ${owned > 0 ? `<div class="text-xs text-emerald-600 mt-0.5">Total: +${formatCurrency(totalCps)}/s</div>` : ''}
+        </div>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// ─────────────────────────────────────────
+//  UPDATE HUD & STATS
+// ─────────────────────────────────────────
+function updateUI() {
+  document.getElementById('hud-cash').textContent = formatCurrency(game.cash);
+  document.getElementById('hud-cps').textContent = formatCurrency(game.cps) + '/s';
+  document.getElementById('click-value').textContent = formatCurrency(game.clickValue);
+  document.getElementById('click-count').textContent = `${game.clicks.toLocaleString()} shifts worked`;
+  document.getElementById('stat-total').textContent = formatCurrency(game.totalEarned);
+  document.getElementById('stat-assets').textContent = Object.values(game.owned).reduce((a, b) => a + b, 0);
+  document.getElementById('stat-clicks').textContent = game.clicks.toLocaleString();
+  document.getElementById('stat-time').textContent = formatTime(Date.now() - game.startTime);
+}
+
+// ─────────────────────────────────────────
+//  TICKER TAPE
+// ─────────────────────────────────────────
+const TICKERS = [
+  'SPX +2.31%', 'NDX +1.87%', 'BTC +5.42%', 'ETH +3.11%',
+  'AAPL +0.94%', 'TSLA -1.22%', 'NVDA +4.07%', 'MSFT +1.15%',
+  'AMZN +0.76%', 'META +2.44%', 'VIX -8.33%', 'DXY -0.41%',
+  'OIL +1.19%', 'GOLD +0.33%', 'T-BILL 5.28%', 'FED RATE 5.50%',
+];
+
+function updateTicker() {
+  const shuffle = [...TICKERS].sort(() => Math.random() - 0.5);
+  document.getElementById('ticker-text').textContent =
+    '  ◈  ' + shuffle.join('   ◦   ') + '   ◈   ';
+}
+
+// ─────────────────────────────────────────
+//  GAME LOOP
+// ─────────────────────────────────────────
+let lastTime = Date.now();
+let lastSecond = Date.now();
+let lastRenderAssets = 0;
+
+function gameLoop() {
+  const now = Date.now();
+  const delta = (now - lastTime) / 1000;
+  lastTime = now;
+
+  // Passive income
+  if (game.cps > 0) {
+    const earned = game.cps * delta;
+    game.cash += earned;
+    game.totalEarned += earned;
+    checkMilestones();
+  }
+
+  // Per-second updates
+  if (now - lastSecond >= 1000) {
+    lastSecond = now;
+    game.clickValue = calcClickValue();
+    updateUI();
+
+    // Re-render assets (affordability may have changed)
+    if (now - lastRenderAssets >= 500) {
+      renderAssets();
+      lastRenderAssets = now;
+    }
+  }
+
+  requestAnimationFrame(gameLoop);
+}
+
+// ─────────────────────────────────────────
+//  SAVE / LOAD
+// ─────────────────────────────────────────
+function saveGame(manual = false) {
+  const save = {
+    cash: game.cash,
+    totalEarned: game.totalEarned,
+    clicks: game.clicks,
+    owned: game.owned,
+    startTime: game.startTime,
+    milestonesHit: [...game.milestonesHit],
+    savedAt: Date.now(),
+  };
+  localStorage.setItem('tickerTycoon', JSON.stringify(save));
+
+  const status = document.getElementById('save-status');
+  const now = new Date();
+  status.textContent = `Last saved: ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+  if (manual) addLog('Game saved manually.');
+}
+
+function loadGame() {
+  const raw = localStorage.getItem('tickerTycoon');
+  if (!raw) return;
+  try {
+    const save = JSON.parse(raw);
+
+    // Offline earnings
+    const elapsed = (Date.now() - (save.savedAt || Date.now())) / 1000;
+    const offlineCps = ASSETS.reduce((sum, a) => sum + a.baseCps * (save.owned[a.id] || 0), 0);
+    const offlineEarned = offlineCps * elapsed;
+
+    game.cash = (save.cash || 0) + offlineEarned;
+    game.totalEarned = (save.totalEarned || 0) + offlineEarned;
+    game.clicks = save.clicks || 0;
+    game.owned = save.owned || {};
+    game.startTime = save.startTime || Date.now();
+    game.milestonesHit = new Set(save.milestonesHit || []);
+    game.cps = calcTotalCps();
+    game.clickValue = calcClickValue();
+
+    if (offlineEarned > 0.01) {
+      addLog(`📡 Offline earnings: +${formatCurrency(offlineEarned)} (${Math.floor(elapsed)}s)`);
+    }
+
+    addLog('Portfolio restored from local storage.');
+  } catch (e) {
+    addLog('Failed to load save data.');
+  }
+}
+
+function confirmReset() {
+  if (confirm('RESET ALL PROGRESS?\n\nThis cannot be undone. Your portfolio will be liquidated.')) {
+    localStorage.removeItem('tickerTycoon');
+    location.reload();
+  }
+}
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+function init() {
+  loadGame();
+  renderAssets();
+  updateUI();
+  updateTicker();
+
+  // Start loop
+  lastTime = Date.now();
+  requestAnimationFrame(gameLoop);
+
+  // Auto-save every 30s
+  setInterval(() => saveGame(false), 30000);
+
+  // Ticker refresh every 45s
+  setInterval(updateTicker, 45000);
+
+  // Startup log
+  addLog('TICKER TYCOON terminal online.');
+  addLog('Click [CLOCK IN] to begin generating income.');
+}
+
+init();
+</script>
+</body>
+</html>
