@@ -296,6 +296,11 @@
     color: #888;
     font-style: italic;
   }
+  .tap-lake-hint {
+    color: #557;
+    font-size: 11px;
+    margin-top: 4px;
+  }
   .spinner {
     display: inline-block;
     width: 12px;
@@ -957,9 +962,10 @@ function openTapDialog(latlng) {
   const body = document.getElementById('tapDialogBody');
   const pdfBtn = document.getElementById('tapDialogPdf');
 
-  // Reset dialog state
+  // Reset dialog state — secondary button gets its label/URL set below
   pdfBtn.style.display = 'none';
   pdfBtn.onclick = null;
+  pdfBtn.textContent = '🗺️ Open contour map (PDF)'; // default label until reconfigured
   body.innerHTML = `
     <div class="tap-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
     <div class="tap-lake-status"><span class="spinner"></span> Looking up Minnesota lake info…</div>
@@ -975,49 +981,79 @@ function openTapDialog(latlng) {
   // Cancel
   document.getElementById('tapDialogCancel').onclick = closeTapDialog;
 
+  // The LakeFinder homepage — always available as a fallback so the user
+  // can manually search for the lake they're looking at, even if our API
+  // call to the by_point endpoint fails (e.g., due to mixed-content
+  // blocking when this page is served over HTTPS, the DNR servers being
+  // temporarily down, or the user being outside Minnesota).
+  const LAKEFINDER_HOME = 'https://www.dnr.state.mn.us/lakefind/index.html';
+
+  // Helper: configure the secondary button (PDF or generic LakeFinder link)
+  function configureSecondaryBtn(label, url) {
+    pdfBtn.textContent = label;
+    pdfBtn.style.display = '';
+    pdfBtn.onclick = () => {
+      window.open(url, '_blank', 'noopener');
+      closeTapDialog();
+    };
+  }
+
+  // Default: even before the API responds, show a LakeFinder link.
+  // If we get a better answer back, we'll upgrade it to the direct PDF.
+  configureSecondaryBtn('🔗 Open LakeFinder', LAKEFINDER_HOME);
+
   // Kick off lake lookup (only if enabled)
   if (lakeInfoEnabled) {
     fetchMnLakeInfo(lat, lng).then(info => {
       // Make sure the dialog is still open and still for this same point
       if (!dialog.classList.contains('show')) return;
-      if (!info || info._error) {
-        body.querySelector('.tap-lake-status').innerHTML =
-          '<span class="tap-lake-none">No Minnesota lake found here</span>';
+
+      const statusEl = body.querySelector('.tap-lake-status');
+
+      // Case 1: API call failed (CORS / mixed-content / network error).
+      // We keep the LakeFinder link visible and tell the user what happened.
+      if (info && info._error) {
+        statusEl.innerHTML = `
+          <span class="tap-lake-none">Couldn't reach the MN DNR API from here.</span>
+          <div class="tap-lake-hint">Tap "Open LakeFinder" to look up the lake manually.</div>
+        `;
         return;
       }
+
+      // Case 2: API responded successfully but no lake within 1km.
+      // Still show the LakeFinder link — maybe they're between lakes
+      // or want to search by name.
+      if (!info) {
+        statusEl.innerHTML = `
+          <span class="tap-lake-none">No Minnesota lake found at this exact spot.</span>
+          <div class="tap-lake-hint">Tap "Open LakeFinder" to search by name.</div>
+        `;
+        return;
+      }
+
+      // Case 3: We got real lake data. Show name + stats.
       const m = info.morphology || {};
       const stats = [];
       if (m.max_depth) stats.push(`Max depth: <b>${m.max_depth} ft</b>`);
       if (m.area)      stats.push(`<b>${m.area.toLocaleString()} acres</b>`);
-      body.querySelector('.tap-lake-status').innerHTML = `
+      statusEl.innerHTML = `
         <div class="tap-lake-name">📍 ${escapeHtml(info.name || 'Unnamed lake')}${info.nearest_town ? `, near ${escapeHtml(info.nearest_town)}` : ''}</div>
         ${stats.length ? `<div class="tap-lake-stats">${stats.join(' • ')}</div>` : ''}
       `;
 
-      // Enable the PDF button if a contour map exists for this lake
+      // If a contour map exists for this specific lake, upgrade the
+      // button from "Open LakeFinder" to the direct PDF download.
       const mapid = (info.mapid && info.mapid[0]) ? String(info.mapid[0]).toLowerCase() : null;
       const hasPdf = mapid && info.resources && info.resources.lakeMap === 1;
       if (hasPdf) {
         const pdfUrl = `https://files.dnr.state.mn.us/lakefind/data/lakemaps/${mapid}.pdf`;
-        pdfBtn.style.display = '';
-        pdfBtn.onclick = () => {
-          // Open in a new tab so the user keeps their pins/state on the map
-          window.open(pdfUrl, '_blank', 'noopener');
-          closeTapDialog();
-        };
-      } else {
-        // No PDF, but offer the LakeFinder web page as a fallback
-        const fallbackUrl = `https://www.dnr.state.mn.us/lakefind/index.html`;
-        pdfBtn.textContent = '🔗 Open LakeFinder';
-        pdfBtn.style.display = '';
-        pdfBtn.onclick = () => {
-          window.open(fallbackUrl, '_blank', 'noopener');
-          closeTapDialog();
-        };
+        configureSecondaryBtn('🗺️ Open contour map (PDF)', pdfUrl);
       }
+      // else: leave the default "Open LakeFinder" link in place
     });
   } else {
-    body.querySelector('.tap-lake-status').textContent = 'Lake auto-lookup is off. Toggle it in the layers panel.';
+    body.querySelector('.tap-lake-status').textContent =
+      'Lake auto-lookup is off. The LakeFinder link below still works.';
   }
 }
 
