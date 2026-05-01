@@ -304,13 +304,16 @@
   <label><input type="radio" name="base" value="sat" /> Satellite</label>
   <label><input type="radio" name="base" value="topo" /> Topographic</label>
   <h4 style="margin-top:8px;">Depth Overlays</h4>
+  <label><input type="checkbox" id="mnBathyToggle" checked /> MN Lake Contours <span class="hint">(MN only)</span></label>
   <label><input type="checkbox" id="noaaToggle" checked /> NOAA Charts <span class="hint">(US/Great Lakes)</span></label>
   <label><input type="checkbox" id="oceanToggle" /> Ocean Bathymetry</label>
   <label><input type="checkbox" id="seaMapToggle" checked /> OpenSeaMap Marks</label>
   <label><input type="checkbox" id="gebcoToggle" /> GEBCO (Global)</label>
+  <h4 style="margin-top:8px;">Lake Info</h4>
+  <label><input type="checkbox" id="lakeInfoToggle" checked /> Auto-lookup MN lake depth on tap</label>
   <p class="coverage-note">
-    Depth data coverage varies. NOAA covers US coastal waters and the Great Lakes.
-    For inland lakes, check your state DNR for detailed maps.
+    MN Lake Contours: ~4,500 surveyed Minnesota lakes (zoom in to see).
+    Tap a Minnesota lake to see max depth, area, and fish species.
   </p>
 </div>
 
@@ -396,21 +399,62 @@ baseLayers.osm.addTo(map); // start with OSM
 
 /* ---- DEPTH OVERLAYS ----
  * Lake bathymetry is genuinely hard to get as free global tiles. We
- * stack three sources so the user gets the best available coverage:
+ * stack four sources so the user gets the best available coverage:
  *
- * 1. ESRI Ocean Basemap — used as a BASE layer option. Includes shaded
- *    relief bathymetry + depth contours for oceans, Great Lakes, and
- *    many large inland water bodies. Best general-purpose choice.
+ * 1. MN DNR Lake Bathymetric Contours — official Minnesota state
+ *    contour lines for ~4,500 surveyed inland lakes. Best-in-class
+ *    for any MN lake that's been mapped. ArcGIS REST exportImage
+ *    endpoint, rendered through L.esri-style URL templating.
  *
  * 2. NOAA RNC nautical charts — official US marine charts (raster).
  *    Covers US coastal waters AND the Great Lakes with full depth
- *    soundings and contours. Best where it has coverage.
+ *    soundings and contours.
  *
- * 3. OpenSeaMap "seamark" — community-contributed nautical marks,
+ * 3. ESRI Ocean Basemap — shaded relief bathymetry for oceans, Great
+ *    Lakes, and many large inland water bodies.
+ *
+ * 4. OpenSeaMap "seamark" — community-contributed nautical marks,
  *    buoys, and depth points overlaid on any base layer.
  */
 
-// ESRI Ocean — used as a base layer (added to baseLayers above? No, defined here as it's depth-specific)
+// MN DNR Lake Bathymetric Contours via ArcGIS REST exportImage.
+// Layer 54 = Lake Bathymetric Contours within the WHAF auxiliary water service.
+// We use Leaflet's L.tileLayer with a templated bbox in EPSG:3857 (web mercator),
+// requesting transparent PNGs that overlay any base map cleanly.
+const mnBathyLayer = L.tileLayer(
+  'https://arcgis.dnr.state.mn.us/arcgis/rest/services/ewr/whaf2_auxiliaryfeatures_water/MapServer/export' +
+  '?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256' +
+  '&dpi=96&format=png32&transparent=true&layers=show:54&f=image',
+  {
+    attribution: '© MN DNR Lake Bathymetry',
+    minZoom: 10,        // contours are meaningless when zoomed way out
+    maxZoom: 18,
+    opacity: 0.9,
+    bounds: L.latLngBounds([43.4, -97.3], [49.4, -89.5]), // Minnesota state extent
+  }
+);
+// Leaflet doesn't substitute {bbox-epsg-3857} natively; we override createTile
+// to compute the bbox per tile in web mercator meters. This is the standard
+// pattern for hooking ArcGIS dynamic map services into Leaflet without esri-leaflet.
+mnBathyLayer.getTileUrl = function (coords) {
+  const tileSize = this.getTileSize();
+  const nwPoint = coords.scaleBy(tileSize);
+  const sePoint = nwPoint.add(tileSize);
+  const nw = this._map.unproject(nwPoint, coords.z);
+  const se = this._map.unproject(sePoint, coords.z);
+  // Convert lng/lat → web-mercator meters
+  const project = (lng, lat) => {
+    const R = 6378137;
+    const x = R * lng * Math.PI / 180;
+    const y = R * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
+    return [x, y];
+  };
+  const [xmin, ymax] = project(nw.lng, nw.lat);
+  const [xmax, ymin] = project(se.lng, se.lat);
+  return this._url.replace('{bbox-epsg-3857}', `${xmin},${ymin},${xmax},${ymax}`);
+};
+
+// ESRI Ocean — shaded relief bathymetry
 const oceanBaseLayer = L.tileLayer(
   'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
   {
@@ -444,15 +488,13 @@ const seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y
   maxZoom: 18,
   opacity: 0.9,
 });
-seaMapLayer.addTo(map); // visible by default
 
-// Default ON so users immediately see lake/water depth where available
+// Default-on overlays: MN bathy + OpenSeaMap marks
+mnBathyLayer.addTo(map);
+seaMapLayer.addTo(map);
 noaaChartsLayer.addTo(map);
 
-/* ---- GEBCO bathymetric WMS (global ocean & deep-lake depths) ----
- * GEBCO provides a public WMS that Leaflet can render as a tiled layer.
- * Best for ocean/coastal use; some large lakes have data too.
- */
+/* ---- GEBCO bathymetric WMS (global ocean & deep-lake depths) ---- */
 const gebcoLayer = L.tileLayer.wms('https://wms.gebco.net/mapserv', {
   layers: 'GEBCO_LATEST',
   format: 'image/png',
@@ -477,6 +519,10 @@ document.querySelectorAll('input[name="base"]').forEach(radio => {
 });
 
 // Overlay toggles
+document.getElementById('mnBathyToggle').addEventListener('change', e => {
+  if (e.target.checked) mnBathyLayer.addTo(map);
+  else map.removeLayer(mnBathyLayer);
+});
 document.getElementById('seaMapToggle').addEventListener('change', e => {
   if (e.target.checked) seaMapLayer.addTo(map);
   else map.removeLayer(seaMapLayer);
@@ -527,6 +573,81 @@ function saveToStorage() {
     console.error('Failed to write localStorage:', err);
     toast('Could not save spot', 'error');
   }
+}
+
+/* =====================================================================
+ *  4b. MN DNR LakeFinder API — depth + species lookup
+ *  ---------------------------------------------------------------------
+ *  Endpoint: services.dnr.state.mn.us/api/lakefinder/by_point/v1
+ *  Returns nearby lakes within ~1km of a lat/lon, with morphology
+ *  (max_depth, mean_depth, area in acres, shore_length) and biology
+ *  (fishSpecies, invasiveSpecies). We pick the closest result whose
+ *  morphology has actual data (max_depth > 0) and surface it in the
+ *  marker popup.
+ *
+ *  This works ONLY for Minnesota — the API returns no results for
+ *  points outside the state. We fail silently in that case.
+ * ===================================================================== */
+const lakeInfoCache = new Map();   // lat,lng key → cached lake info (avoid duplicate calls)
+let lakeInfoEnabled = true;        // toggled via UI
+
+async function fetchMnLakeInfo(lat, lng) {
+  // Round to ~100m precision for caching purposes
+  const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
+  if (lakeInfoCache.has(key)) return lakeInfoCache.get(key);
+
+  try {
+    // NOTE: API is HTTP not HTTPS. On HTTPS pages the browser will
+    // upgrade-or-block. We catch the failure quietly.
+    const url = `https://services.dnr.state.mn.us/api/lakefinder/by_point/v1?lat=${lat}&lon=${lng}&radius=1000`;
+    const r = await fetch(url, { mode: 'cors' });
+    if (!r.ok) throw new Error('LakeFinder ' + r.status);
+    const data = await r.json();
+    if (!data.results || !data.results.length) {
+      lakeInfoCache.set(key, null);
+      return null;
+    }
+    // Prefer a result that has real depth data; fall back to first
+    const best = data.results.find(l => l.morphology && l.morphology.max_depth > 0)
+              || data.results[0];
+    lakeInfoCache.set(key, best);
+    return best;
+  } catch (err) {
+    console.warn('LakeFinder lookup failed:', err);
+    lakeInfoCache.set(key, null);
+    return null;
+  }
+}
+
+function lakeInfoToHtml(info) {
+  if (!info) return '';
+  const m = info.morphology || {};
+  const bits = [];
+  if (m.max_depth)   bits.push(`Max depth: <b>${m.max_depth} ft</b>`);
+  if (m.mean_depth)  bits.push(`Mean depth: <b>${m.mean_depth} ft</b>`);
+  if (m.area)        bits.push(`Area: <b>${m.area.toLocaleString()} acres</b>`);
+  if (m.shore_length) bits.push(`Shoreline: <b>${m.shore_length} mi</b>`);
+
+  const fish = (info.fishSpecies || []).filter(Boolean);
+  const fishHtml = fish.length
+    ? `<div class="fish-list">🐟 ${escapeHtml(fish.slice(0, 8).join(', '))}${fish.length > 8 ? '…' : ''}</div>`
+    : '';
+
+  const invasive = (info.invasiveSpecies || []).filter(Boolean);
+  const invHtml = invasive.length
+    ? `<div class="invasive">⚠ Invasive: ${escapeHtml(invasive.join(', '))}</div>`
+    : '';
+
+  if (!bits.length && !fishHtml && !invHtml) return '';
+
+  return `
+    <div class="lake-info">
+      <div class="lake-name">📍 ${escapeHtml(info.name || 'Unnamed')}${info.nearest_town ? ` <span class="lake-town">near ${escapeHtml(info.nearest_town)}</span>` : ''}</div>
+      <div class="lake-stats">${bits.join(' • ')}</div>
+      ${fishHtml}
+      ${invHtml}
+      <div class="lake-source">Data: MN DNR LakeFinder</div>
+    </div>`;
 }
 
 /* =====================================================================
