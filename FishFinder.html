@@ -178,6 +178,177 @@
   .btn-del   { background: #c62828; color: #fff; }
   .btn-del:hover  { background: #a32020; }
 
+  /* ----------  LAKE INFO BLOCK (inside popup)  ---------- */
+  .lake-info {
+    background: linear-gradient(135deg, #e8f4fb, #d5e9f5);
+    border-left: 3px solid #0a3d5c;
+    border-radius: 6px;
+    padding: 8px 10px;
+    margin: 4px 0 2px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .lake-name {
+    font-weight: 700;
+    color: #0a3d5c;
+    font-size: 13px;
+    margin-bottom: 3px;
+  }
+  .lake-town {
+    font-weight: 400;
+    font-size: 11px;
+    color: #557;
+  }
+  .lake-stats {
+    color: #234;
+    margin-bottom: 4px;
+  }
+  .fish-list {
+    color: #2e5d2e;
+    margin-top: 4px;
+    font-size: 11px;
+  }
+  .invasive {
+    color: #b22;
+    margin-top: 4px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .lake-source {
+    margin-top: 4px;
+    font-size: 9px;
+    color: #888;
+    text-align: right;
+    font-style: italic;
+  }
+  .lake-loading {
+    color: #557;
+    font-size: 11px;
+    font-style: italic;
+    padding: 4px 0;
+  }
+
+  /* ----------  TAP-CHOICE DIALOG  ----------
+   * Mobile-first action sheet that slides up from the bottom on phones,
+   * appears as a centered modal on wider screens.
+   */
+  .tap-dialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 3000;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    animation: dialog-fade-in 0.2s ease-out;
+  }
+  .tap-dialog-backdrop.show {
+    display: flex;
+  }
+  .tap-dialog {
+    background: #fff;
+    width: 100%;
+    max-width: 480px;
+    border-radius: 16px 16px 0 0;
+    padding: 16px 16px 22px;
+    box-shadow: 0 -8px 30px rgba(0,0,0,0.3);
+    animation: dialog-slide-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  @media (min-width: 600px) {
+    .tap-dialog-backdrop { align-items: center; }
+    .tap-dialog { border-radius: 16px; max-width: 420px; }
+  }
+  .tap-dialog-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0a3d5c;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .tap-dialog-body {
+    background: #f5f9fc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+    font-size: 13px;
+  }
+  .tap-coords {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 11px;
+    color: #678;
+    margin-bottom: 6px;
+  }
+  .tap-lake-status {
+    color: #234;
+    line-height: 1.4;
+  }
+  .tap-lake-name {
+    font-weight: 700;
+    color: #0a3d5c;
+    font-size: 14px;
+  }
+  .tap-lake-stats {
+    font-size: 12px;
+    margin-top: 3px;
+    color: #345;
+  }
+  .tap-lake-none {
+    color: #888;
+    font-style: italic;
+  }
+  .spinner {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border: 2px solid #ccd;
+    border-top-color: #0a3d5c;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tap-dialog-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tap-btn {
+    width: 100%;
+    padding: 14px 16px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s, transform 0.08s;
+    text-align: center;
+  }
+  .tap-btn:active { transform: scale(0.98); }
+  .tap-btn-pin {
+    background: #ff6b35;
+    color: #fff;
+  }
+  .tap-btn-pin:hover { background: #e85a24; }
+  .tap-btn-pdf {
+    background: #0a3d5c;
+    color: #fff;
+  }
+  .tap-btn-pdf:hover { background: #082e44; }
+  .tap-btn-cancel {
+    background: #f0f0f0;
+    color: #555;
+  }
+  .tap-btn-cancel:hover { background: #e0e0e0; }
+  @keyframes dialog-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes dialog-slide-up {
+    from { transform: translateY(100%); }
+    to   { transform: translateY(0); }
+  }
+
   /* ----------  TOAST NOTIFICATIONS  ---------- */
   .toast-host {
     position: absolute;
@@ -304,7 +475,6 @@
   <label><input type="radio" name="base" value="sat" /> Satellite</label>
   <label><input type="radio" name="base" value="topo" /> Topographic</label>
   <h4 style="margin-top:8px;">Depth Overlays</h4>
-  <label><input type="checkbox" id="mnBathyToggle" checked /> MN Lake Contours <span class="hint">(MN only)</span></label>
   <label><input type="checkbox" id="noaaToggle" checked /> NOAA Charts <span class="hint">(US/Great Lakes)</span></label>
   <label><input type="checkbox" id="oceanToggle" /> Ocean Bathymetry</label>
   <label><input type="checkbox" id="seaMapToggle" checked /> OpenSeaMap Marks</label>
@@ -312,8 +482,9 @@
   <h4 style="margin-top:8px;">Lake Info</h4>
   <label><input type="checkbox" id="lakeInfoToggle" checked /> Auto-lookup MN lake depth on tap</label>
   <p class="coverage-note">
-    MN Lake Contours: ~4,500 surveyed Minnesota lakes (zoom in to see).
-    Tap a Minnesota lake to see max depth, area, and fish species.
+    <b>MN inland lakes:</b> Tap any Minnesota lake to drop a pin OR
+    open the official DNR contour map PDF (where available).<br/>
+    <b>Oceans &amp; Great Lakes:</b> Toggle NOAA charts above for real depth contours.
   </p>
 </div>
 
@@ -337,6 +508,25 @@
 
 <!-- ============== MAP CONTAINER ============== -->
 <div id="map"></div>
+
+<!-- ============== TAP-CHOICE DIALOG ============== -->
+<div class="tap-dialog-backdrop" id="tapDialog">
+  <div class="tap-dialog">
+    <div class="tap-dialog-title">📍 What do you want to do?</div>
+    <div class="tap-dialog-body" id="tapDialogBody"></div>
+    <div class="tap-dialog-actions">
+      <button class="tap-btn tap-btn-pin" id="tapDialogPin">
+        🎣 Drop fishing pin
+      </button>
+      <button class="tap-btn tap-btn-pdf" id="tapDialogPdf">
+        🗺️ Open contour map (PDF)
+      </button>
+      <button class="tap-btn tap-btn-cancel" id="tapDialogCancel">
+        Cancel
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- ============== Leaflet JS from CDN ============== -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -398,61 +588,20 @@ const baseLayers = {
 baseLayers.osm.addTo(map); // start with OSM
 
 /* ---- DEPTH OVERLAYS ----
- * Lake bathymetry is genuinely hard to get as free global tiles. We
- * stack four sources so the user gets the best available coverage:
+ * Honest reality: there is no public tile service that renders Minnesota
+ * inland lake contours as a transparent overlay. The DNR distributes
+ * those as per-lake PDF maps on LakeFinder, not as web tiles. So our
+ * approach is two-pronged:
  *
- * 1. MN DNR Lake Bathymetric Contours — official Minnesota state
- *    contour lines for ~4,500 surveyed inland lakes. Best-in-class
- *    for any MN lake that's been mapped. ArcGIS REST exportImage
- *    endpoint, rendered through L.esri-style URL templating.
+ *   • For OCEANS, GREAT LAKES, and US COASTAL waters → use NOAA's
+ *     official chart tiles + ESRI Ocean bathymetry (real depth contours).
+ *   • For MINNESOTA INLAND LAKES → tap a lake to either drop a pin OR
+ *     open the official DNR contour map PDF for that specific lake.
  *
- * 2. NOAA RNC nautical charts — official US marine charts (raster).
- *    Covers US coastal waters AND the Great Lakes with full depth
- *    soundings and contours.
- *
- * 3. ESRI Ocean Basemap — shaded relief bathymetry for oceans, Great
- *    Lakes, and many large inland water bodies.
- *
- * 4. OpenSeaMap "seamark" — community-contributed nautical marks,
- *    buoys, and depth points overlaid on any base layer.
+ * The PDF approach actually gives you BETTER depth data for MN lakes
+ * than any tile overlay would, because you get the full DNR survey
+ * with 5-foot contours, structure, and access points.
  */
-
-// MN DNR Lake Bathymetric Contours via ArcGIS REST exportImage.
-// Layer 54 = Lake Bathymetric Contours within the WHAF auxiliary water service.
-// We use Leaflet's L.tileLayer with a templated bbox in EPSG:3857 (web mercator),
-// requesting transparent PNGs that overlay any base map cleanly.
-const mnBathyLayer = L.tileLayer(
-  'https://arcgis.dnr.state.mn.us/arcgis/rest/services/ewr/whaf2_auxiliaryfeatures_water/MapServer/export' +
-  '?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256' +
-  '&dpi=96&format=png32&transparent=true&layers=show:54&f=image',
-  {
-    attribution: '© MN DNR Lake Bathymetry',
-    minZoom: 10,        // contours are meaningless when zoomed way out
-    maxZoom: 18,
-    opacity: 0.9,
-    bounds: L.latLngBounds([43.4, -97.3], [49.4, -89.5]), // Minnesota state extent
-  }
-);
-// Leaflet doesn't substitute {bbox-epsg-3857} natively; we override createTile
-// to compute the bbox per tile in web mercator meters. This is the standard
-// pattern for hooking ArcGIS dynamic map services into Leaflet without esri-leaflet.
-mnBathyLayer.getTileUrl = function (coords) {
-  const tileSize = this.getTileSize();
-  const nwPoint = coords.scaleBy(tileSize);
-  const sePoint = nwPoint.add(tileSize);
-  const nw = this._map.unproject(nwPoint, coords.z);
-  const se = this._map.unproject(sePoint, coords.z);
-  // Convert lng/lat → web-mercator meters
-  const project = (lng, lat) => {
-    const R = 6378137;
-    const x = R * lng * Math.PI / 180;
-    const y = R * Math.log(Math.tan(Math.PI / 4 + lat * Math.PI / 360));
-    return [x, y];
-  };
-  const [xmin, ymax] = project(nw.lng, nw.lat);
-  const [xmax, ymin] = project(se.lng, se.lat);
-  return this._url.replace('{bbox-epsg-3857}', `${xmin},${ymin},${xmax},${ymax}`);
-};
 
 // ESRI Ocean — shaded relief bathymetry
 const oceanBaseLayer = L.tileLayer(
@@ -489,8 +638,7 @@ const seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y
   opacity: 0.9,
 });
 
-// Default-on overlays: MN bathy + OpenSeaMap marks
-mnBathyLayer.addTo(map);
+// Default-on overlays
 seaMapLayer.addTo(map);
 noaaChartsLayer.addTo(map);
 
@@ -519,10 +667,6 @@ document.querySelectorAll('input[name="base"]').forEach(radio => {
 });
 
 // Overlay toggles
-document.getElementById('mnBathyToggle').addEventListener('change', e => {
-  if (e.target.checked) mnBathyLayer.addTo(map);
-  else map.removeLayer(mnBathyLayer);
-});
 document.getElementById('seaMapToggle').addEventListener('change', e => {
   if (e.target.checked) seaMapLayer.addTo(map);
   else map.removeLayer(seaMapLayer);
@@ -530,6 +674,9 @@ document.getElementById('seaMapToggle').addEventListener('change', e => {
 document.getElementById('gebcoToggle').addEventListener('change', e => {
   if (e.target.checked) gebcoLayer.addTo(map);
   else map.removeLayer(gebcoLayer);
+});
+document.getElementById('lakeInfoToggle').addEventListener('change', e => {
+  lakeInfoEnabled = e.target.checked;
 });
 document.getElementById('noaaToggle').addEventListener('change', e => {
   if (e.target.checked) noaaChartsLayer.addTo(map);
@@ -596,10 +743,12 @@ async function fetchMnLakeInfo(lat, lng) {
   const key = `${lat.toFixed(3)},${lng.toFixed(3)}`;
   if (lakeInfoCache.has(key)) return lakeInfoCache.get(key);
 
+  // The MN DNR LakeFinder API is served over HTTPS. If you're running this
+  // page over plain http:// the browser may upgrade or block; if you're on
+  // https:// most modern browsers handle the upgrade transparently.
+  const url = `https://services.dnr.state.mn.us/api/lakefinder/by_point/v1?lat=${lat}&lon=${lng}&radius=1000`;
+
   try {
-    // NOTE: API is HTTP not HTTPS. On HTTPS pages the browser will
-    // upgrade-or-block. We catch the failure quietly.
-    const url = `https://services.dnr.state.mn.us/api/lakefinder/by_point/v1?lat=${lat}&lon=${lng}&radius=1000`;
     const r = await fetch(url, { mode: 'cors' });
     if (!r.ok) throw new Error('LakeFinder ' + r.status);
     const data = await r.json();
@@ -614,13 +763,29 @@ async function fetchMnLakeInfo(lat, lng) {
     return best;
   } catch (err) {
     console.warn('LakeFinder lookup failed:', err);
-    lakeInfoCache.set(key, null);
-    return null;
+    // Cache the failure so we don't keep retrying for the same coords
+    lakeInfoCache.set(key, { _error: true, lat, lng });
+    return { _error: true, lat, lng };
   }
 }
 
 function lakeInfoToHtml(info) {
   if (!info) return '';
+
+  // If the API call failed, offer a manual link to LakeFinder
+  if (info._error) {
+    const url = `https://www.dnr.state.mn.us/lakefind/showmap.html?downum=${''}&lat=${info.lat}&lon=${info.lng}`;
+    return `
+      <div class="lake-info lake-info-fallback">
+        <div class="lake-name">⚠ Couldn't fetch lake info</div>
+        <div class="lake-stats">
+          <a href="https://www.dnr.state.mn.us/lakefind/index.html" target="_blank" rel="noopener">
+            Open MN DNR LakeFinder ↗
+          </a>
+        </div>
+        <div class="lake-source">API unreachable (CORS or offline)</div>
+      </div>`;
+  }
   const m = info.morphology || {};
   const bits = [];
   if (m.max_depth)   bits.push(`Max depth: <b>${m.max_depth} ft</b>`);
@@ -660,10 +825,13 @@ function makeId() {
 /** Build the HTML form shown inside a marker popup. */
 function popupHtml(wp) {
   const created = new Date(wp.created).toLocaleString();
+  // Inline cached lake info (if we already fetched it for this waypoint)
+  const lakeHtml = wp.lakeInfo ? lakeInfoToHtml(wp.lakeInfo) : '';
   return `
     <div class="spot-form" data-id="${wp.id}">
       <h3>🐟 Fishing Spot</h3>
       <div class="meta">${wp.lat.toFixed(5)}, ${wp.lng.toFixed(5)}<br/>Saved: ${created}</div>
+      ${lakeHtml || '<div class="lake-info-pending" data-id="' + wp.id + '"></div>'}
       <textarea placeholder="Notes — bait, depth, time, species…">${escapeHtml(wp.notes || '')}</textarea>
       <div class="form-row">
         <button class="btn-save">💾 Save</button>
@@ -686,7 +854,7 @@ function addMarker(wp) {
     .addTo(map);
 
   // When the popup opens, attach handlers to its Save / Delete buttons.
-  marker.on('popupopen', e => {
+  marker.on('popupopen', async e => {
     const root = e.popup.getElement();
     if (!root) return;
 
@@ -707,6 +875,21 @@ function addMarker(wp) {
       removeWaypoint(wp.id);
       toast('Spot deleted');
     };
+
+    // Lazy-load MN DNR lake info if enabled and not yet fetched
+    if (lakeInfoEnabled && !wp.lakeInfo && wp.lakeInfoFetched !== true) {
+      const placeholder = root.querySelector('.lake-info-pending');
+      if (placeholder) placeholder.innerHTML = '<div class="lake-loading">🔍 Looking up lake info…</div>';
+      const info = await fetchMnLakeInfo(wp.lat, wp.lng);
+      wp.lakeInfoFetched = true;
+      if (info) {
+        wp.lakeInfo = info;
+        // Don't persist error-stub objects to localStorage — only real data
+        if (!info._error) saveToStorage();
+      }
+      // Re-render the popup with the new info (or hide the placeholder)
+      marker.setPopupContent(popupHtml(wp));
+    }
   });
 
   markersById.set(wp.id, marker);
@@ -747,17 +930,100 @@ function updateSpotCount() {
 }
 
 /* =====================================================================
- *  5. CLICK & LONG-PRESS to drop a pin
+ *  5. CLICK & LONG-PRESS to open the tap dialog
  *  ---------------------------------------------------------------------
- *  Desktop: a normal `click` fires `addWaypoint`.
- *  Mobile: Leaflet emits a `contextmenu` event on long-press out of the
- *  box, so we listen for that too.
+ *  Instead of immediately dropping a pin, we open a modal that lets the
+ *  user choose:
+ *    • Drop a fishing-spot pin here
+ *    • View the official MN DNR contour-map PDF (if this is a MN lake
+ *      that's been surveyed and has a `mapid`)
+ *    • Cancel
+ *
+ *  Behind the scenes we kick off the LakeFinder API call as soon as the
+ *  user taps so the dialog can show the lake name + depth and enable
+ *  the PDF button by the time they read the modal. If the API hasn't
+ *  responded yet we show a spinner; if there's no MN lake here we just
+ *  hide the contour-map option.
  * ===================================================================== */
-map.on('click', e => addWaypoint(e.latlng.lat, e.latlng.lng));
+map.on('click', e => openTapDialog(e.latlng));
 map.on('contextmenu', e => {
   e.originalEvent.preventDefault?.();
-  addWaypoint(e.latlng.lat, e.latlng.lng);
+  openTapDialog(e.latlng);
 });
+
+function openTapDialog(latlng) {
+  const lat = latlng.lat, lng = latlng.lng;
+  const dialog = document.getElementById('tapDialog');
+  const body = document.getElementById('tapDialogBody');
+  const pdfBtn = document.getElementById('tapDialogPdf');
+
+  // Reset dialog state
+  pdfBtn.style.display = 'none';
+  pdfBtn.onclick = null;
+  body.innerHTML = `
+    <div class="tap-coords">${lat.toFixed(5)}, ${lng.toFixed(5)}</div>
+    <div class="tap-lake-status"><span class="spinner"></span> Looking up Minnesota lake info…</div>
+  `;
+  dialog.classList.add('show');
+
+  // Pin button always works
+  document.getElementById('tapDialogPin').onclick = () => {
+    closeTapDialog();
+    addWaypoint(lat, lng);
+  };
+
+  // Cancel
+  document.getElementById('tapDialogCancel').onclick = closeTapDialog;
+
+  // Kick off lake lookup (only if enabled)
+  if (lakeInfoEnabled) {
+    fetchMnLakeInfo(lat, lng).then(info => {
+      // Make sure the dialog is still open and still for this same point
+      if (!dialog.classList.contains('show')) return;
+      if (!info || info._error) {
+        body.querySelector('.tap-lake-status').innerHTML =
+          '<span class="tap-lake-none">No Minnesota lake found here</span>';
+        return;
+      }
+      const m = info.morphology || {};
+      const stats = [];
+      if (m.max_depth) stats.push(`Max depth: <b>${m.max_depth} ft</b>`);
+      if (m.area)      stats.push(`<b>${m.area.toLocaleString()} acres</b>`);
+      body.querySelector('.tap-lake-status').innerHTML = `
+        <div class="tap-lake-name">📍 ${escapeHtml(info.name || 'Unnamed lake')}${info.nearest_town ? `, near ${escapeHtml(info.nearest_town)}` : ''}</div>
+        ${stats.length ? `<div class="tap-lake-stats">${stats.join(' • ')}</div>` : ''}
+      `;
+
+      // Enable the PDF button if a contour map exists for this lake
+      const mapid = (info.mapid && info.mapid[0]) ? String(info.mapid[0]).toLowerCase() : null;
+      const hasPdf = mapid && info.resources && info.resources.lakeMap === 1;
+      if (hasPdf) {
+        const pdfUrl = `https://files.dnr.state.mn.us/lakefind/data/lakemaps/${mapid}.pdf`;
+        pdfBtn.style.display = '';
+        pdfBtn.onclick = () => {
+          // Open in a new tab so the user keeps their pins/state on the map
+          window.open(pdfUrl, '_blank', 'noopener');
+          closeTapDialog();
+        };
+      } else {
+        // No PDF, but offer the LakeFinder web page as a fallback
+        const fallbackUrl = `https://www.dnr.state.mn.us/lakefind/index.html`;
+        pdfBtn.textContent = '🔗 Open LakeFinder';
+        pdfBtn.style.display = '';
+        pdfBtn.onclick = () => {
+          window.open(fallbackUrl, '_blank', 'noopener');
+          closeTapDialog();
+        };
+      }
+    });
+  } else {
+    body.querySelector('.tap-lake-status').textContent = 'Lake auto-lookup is off. Toggle it in the layers panel.';
+  }
+}
+
+function closeTapDialog() {
+  document.getElementById('tapDialog').classList.remove('show');
+}
 
 /* =====================================================================
  *  6. GPS — continuous tracking with optional "follow" mode
