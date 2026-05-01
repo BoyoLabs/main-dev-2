@@ -10,6 +10,60 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
 <style>
+  /* ----------  THEME VARIABLES  ----------
+   * All UI chrome (panels, toolbar, popups, dialog) reads from these.
+   * Dark mode just swaps the values via [data-theme="dark"] — the map
+   * tiles themselves don't need to change since base maps are already
+   * raster images.
+   */
+  :root {
+    --bg-panel: #ffffff;
+    --bg-panel-soft: #f5f9fc;
+    --bg-input: #f0f7fc;
+    --text-primary: #0a3d5c;
+    --text-body: #234;
+    --text-muted: #678;
+    --text-faint: #888;
+    --border-soft: #e0e0e0;
+    --border-medium: #ccc;
+    --shadow-panel: 0 3px 10px rgba(0,0,0,0.3);
+    --shadow-deep: 0 -8px 30px rgba(0,0,0,0.3);
+    --backdrop: rgba(0,0,0,0.45);
+    --header-bg: linear-gradient(180deg, rgba(10,61,92,0.95), rgba(10,61,92,0.85));
+    --header-text: #fff;
+    --accent: #ff6b35;
+    --accent-hover: #e85a24;
+    --accent-deep: #0a3d5c;
+    --accent-deep-hover: #082e44;
+    --map-fallback: #a4cbe3;
+    --lake-info-bg: linear-gradient(135deg, #e8f4fb, #d5e9f5);
+    --tile-filter: none;  /* darken map tiles in dark mode */
+  }
+
+  [data-theme="dark"] {
+    --bg-panel: #1e2733;
+    --bg-panel-soft: #161d27;
+    --bg-input: #0f1620;
+    --text-primary: #6cb2e0;
+    --text-body: #d8e1ea;
+    --text-muted: #8ea0b3;
+    --text-faint: #6b7a8c;
+    --border-soft: #2c3744;
+    --border-medium: #3a4654;
+    --shadow-panel: 0 3px 10px rgba(0,0,0,0.6);
+    --shadow-deep: 0 -8px 30px rgba(0,0,0,0.7);
+    --backdrop: rgba(0,0,0,0.7);
+    --header-bg: linear-gradient(180deg, rgba(15,22,32,0.97), rgba(15,22,32,0.88));
+    --header-text: #d8e1ea;
+    --accent: #ff8255;          /* slightly warmer in dark mode for contrast */
+    --accent-hover: #ff6b35;
+    --accent-deep: #2a5a82;
+    --accent-deep-hover: #357099;
+    --map-fallback: #1a2638;
+    --lake-info-bg: linear-gradient(135deg, #1f2d3d, #243446);
+    --tile-filter: brightness(0.75) saturate(0.85) hue-rotate(180deg) invert(1); /* dim+invert map tiles */
+  }
+
   /* ----------  RESET & BASE  ---------- */
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { height: 100%; width: 100%; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -19,7 +73,14 @@
     position: absolute;
     inset: 0;          /* top:0; right:0; bottom:0; left:0; */
     z-index: 1;
-    background: #a4cbe3;
+    background: var(--map-fallback);
+  }
+  /* Dark mode tile dimming — applied only to base map tiles, not to UI overlays.
+   * The hue-rotate+invert trick is the standard technique for "dark map mode"
+   * without needing a different tile provider. Markers, popups, and overlay
+   * tiles (NOAA, OpenSeaMap) are excluded so they stay readable. */
+  [data-theme="dark"] .leaflet-tile-pane .leaflet-layer:first-child .leaflet-tile {
+    filter: var(--tile-filter);
   }
 
   /* ----------  HEADER BAR  ---------- */
@@ -27,8 +88,8 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     z-index: 1000;
-    background: linear-gradient(180deg, rgba(10,61,92,0.95), rgba(10,61,92,0.85));
-    color: #fff;
+    background: var(--header-bg);
+    color: var(--header-text);
     padding: 12px 16px;
     display: flex;
     align-items: center;
@@ -65,23 +126,23 @@
     height: 52px;
     border-radius: 50%;
     border: none;
-    background: #ffffff;
-    color: #0a3d5c;
+    background: var(--bg-panel);
+    color: var(--text-primary);
     font-size: 22px;
     cursor: pointer;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-panel);
     display: flex;
     align-items: center;
     justify-content: center;
     transition: transform 0.15s, background 0.15s;
   }
-  .ctrl-btn:hover { background: #f0f7fc; transform: scale(1.05); }
+  .ctrl-btn:hover { background: var(--bg-input); transform: scale(1.05); }
   .ctrl-btn:active { transform: scale(0.95); }
   .ctrl-btn.primary {
-    background: #ff6b35;
+    background: var(--accent);
     color: #fff;
   }
-  .ctrl-btn.primary:hover { background: #e85a24; }
+  .ctrl-btn.primary:hover { background: var(--accent-hover); }
   .ctrl-btn.locating {
     animation: pulse 1.2s infinite;
   }
@@ -103,16 +164,16 @@
     bottom: 20px;
     left: 12px;
     z-index: 1000;
-    background: #ffffff;
+    background: var(--bg-panel);
     border-radius: 28px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-panel);
     display: flex;
     overflow: hidden;
   }
   .bottom-toolbar button {
     border: none;
     background: transparent;
-    color: #0a3d5c;
+    color: var(--text-primary);
     padding: 14px 16px;
     font-size: 18px;
     cursor: pointer;
@@ -121,8 +182,8 @@
     align-items: center;
     gap: 6px;
   }
-  .bottom-toolbar button:hover { background: #e8f1f8; }
-  .bottom-toolbar button + button { border-left: 1px solid #e0e0e0; }
+  .bottom-toolbar button:hover { background: var(--bg-input); }
+  .bottom-toolbar button + button { border-left: 1px solid var(--border-soft); }
   .bottom-toolbar .lbl {
     font-size: 12px;
     font-weight: 600;
@@ -235,7 +296,7 @@
   .tap-dialog-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--backdrop);
     z-index: 3000;
     display: none;
     align-items: flex-end;
@@ -246,12 +307,12 @@
     display: flex;
   }
   .tap-dialog {
-    background: #fff;
+    background: var(--bg-panel);
     width: 100%;
     max-width: 480px;
     border-radius: 16px 16px 0 0;
     padding: 16px 16px 22px;
-    box-shadow: 0 -8px 30px rgba(0,0,0,0.3);
+    box-shadow: var(--shadow-deep);
     animation: dialog-slide-up 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
   @media (min-width: 600px) {
@@ -261,12 +322,12 @@
   .tap-dialog-title {
     font-size: 16px;
     font-weight: 700;
-    color: #0a3d5c;
+    color: var(--text-primary);
     margin-bottom: 10px;
     text-align: center;
   }
   .tap-dialog-body {
-    background: #f5f9fc;
+    background: var(--bg-panel-soft);
     border-radius: 10px;
     padding: 10px 12px;
     margin-bottom: 14px;
@@ -275,29 +336,29 @@
   .tap-coords {
     font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
     font-size: 11px;
-    color: #678;
+    color: var(--text-muted);
     margin-bottom: 6px;
   }
   .tap-lake-status {
-    color: #234;
+    color: var(--text-body);
     line-height: 1.4;
   }
   .tap-lake-name {
     font-weight: 700;
-    color: #0a3d5c;
+    color: var(--text-primary);
     font-size: 14px;
   }
   .tap-lake-stats {
     font-size: 12px;
     margin-top: 3px;
-    color: #345;
+    color: var(--text-body);
   }
   .tap-lake-none {
-    color: #888;
+    color: var(--text-faint);
     font-style: italic;
   }
   .tap-lake-hint {
-    color: #557;
+    color: var(--text-muted);
     font-size: 11px;
     margin-top: 4px;
   }
@@ -305,8 +366,8 @@
     display: inline-block;
     width: 12px;
     height: 12px;
-    border: 2px solid #ccd;
-    border-top-color: #0a3d5c;
+    border: 2px solid var(--border-medium);
+    border-top-color: var(--text-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
     vertical-align: middle;
@@ -331,20 +392,20 @@
   }
   .tap-btn:active { transform: scale(0.98); }
   .tap-btn-pin {
-    background: #ff6b35;
+    background: var(--accent);
     color: #fff;
   }
-  .tap-btn-pin:hover { background: #e85a24; }
+  .tap-btn-pin:hover { background: var(--accent-hover); }
   .tap-btn-pdf {
-    background: #0a3d5c;
+    background: var(--accent-deep);
     color: #fff;
   }
-  .tap-btn-pdf:hover { background: #082e44; }
+  .tap-btn-pdf:hover { background: var(--accent-deep-hover); }
   .tap-btn-cancel {
-    background: #f0f0f0;
-    color: #555;
+    background: var(--bg-input);
+    color: var(--text-muted);
   }
-  .tap-btn-cancel:hover { background: #e0e0e0; }
+  .tap-btn-cancel:hover { background: var(--border-soft); }
   @keyframes dialog-fade-in {
     from { opacity: 0; }
     to   { opacity: 1; }
@@ -382,47 +443,146 @@
   @keyframes slide-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fade-out { to { opacity: 0; transform: translateY(-10px); } }
 
-  /* ----------  LAYER TOGGLE PANEL  ---------- */
-  .layer-panel {
-    position: absolute;
-    top: 70px;
-    right: 12px;
-    z-index: 1000;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-    padding: 10px 12px;
-    font-size: 13px;
+  /* ----------  SETTINGS PANEL (slide-in drawer)  ----------
+   * Replaces the old simple layer-panel. Slides in from the right edge,
+   * full-height, with grouped sections. On mobile it takes ~88% of
+   * screen width; on desktop it's a fixed 320px panel.
+   */
+  .settings-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--backdrop);
+    z-index: 1500;
     display: none;
+    opacity: 0;
+    transition: opacity 0.2s;
   }
-  .layer-panel.show { display: block; }
-  .layer-panel label {
+  .settings-backdrop.show {
+    display: block;
+    opacity: 1;
+  }
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 88%;
+    max-width: 360px;
+    background: var(--bg-panel);
+    box-shadow: -4px 0 20px rgba(0,0,0,0.25);
+    z-index: 1600;
+    transform: translateX(100%);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    color: var(--text-body);
+  }
+  .settings-panel.show { transform: translateX(0); }
+
+  .settings-header {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 0;
+    justify-content: space-between;
+    padding: 16px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    background: var(--header-bg);
+    color: var(--header-text);
+  }
+  .settings-header h2 {
+    font-size: 17px;
+    font-weight: 700;
+  }
+  .settings-close {
+    background: transparent;
+    border: none;
+    color: var(--header-text);
+    font-size: 22px;
     cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    line-height: 1;
   }
-  .layer-panel h4 {
-    font-size: 12px;
-    color: #0a3d5c;
-    margin-bottom: 6px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 4px;
+  .settings-close:hover { background: rgba(255,255,255,0.15); }
+
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 24px;
   }
-  .layer-panel .hint {
-    font-size: 10px;
-    color: #888;
+  .settings-section {
+    border-bottom: 1px solid var(--border-soft);
+    padding: 12px 18px 14px;
+  }
+  .settings-section:last-child { border-bottom: none; }
+  .settings-section h3 {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+  }
+  .settings-section label {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 0;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text-body);
+  }
+  .settings-section label input[type="checkbox"],
+  .settings-section label input[type="radio"] {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+  .settings-section .hint {
+    font-size: 11px;
+    color: var(--text-faint);
     font-weight: 400;
+    margin-left: 4px;
   }
-  .layer-panel .coverage-note {
-    margin-top: 8px;
-    padding-top: 8px;
-    border-top: 1px solid #eee;
-    font-size: 10px;
-    color: #666;
-    line-height: 1.4;
-    max-width: 200px;
+  .settings-section .coverage-note {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--bg-panel-soft);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+  .settings-section .coverage-note b { color: var(--text-body); }
+
+  /* Theme switch — segmented control style */
+  .theme-switch {
+    display: flex;
+    background: var(--bg-panel-soft);
+    border-radius: 10px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .theme-switch button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: 9px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.18s, color 0.18s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .theme-switch button.active {
+    background: var(--bg-panel);
+    color: var(--text-primary);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
   }
 
   /* ----------  CUSTOM MARKER ICONS  ---------- */
