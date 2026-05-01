@@ -85,6 +85,13 @@
   .ctrl-btn.locating {
     animation: pulse 1.2s infinite;
   }
+  /* "Following" state — locate button glows blue while map auto-centers on you */
+  .ctrl-btn.following {
+    background: #4285f4;
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 3px rgba(66,133,244,0.3);
+  }
+  .ctrl-btn.following:hover { background: #3367d6; }
   @keyframes pulse {
     0%, 100% { box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 0 rgba(255,107,53,0.6); }
     50%      { box-shadow: 0 3px 10px rgba(0,0,0,0.3), 0 0 0 12px rgba(255,107,53,0); }
@@ -227,6 +234,20 @@
     border-bottom: 1px solid #eee;
     padding-bottom: 4px;
   }
+  .layer-panel .hint {
+    font-size: 10px;
+    color: #888;
+    font-weight: 400;
+  }
+  .layer-panel .coverage-note {
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+    font-size: 10px;
+    color: #666;
+    line-height: 1.4;
+    max-width: 200px;
+  }
 
   /* ----------  CUSTOM MARKER ICONS  ---------- */
   .live-pos-icon {
@@ -278,20 +299,26 @@
 
 <!-- ============== LAYER PANEL ============== -->
 <div class="layer-panel" id="layerPanel">
-  <h4>Map Layers</h4>
+  <h4>Base Map</h4>
   <label><input type="radio" name="base" value="osm" checked /> Standard</label>
   <label><input type="radio" name="base" value="sat" /> Satellite</label>
   <label><input type="radio" name="base" value="topo" /> Topographic</label>
-  <h4 style="margin-top:8px;">Overlays</h4>
-  <label><input type="checkbox" id="seaMapToggle" checked /> OpenSeaMap (Depths)</label>
-  <label><input type="checkbox" id="gebcoToggle" /> GEBCO Bathymetry</label>
+  <h4 style="margin-top:8px;">Depth Overlays</h4>
+  <label><input type="checkbox" id="noaaToggle" checked /> NOAA Charts <span class="hint">(US/Great Lakes)</span></label>
+  <label><input type="checkbox" id="oceanToggle" /> Ocean Bathymetry</label>
+  <label><input type="checkbox" id="seaMapToggle" checked /> OpenSeaMap Marks</label>
+  <label><input type="checkbox" id="gebcoToggle" /> GEBCO (Global)</label>
+  <p class="coverage-note">
+    Depth data coverage varies. NOAA covers US coastal waters and the Great Lakes.
+    For inland lakes, check your state DNR for detailed maps.
+  </p>
 </div>
 
 <!-- ============== CONTROL PANEL (Right) ============== -->
 <div class="control-panel">
   <button class="ctrl-btn" id="layerBtn" title="Map Layers">🗺️</button>
   <button class="ctrl-btn" id="clearBtn" title="Clear All Spots">🗑️</button>
-  <button class="ctrl-btn primary" id="locateBtn" title="Locate Me">📍</button>
+  <button class="ctrl-btn primary" id="locateBtn" title="Locate / center on me (long-press to stop tracking)">📍</button>
 </div>
 
 <!-- ============== BOTTOM TOOLBAR ============== -->
@@ -367,6 +394,50 @@ const baseLayers = {
 };
 baseLayers.osm.addTo(map); // start with OSM
 
+/* ---- DEPTH OVERLAYS ----
+ * Lake bathymetry is genuinely hard to get as free global tiles. We
+ * stack three sources so the user gets the best available coverage:
+ *
+ * 1. ESRI Ocean Basemap — used as a BASE layer option. Includes shaded
+ *    relief bathymetry + depth contours for oceans, Great Lakes, and
+ *    many large inland water bodies. Best general-purpose choice.
+ *
+ * 2. NOAA RNC nautical charts — official US marine charts (raster).
+ *    Covers US coastal waters AND the Great Lakes with full depth
+ *    soundings and contours. Best where it has coverage.
+ *
+ * 3. OpenSeaMap "seamark" — community-contributed nautical marks,
+ *    buoys, and depth points overlaid on any base layer.
+ */
+
+// ESRI Ocean — used as a base layer (added to baseLayers above? No, defined here as it's depth-specific)
+const oceanBaseLayer = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}',
+  {
+    attribution: 'Tiles © Esri — Sources: GEBCO, NOAA, National Geographic, DeLorme, NAVTEQ',
+    maxZoom: 13,
+  }
+);
+const oceanRefLayer = L.tileLayer(
+  'https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Reference/MapServer/tile/{z}/{y}/{x}',
+  {
+    maxZoom: 13,
+    attribution: '',
+  }
+);
+// Group base + reference so they toggle together
+const oceanGroup = L.layerGroup([oceanBaseLayer, oceanRefLayer]);
+
+// NOAA RNC charts — US waters & Great Lakes
+const noaaChartsLayer = L.tileLayer(
+  'https://tileservice.charts.noaa.gov/tiles/50000_1/{z}/{x}/{y}.png',
+  {
+    attribution: '© NOAA Office of Coast Survey',
+    maxZoom: 18,
+    opacity: 0.85,
+  }
+);
+
 /* ---- OpenSeaMap overlay (nautical & some lake depths/markers) ---- */
 const seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y}.png', {
   attribution: '© OpenSeaMap contributors',
@@ -374,6 +445,9 @@ const seaMapLayer = L.tileLayer('https://tiles.openseamap.org/seamark/{z}/{x}/{y
   opacity: 0.9,
 });
 seaMapLayer.addTo(map); // visible by default
+
+// Default ON so users immediately see lake/water depth where available
+noaaChartsLayer.addTo(map);
 
 /* ---- GEBCO bathymetric WMS (global ocean & deep-lake depths) ----
  * GEBCO provides a public WMS that Leaflet can render as a tiled layer.
@@ -410,6 +484,14 @@ document.getElementById('seaMapToggle').addEventListener('change', e => {
 document.getElementById('gebcoToggle').addEventListener('change', e => {
   if (e.target.checked) gebcoLayer.addTo(map);
   else map.removeLayer(gebcoLayer);
+});
+document.getElementById('noaaToggle').addEventListener('change', e => {
+  if (e.target.checked) noaaChartsLayer.addTo(map);
+  else map.removeLayer(noaaChartsLayer);
+});
+document.getElementById('oceanToggle').addEventListener('change', e => {
+  if (e.target.checked) oceanGroup.addTo(map);
+  else map.removeLayer(oceanGroup);
 });
 
 /* =====================================================================
@@ -557,56 +639,166 @@ map.on('contextmenu', e => {
 });
 
 /* =====================================================================
- *  6. GPS — "Locate Me"
+ *  6. GPS — continuous tracking with optional "follow" mode
+ *  ---------------------------------------------------------------------
+ *  Behavior:
+ *  - First press of 📍: starts watchPosition AND enters follow mode.
+ *    The map jumps to your location and stays centered on you as you
+ *    move. The button glows blue while following.
+ *  - If you pan/drag the map manually, follow mode disengages but
+ *    tracking keeps running — the live marker keeps updating, you
+ *    just regain free panning. Button returns to orange.
+ *  - Second press of 📍: re-engages follow mode (re-centers).
+ *  - Long-press (1s) of 📍: stops tracking entirely.
+ *
+ *  We use watchPosition (not setInterval+getCurrentPosition) because
+ *  it's the standards-compliant way and it lets the OS decide when
+ *  to deliver updates, saving battery vs polling.
  * ===================================================================== */
 const locateBtn = document.getElementById('locateBtn');
-locateBtn.addEventListener('click', () => {
+let watchId = null;       // navigator.geolocation watch handle
+let followMode = false;   // when true, map re-centers on each GPS fix
+let userInitiatedMove = false; // distinguishes our setView calls from manual pans
+
+function setFollowMode(on) {
+  followMode = on;
+  locateBtn.classList.toggle('following', on);
+}
+
+function updateLivePosition(pos) {
+  const { latitude: lat, longitude: lng, accuracy, heading, speed } = pos.coords;
+
+  const liveIcon = L.divIcon({
+    className: 'live-pos-icon',
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
+  });
+
+  // Build a richer popup with speed/heading if available
+  const popupBits = [`<b>📍 You are here</b>`, `Accuracy: ±${Math.round(accuracy)} m`];
+  if (typeof speed === 'number' && !isNaN(speed) && speed > 0) {
+    popupBits.push(`Speed: ${(speed * 2.237).toFixed(1)} mph`); // m/s → mph
+  }
+  if (typeof heading === 'number' && !isNaN(heading)) {
+    popupBits.push(`Heading: ${Math.round(heading)}°`);
+  }
+  const popupHtml = popupBits.join('<br/>');
+
+  if (!liveMarker) {
+    liveMarker = L.marker([lat, lng], { icon: liveIcon, zIndexOffset: 1000 })
+      .bindPopup(popupHtml)
+      .addTo(map);
+    liveAccCircle = L.circle([lat, lng], {
+      radius: accuracy,
+      color: '#4285f4',
+      fillColor: '#4285f4',
+      fillOpacity: 0.1,
+      weight: 1,
+    }).addTo(map);
+  } else {
+    // Just move the existing marker — much smoother than removing/re-adding
+    liveMarker.setLatLng([lat, lng]);
+    liveMarker.setPopupContent(popupHtml);
+    liveAccCircle.setLatLng([lat, lng]);
+    liveAccCircle.setRadius(accuracy);
+  }
+
+  // Re-center if in follow mode. Mark the move as ours so the
+  // dragstart handler doesn't immediately disengage follow.
+  if (followMode) {
+    userInitiatedMove = false;
+    map.setView([lat, lng], Math.max(map.getZoom(), 14), { animate: true });
+  }
+}
+
+function handleGeoError(err) {
+  const msgs = {
+    1: 'Location permission denied',
+    2: 'Position unavailable',
+    3: 'Location request timed out',
+  };
+  toast(msgs[err.code] || 'Could not get location', 'error');
+  stopTracking();
+}
+
+function startTracking() {
   if (!('geolocation' in navigator)) {
     toast('Geolocation not supported on this device', 'error');
-    return;
+    return false;
   }
+  if (watchId !== null) return true; // already tracking
+
   locateBtn.classList.add('locating');
-  navigator.geolocation.getCurrentPosition(
+  watchId = navigator.geolocation.watchPosition(
     pos => {
       locateBtn.classList.remove('locating');
-      const { latitude: lat, longitude: lng, accuracy } = pos.coords;
-
-      // Remove previous live marker/circle if present
-      if (liveMarker) map.removeLayer(liveMarker);
-      if (liveAccCircle) map.removeLayer(liveAccCircle);
-
-      const liveIcon = L.divIcon({
-        className: 'live-pos-icon',
-        iconSize: [18, 18],
-        iconAnchor: [9, 9],
-      });
-
-      liveMarker = L.marker([lat, lng], { icon: liveIcon, zIndexOffset: 1000 })
-        .bindPopup(`<b>📍 You are here</b><br/>Accuracy: ±${Math.round(accuracy)} m`)
-        .addTo(map);
-
-      liveAccCircle = L.circle([lat, lng], {
-        radius: accuracy,
-        color: '#4285f4',
-        fillColor: '#4285f4',
-        fillOpacity: 0.1,
-        weight: 1,
-      }).addTo(map);
-
-      map.setView([lat, lng], Math.max(map.getZoom(), 14));
-      toast('Location found', 'success');
+      updateLivePosition(pos);
     },
-    err => {
-      locateBtn.classList.remove('locating');
-      const msgs = {
-        1: 'Location permission denied',
-        2: 'Position unavailable',
-        3: 'Location request timed out',
-      };
-      toast(msgs[err.code] || 'Could not get location', 'error');
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
+    handleGeoError,
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
   );
+  return true;
+}
+
+function stopTracking() {
+  if (watchId !== null) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  setFollowMode(false);
+  locateBtn.classList.remove('locating');
+  if (liveMarker) { map.removeLayer(liveMarker); liveMarker = null; }
+  if (liveAccCircle) { map.removeLayer(liveAccCircle); liveAccCircle = null; }
+  toast('Location tracking stopped');
+}
+
+// Tap: start tracking + enable follow, or re-center if already tracking
+locateBtn.addEventListener('click', () => {
+  if (watchId === null) {
+    if (startTracking()) {
+      setFollowMode(true);
+      toast('Tracking your location…', 'success');
+    }
+  } else if (!followMode) {
+    // Already tracking but user has panned away — re-center on them
+    setFollowMode(true);
+    if (liveMarker) {
+      map.setView(liveMarker.getLatLng(), Math.max(map.getZoom(), 14), { animate: true });
+    }
+    toast('Following your location', 'success');
+  } else {
+    // Already following — toggle off (but keep tracking)
+    setFollowMode(false);
+    toast('Free pan mode (still tracking)');
+  }
+});
+
+// Long-press the locate button to fully stop tracking
+let pressTimer = null;
+const startLongPress = () => {
+  pressTimer = setTimeout(() => {
+    if (watchId !== null) stopTracking();
+    pressTimer = null;
+  }, 1000);
+};
+const cancelLongPress = () => {
+  if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+};
+locateBtn.addEventListener('mousedown', startLongPress);
+locateBtn.addEventListener('touchstart', startLongPress, { passive: true });
+locateBtn.addEventListener('mouseup', cancelLongPress);
+locateBtn.addEventListener('mouseleave', cancelLongPress);
+locateBtn.addEventListener('touchend', cancelLongPress);
+locateBtn.addEventListener('touchcancel', cancelLongPress);
+
+/* When the user pans/drags the map, disengage follow mode so they
+ * can browse freely. Tracking continues in the background.
+ * `dragstart` fires on touch-drag and mouse-drag alike. */
+map.on('dragstart', () => {
+  if (followMode) {
+    setFollowMode(false);
+    toast('Tap 📍 to re-center');
+  }
 });
 
 /* =====================================================================
