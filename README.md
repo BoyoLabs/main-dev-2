@@ -3,6 +3,10 @@ SPA's mostly. My first repo for development was main-dev, but now that one is ge
 
 Note: just because something is in prod does not mean it is working necessarily, it just means that I am out of the initial attempts to get it running at all whatsoever. If its not working the way I want, it may still end up abandoned here.
 
+## vane-of-the-abyss.html
+* a mobile bullet hell type game that is infinite. You don't go back to square one upon death.
+* github.io link: https://boyolabs.github.io/prod-2/vane-of-the-abyss.html
+
 ## FishFinder.html (ABANDONED)
 * a mobile app for fish mapping with depth overlay. UPDATE: learned of a better version of my app already existing and much better than what I would have been possible of achieving.
 * github.io link: https://boyolabs.github.io/prod-2/FishFinder.html
