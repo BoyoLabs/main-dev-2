@@ -1,0 +1,1706 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="color-scheme" content="dark" />
+<title>Ferrous · Local AI Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ============================================================
+     FERROUS — a private, local-only AI assistant
+     Single-file SPA · Transformers.js v3 · WebGPU/WASM
+     ============================================================ */
+
+  :root {
+    /* Palette: warm-graphite neutrals + a single ferrous accent */
+    --bg-0:        #0c0c0e;
+    --bg-1:        #131316;
+    --bg-2:        #18181c;
+    --bg-3:        #1f1f24;
+    --bg-elev:    #1a1a1f;
+    --line:        #26262d;
+    --line-soft:   #1d1d22;
+    --ink-0:       #f3efe9;
+    --ink-1:       #d8d3ca;
+    --ink-2:       #a09a90;
+    --ink-3:       #6b6760;
+    --accent:      #d96d46;       /* iron-oxide */
+    --accent-2:    #f0a07a;
+    --accent-soft: rgba(217, 109, 70, 0.12);
+    --ok:          #7cb893;
+    --warn:        #d9b162;
+    --err:         #d96d46;
+
+    --radius-sm:  6px;
+    --radius:     10px;
+    --radius-lg:  14px;
+
+    --font-display: "Fraunces", Georgia, serif;
+    --font-body:    "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono:    "JetBrains Mono", ui-monospace, monospace;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --shadow:    0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-lg: 0 24px 64px rgba(0,0,0,0.55), 0 8px 24px rgba(0,0,0,0.35);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    background: var(--bg-0);
+    color: var(--ink-1);
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow: hidden;
+  }
+
+  body {
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(217,109,70,0.06), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(217,109,70,0.04), transparent 60%),
+      var(--bg-0);
+  }
+
+  button {
+    font-family: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+  }
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 1.5px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  /* ---------- Layout ---------- */
+
+  .app {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: 100vh;
+    height: 100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+
+  .sidebar {
+    background: var(--bg-1);
+    border-right: 1px solid var(--line-soft);
+    display: flex;
+    flex-direction: column;
+    padding: 18px 16px;
+    gap: 18px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 6px 12px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .brand-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background:
+      radial-gradient(circle at 30% 30%, var(--accent-2), var(--accent) 55%, #7a3520 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06), 0 2px 8px rgba(217,109,70,0.35);
+    position: relative;
+  }
+  .brand-mark::after {
+    content: "";
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, rgba(255,255,255,0.5), transparent 55%);
+  }
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .brand-name {
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 18px;
+    color: var(--ink-0);
+    letter-spacing: 0.2px;
+  }
+  .brand-sub {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  .side-section { display: flex; flex-direction: column; gap: 6px; }
+  .side-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-3);
+    padding: 0 6px;
+    margin-bottom: 4px;
+  }
+
+  .side-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    color: var(--ink-1);
+    font-size: 13.5px;
+    transition: background 120ms ease, color 120ms ease;
+    text-align: left;
+    width: 100%;
+  }
+  .side-btn:hover { background: var(--bg-2); color: var(--ink-0); }
+  .side-btn .icon { width: 16px; height: 16px; opacity: 0.8; }
+  .side-btn.danger:hover { color: var(--accent-2); }
+
+  .status-card {
+    margin-top: auto;
+    padding: 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .status-row { display: flex; align-items: center; gap: 8px; }
+  .status-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--ink-3);
+    box-shadow: 0 0 0 0 var(--ink-3);
+    flex-shrink: 0;
+  }
+  .status-dot.ready { background: var(--ok); box-shadow: 0 0 8px rgba(124,184,147,0.5); }
+  .status-dot.busy  { background: var(--warn); animation: pulse 1.4s ease-in-out infinite; }
+  .status-dot.err   { background: var(--err); }
+  @keyframes pulse {
+    0%,100% { opacity: 1; }
+    50%     { opacity: 0.35; }
+  }
+  .status-text {
+    font-size: 12.5px;
+    color: var(--ink-1);
+    font-weight: 500;
+    line-height: 1.3;
+  }
+  .status-detail {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    line-height: 1.4;
+    word-break: break-word;
+  }
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: var(--bg-3);
+    border-radius: 99px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-track.active { display: block; }
+  .progress-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    transition: width 200ms ease;
+  }
+
+  .device-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 3px 7px;
+    border-radius: 99px;
+    background: var(--bg-3);
+    color: var(--ink-2);
+    border: 1px solid var(--line);
+  }
+  .device-badge.webgpu { color: var(--accent-2); border-color: rgba(217,109,70,0.3); }
+  .device-badge.wasm   { color: var(--ink-1); }
+
+  /* ---------- Main ---------- */
+
+  .main {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    min-width: 0;
+    position: relative;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 28px;
+    border-bottom: 1px solid var(--line-soft);
+    background: rgba(12,12,14,0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .topbar-title {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.1;
+  }
+  .topbar-title h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 17px;
+    color: var(--ink-0);
+    letter-spacing: 0.1px;
+  }
+  .topbar-title .model-id {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-top: 2px;
+    max-width: 70vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .topbar-actions { display: flex; gap: 8px; }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    color: var(--ink-2);
+    transition: background 120ms ease, color 120ms ease;
+  }
+  .icon-btn:hover { background: var(--bg-2); color: var(--ink-0); }
+  .icon-btn svg { width: 17px; height: 17px; }
+
+  /* ---------- Chat ---------- */
+
+  .chat-scroll {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+  }
+  .chat-scroll::-webkit-scrollbar { width: 10px; }
+  .chat-scroll::-webkit-scrollbar-track { background: transparent; }
+  .chat-scroll::-webkit-scrollbar-thumb {
+    background: var(--bg-3);
+    border-radius: 99px;
+    border: 3px solid var(--bg-0);
+  }
+
+  .chat-canvas {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 32px 28px 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .empty-state {
+    margin-top: 12vh;
+    text-align: center;
+    color: var(--ink-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    animation: fadein 600ms ease;
+  }
+  @keyframes fadein {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+  .empty-state h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 28px;
+    color: var(--ink-0);
+    margin: 0;
+    letter-spacing: -0.2px;
+  }
+  .empty-state h2 em {
+    font-style: italic;
+    color: var(--accent-2);
+    font-weight: 500;
+  }
+  .empty-state p {
+    margin: 0;
+    max-width: 460px;
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .empty-state .hint {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-3);
+    margin-top: 6px;
+    letter-spacing: 0.04em;
+  }
+
+  .msg { display: flex; gap: 14px; animation: msgin 240ms ease; }
+  @keyframes msgin {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  .avatar {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+  }
+  .msg.user .avatar {
+    background: var(--bg-3);
+    color: var(--ink-1);
+    border: 1px solid var(--line);
+  }
+  .msg.assistant .avatar {
+    background:
+      radial-gradient(circle at 30% 30%, var(--accent-2), var(--accent) 55%, #7a3520 100%);
+    color: #fff;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+
+  .msg-body { flex: 1; min-width: 0; padding-top: 2px; }
+  .msg-role {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-3);
+    margin-bottom: 6px;
+  }
+  .msg-content {
+    color: var(--ink-0);
+    font-size: 15px;
+    line-height: 1.62;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: anywhere;
+  }
+  .msg.user .msg-content { color: var(--ink-1); }
+  .msg-content code {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-soft);
+    padding: 1px 5px;
+    border-radius: 4px;
+  }
+  .msg-content pre {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-soft);
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    margin: 10px 0;
+  }
+  .msg-content pre code { background: none; border: none; padding: 0; }
+
+  .typing-cursor {
+    display: inline-block;
+    width: 7px;
+    height: 15px;
+    background: var(--accent);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s steps(2) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ---------- Composer ---------- */
+
+  .composer-wrap {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 28px 22px;
+    background: linear-gradient(180deg, transparent, var(--bg-0) 30%);
+    pointer-events: none;
+  }
+  .composer {
+    max-width: 760px;
+    margin: 0 auto;
+    background: var(--bg-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: 10px 12px 10px 16px;
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    pointer-events: auto;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+  .composer:focus-within {
+    border-color: rgba(217,109,70,0.4);
+    box-shadow: var(--shadow), 0 0 0 4px rgba(217,109,70,0.08);
+  }
+  .composer textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    outline: none;
+    resize: none;
+    color: var(--ink-0);
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.55;
+    padding: 7px 0;
+    max-height: 200px;
+    min-height: 24px;
+  }
+  .composer textarea::placeholder { color: var(--ink-3); }
+
+  .send-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--accent);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 120ms ease, transform 80ms ease, opacity 120ms ease;
+    flex-shrink: 0;
+  }
+  .send-btn:hover:not(:disabled) { background: var(--accent-2); }
+  .send-btn:active:not(:disabled) { transform: scale(0.94); }
+  .send-btn:disabled { opacity: 0.35; cursor: not-allowed; background: var(--bg-3); color: var(--ink-3); }
+  .send-btn svg { width: 16px; height: 16px; }
+
+  .stop-btn {
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--bg-3);
+    color: var(--ink-0);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 120ms ease;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+  }
+  .stop-btn:hover { background: var(--err); border-color: var(--err); color: #fff; }
+  .stop-btn svg { width: 14px; height: 14px; }
+
+  .composer-footer {
+    max-width: 760px;
+    margin: 6px auto 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    color: var(--ink-3);
+    letter-spacing: 0.06em;
+    padding: 0 4px;
+  }
+  .composer-footer kbd {
+    font-family: var(--font-mono);
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 1px 5px;
+    color: var(--ink-2);
+    font-size: 10px;
+  }
+
+  /* ---------- Drawer ---------- */
+
+  .drawer-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 180ms ease, visibility 180ms ease;
+    z-index: 50;
+  }
+  .drawer-overlay.open { opacity: 1; visibility: visible; }
+
+  .drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 420px;
+    max-width: 92vw;
+    background: var(--bg-1);
+    border-left: 1px solid var(--line);
+    box-shadow: var(--shadow-lg);
+    transform: translateX(105%);
+    transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .drawer-header h2 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 500;
+    font-size: 20px;
+    color: var(--ink-0);
+    letter-spacing: 0.1px;
+  }
+
+  .drawer-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .drawer-body::-webkit-scrollbar { width: 8px; }
+  .drawer-body::-webkit-scrollbar-thumb {
+    background: var(--bg-3);
+    border-radius: 99px;
+    border: 2px solid var(--bg-1);
+  }
+
+  .field { display: flex; flex-direction: column; gap: 7px; }
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-2);
+  }
+  .field-hint {
+    font-size: 12px;
+    color: var(--ink-3);
+    line-height: 1.45;
+    margin-top: -2px;
+  }
+
+  .field-input,
+  .field-select,
+  .field-textarea {
+    background: var(--bg-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    color: var(--ink-0);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 10px 12px;
+    width: 100%;
+    transition: border-color 120ms ease;
+  }
+  .field-textarea {
+    font-family: var(--font-body);
+    font-size: 13.5px;
+    line-height: 1.55;
+    resize: vertical;
+    min-height: 90px;
+  }
+  .field-input:focus,
+  .field-select:focus,
+  .field-textarea:focus { border-color: var(--accent); }
+
+  .field-row { display: flex; gap: 10px; align-items: flex-end; }
+  .field-row .field { flex: 1; }
+
+  .field-select {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'><path d='M1 3l4 4 4-4' stroke='%236b6760' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background 120ms ease;
+  }
+  .btn-primary:hover { background: var(--accent-2); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-secondary {
+    background: var(--bg-2);
+    color: var(--ink-1);
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    font-size: 13.5px;
+    font-weight: 500;
+    transition: background 120ms ease;
+  }
+  .btn-secondary:hover { background: var(--bg-3); color: var(--ink-0); }
+
+  .divider {
+    height: 1px;
+    background: var(--line-soft);
+    margin: 4px 0;
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .info-cell {
+    padding: 10px 12px;
+    background: var(--bg-2);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+  }
+  .info-cell .k {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-3);
+    margin-bottom: 4px;
+  }
+  .info-cell .v {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-0);
+    word-break: break-all;
+  }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 760px) {
+    .app { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .chat-canvas, .composer-wrap { padding-left: 16px; padding-right: 16px; }
+    .drawer { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============================================================
+       SIDEBAR
+       ============================================================ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true"></div>
+      <div class="brand-text">
+        <span class="brand-name">Ferrous</span>
+        <span class="brand-sub">Local · Private · v3</span>
+      </div>
+    </div>
+
+    <div class="side-section">
+      <button class="side-btn" id="newChatBtn" title="Clear the conversation">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        New conversation
+      </button>
+      <button class="side-btn" id="settingsBtn" title="Model & runtime settings">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+    </div>
+
+    <div class="side-section">
+      <div class="side-label">About</div>
+      <div style="padding: 4px 6px; font-size: 12.5px; color: var(--ink-2); line-height: 1.55;">
+        Inference runs <em style="font-family: var(--font-display); color: var(--ink-1);">entirely in your browser</em>. No data leaves this tab. Models are cached after first download.
+      </div>
+    </div>
+
+    <div class="status-card" id="statusCard">
+      <div class="status-row">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-text" id="statusText">Initializing…</span>
+      </div>
+      <div class="status-detail" id="statusDetail">Waiting for worker.</div>
+      <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
+      <div>
+        <span class="device-badge" id="deviceBadge">— device —</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ============================================================
+       MAIN
+       ============================================================ -->
+  <main class="main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Conversation</h1>
+        <div class="model-id" id="topbarModelId">— no model loaded —</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="icon-btn" id="settingsBtnTop" title="Settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="chat-scroll" id="chatScroll">
+      <div class="chat-canvas" id="chatCanvas">
+        <!-- messages injected here -->
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <form class="composer" id="composer" autocomplete="off">
+        <textarea
+          id="composerInput"
+          placeholder="Ask anything — your words never leave this browser…"
+          rows="1"
+          spellcheck="true"
+        ></textarea>
+        <button type="button" class="stop-btn" id="stopBtn" title="Stop generation" style="display:none;">
+          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+        </button>
+        <button type="submit" class="send-btn" id="sendBtn" title="Send (Enter)" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </form>
+      <div class="composer-footer">
+        <span><kbd>Enter</kbd> send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline</span>
+        <span id="tokenStats">—</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ============================================================
+     SETTINGS DRAWER
+     ============================================================ -->
+<div class="drawer-overlay" id="drawerOverlay"></div>
+<aside class="drawer" id="drawer" aria-hidden="true">
+  <div class="drawer-header">
+    <h2>Settings</h2>
+    <button class="icon-btn" id="drawerCloseBtn" title="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div class="drawer-body">
+
+    <div class="field">
+      <label class="field-label" for="presetSelect">Preset model</label>
+      <select id="presetSelect" class="field-select">
+        <option value="HuggingFaceTB/SmolLM2-360M-Instruct">SmolLM2 · 360M Instruct (fastest)</option>
+        <option value="HuggingFaceTB/SmolLM2-1.7B-Instruct">SmolLM2 · 1.7B Instruct (balanced)</option>
+        <option value="onnx-community/Qwen2.5-0.5B-Instruct">Qwen2.5 · 0.5B Instruct</option>
+        <option value="onnx-community/Llama-3.2-1B-Instruct">Llama-3.2 · 1B Instruct</option>
+        <option value="__custom__">Custom Hugging Face repo…</option>
+      </select>
+      <div class="field-hint">Preset selections write to the field below. Pick "Custom" to enter any ONNX-compatible repo ID.</div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="modelInput">Model repo ID</label>
+      <input id="modelInput" class="field-input" type="text" placeholder="org-name/model-name" />
+      <div class="field-hint">Any Hugging Face repo with ONNX weights compatible with Transformers.js v3.</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="dtypeSelect">Quantization (dtype)</label>
+        <select id="dtypeSelect" class="field-select">
+          <option value="q4">q4 — lowest memory</option>
+          <option value="q4f16">q4f16 — q4 + fp16 activations</option>
+          <option value="q8">q8 — moderate memory</option>
+          <option value="int8">int8</option>
+          <option value="fp16">fp16 — high quality</option>
+          <option value="fp32">fp32 — full precision</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="field-label" for="deviceSelect">Device</label>
+        <select id="deviceSelect" class="field-select">
+          <option value="webgpu">WebGPU (auto-fallback)</option>
+          <option value="wasm">WASM (CPU)</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="loadModelBtn">Load model</button>
+
+    <div class="divider"></div>
+
+    <div class="field">
+      <label class="field-label" for="systemPrompt">System prompt</label>
+      <textarea id="systemPrompt" class="field-textarea" rows="4"></textarea>
+      <div class="field-hint">Prepended to every generation. Saved locally.</div>
+    </div>
+
+    <div class="field-row">
+      <div class="field">
+        <label class="field-label" for="maxTokens">Max new tokens</label>
+        <input id="maxTokens" class="field-input" type="number" min="16" max="4096" step="16" value="512" />
+      </div>
+      <div class="field">
+        <label class="field-label" for="temperature">Temperature</label>
+        <input id="temperature" class="field-input" type="number" min="0" max="2" step="0.05" value="0.7" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="contextLimit">Context character budget</label>
+      <input id="contextLimit" class="field-input" type="number" min="500" max="60000" step="500" value="8000" />
+      <div class="field-hint">Older turns are dropped from the prompt above this limit. The full history still persists.</div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="info-grid">
+      <div class="info-cell"><div class="k">Status</div><div class="v" id="infoStatus">—</div></div>
+      <div class="info-cell"><div class="k">Device</div><div class="v" id="infoDevice">—</div></div>
+      <div class="info-cell"><div class="k">Loaded model</div><div class="v" id="infoModel">—</div></div>
+      <div class="info-cell"><div class="k">Messages stored</div><div class="v" id="infoMessages">0</div></div>
+    </div>
+
+    <button class="btn-secondary" id="clearHistoryBtn">Clear conversation history</button>
+  </div>
+</aside>
+
+<!-- ============================================================
+     APPLICATION SCRIPT
+     ============================================================ -->
+<script type="module">
+'use strict';
+
+/* ================================================================
+   1. Worker source (runs in a Blob URL · isolated from main thread)
+   ================================================================ */
+const workerSource = `
+  // ---- Web Worker: Transformers.js inference host ----
+  let pipelinePromise = null;
+  let currentModelKey = null;
+  let stopRequested = false;
+  let TF = null;
+
+  async function ensureTransformers() {
+    if (TF) return TF;
+    TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+    // Allow remote model fetching, no local model browsing.
+    if (TF.env) {
+      TF.env.allowLocalModels = false;
+      TF.env.allowRemoteModels = true;
+    }
+    return TF;
+  }
+
+  function postProgress(payload) {
+    self.postMessage({ type: 'PROGRESS', payload });
+  }
+  function postStatus(stage, detail, extra = {}) {
+    self.postMessage({ type: 'STATUS', payload: { stage, detail, ...extra } });
+  }
+
+  async function loadModel({ model, dtype, device }) {
+    const key = model + '::' + dtype + '::' + device;
+    if (key === currentModelKey && pipelinePromise) {
+      const pipe = await pipelinePromise;
+      postStatus('ready', 'Model already loaded.', { model, dtype, device: pipe.__device });
+      return pipe;
+    }
+    currentModelKey = key;
+    pipelinePromise = (async () => {
+      const { pipeline } = await ensureTransformers();
+      postStatus('fetching', 'Fetching model weights…', { model });
+
+      const progressCb = (p) => {
+        // p has fields like: status, name, file, progress, loaded, total
+        postProgress(p);
+      };
+
+      const tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
+      let lastErr = null;
+      for (const dev of tryDevices) {
+        try {
+          postStatus(
+            dev === 'webgpu' ? 'compiling' : 'fetching',
+            dev === 'webgpu'
+              ? 'Initializing WebGPU and compiling shaders…'
+              : 'Initializing WASM runtime…',
+            { model, device: dev }
+          );
+          const generator = await pipeline('text-generation', model, {
+            device: dev,
+            dtype: dtype || 'q4',
+            progress_callback: progressCb,
+          });
+          generator.__device = dev;
+          postStatus('ready', 'Model ready.', { model, dtype, device: dev });
+          return generator;
+        } catch (err) {
+          lastErr = err;
+          postStatus('warn', '['+dev+'] failed: ' + (err && err.message ? err.message : String(err)));
+          // continue to next device
+        }
+      }
+      throw lastErr || new Error('All device backends failed.');
+    })();
+
+    try {
+      return await pipelinePromise;
+    } catch (err) {
+      pipelinePromise = null;
+      currentModelKey = null;
+      throw err;
+    }
+  }
+
+  async function runGeneration({ messages, maxTokens, temperature }) {
+    stopRequested = false;
+    if (!pipelinePromise) {
+      throw new Error('No model loaded.');
+    }
+    const generator = await pipelinePromise;
+
+    // Build a TextStreamer via the same transformers module
+    const { TextStreamer } = TF;
+
+    let tokenCount = 0;
+    const startTime = performance.now();
+
+    const streamer = new TextStreamer(generator.tokenizer, {
+      skip_prompt: true,
+      skip_special_tokens: true,
+      callback_function: (text) => {
+        if (stopRequested) return;
+        tokenCount += 1;
+        self.postMessage({ type: 'STREAM_TOKEN', payload: { text } });
+      },
+    });
+
+    // Some Transformers.js versions support a stopping criterion via callback.
+    // We simulate stop by checking stopRequested in the streamer; the model
+    // will continue generating until it hits max_new_tokens or EOS, but the UI
+    // will ignore tokens after stop and we'll inform the user.
+    try {
+      const output = await generator(messages, {
+        max_new_tokens: Math.max(16, Math.min(4096, parseInt(maxTokens, 10) || 512)),
+        do_sample: (parseFloat(temperature) || 0) > 0,
+        temperature: parseFloat(temperature) || 0.7,
+        top_p: 0.95,
+        repetition_penalty: 1.1,
+        return_full_text: false,
+        streamer,
+      });
+
+      const elapsed = (performance.now() - startTime) / 1000;
+      const tps = tokenCount > 0 ? (tokenCount / elapsed).toFixed(1) : '0';
+      self.postMessage({
+        type: 'STREAM_DONE',
+        payload: {
+          tokenCount,
+          elapsedSec: elapsed.toFixed(2),
+          tokensPerSec: tps,
+          stopped: stopRequested,
+          output: Array.isArray(output) ? output[0] : output,
+        },
+      });
+    } catch (err) {
+      self.postMessage({
+        type: 'ERROR',
+        payload: { where: 'generation', message: err && err.message ? err.message : String(err) },
+      });
+    }
+  }
+
+  self.onmessage = async (e) => {
+    const { type, payload } = e.data || {};
+    try {
+      if (type === 'LOAD_MODEL') {
+        await loadModel(payload);
+      } else if (type === 'GENERATE') {
+        await runGeneration(payload);
+      } else if (type === 'STOP') {
+        stopRequested = true;
+      } else if (type === 'PING') {
+        self.postMessage({ type: 'PONG' });
+      }
+    } catch (err) {
+      self.postMessage({
+        type: 'ERROR',
+        payload: { where: type, message: err && err.message ? err.message : String(err) },
+      });
+    }
+  };
+
+  self.postMessage({ type: 'WORKER_READY' });
+`;
+
+/* ================================================================
+   2. State & persistence
+   ================================================================ */
+const STORAGE_KEY = 'ferrous.chat.v1';
+const SETTINGS_KEY = 'ferrous.settings.v1';
+
+const defaultSettings = {
+  model: 'HuggingFaceTB/SmolLM2-360M-Instruct',
+  dtype: 'q4',
+  device: 'webgpu',
+  systemPrompt:
+    'You are Ferrous, a careful and concise local AI assistant running entirely in the user\'s browser. ' +
+    'Answer clearly. Use code blocks for code. Acknowledge uncertainty when it exists.',
+  maxTokens: 512,
+  temperature: 0.7,
+  contextLimit: 8000,
+};
+
+const state = {
+  messages: [],            // [{ id, role: 'user'|'assistant', content, ts }]
+  settings: { ...defaultSettings },
+  status: 'idle',          // 'idle' | 'loading' | 'ready' | 'generating' | 'error'
+  device: null,            // resolved device after load
+  modelLoaded: null,       // string id of loaded model
+  generating: false,
+  currentAssistantId: null,
+};
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) state.messages = parsed;
+    }
+  } catch (e) { console.warn('Failed to load chat history:', e); }
+  try {
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      state.settings = { ...defaultSettings, ...parsed };
+    }
+  } catch (e) { console.warn('Failed to load settings:', e); }
+}
+
+function persistMessages() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.messages)); }
+  catch (e) { console.warn('Persist messages failed:', e); }
+}
+function persistSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); }
+  catch (e) { console.warn('Persist settings failed:', e); }
+}
+
+function uid() {
+  return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+}
+
+/* ================================================================
+   3. DOM references
+   ================================================================ */
+const $ = (id) => document.getElementById(id);
+const chatCanvas    = $('chatCanvas');
+const chatScroll    = $('chatScroll');
+const composer      = $('composer');
+const composerInput = $('composerInput');
+const sendBtn       = $('sendBtn');
+const stopBtn       = $('stopBtn');
+const statusDot     = $('statusDot');
+const statusText    = $('statusText');
+const statusDetail  = $('statusDetail');
+const progressTrack = $('progressTrack');
+const progressFill  = $('progressFill');
+const deviceBadge   = $('deviceBadge');
+const topbarModelId = $('topbarModelId');
+const tokenStats    = $('tokenStats');
+
+const drawer         = $('drawer');
+const drawerOverlay  = $('drawerOverlay');
+const settingsBtn    = $('settingsBtn');
+const settingsBtnTop = $('settingsBtnTop');
+const drawerCloseBtn = $('drawerCloseBtn');
+const newChatBtn     = $('newChatBtn');
+const clearHistoryBtn= $('clearHistoryBtn');
+
+const presetSelect = $('presetSelect');
+const modelInput   = $('modelInput');
+const dtypeSelect  = $('dtypeSelect');
+const deviceSelect = $('deviceSelect');
+const loadModelBtn = $('loadModelBtn');
+const systemPrompt = $('systemPrompt');
+const maxTokensIn  = $('maxTokens');
+const temperatureIn= $('temperature');
+const contextLimit = $('contextLimit');
+
+const infoStatus   = $('infoStatus');
+const infoDevice   = $('infoDevice');
+const infoModel    = $('infoModel');
+const infoMessages = $('infoMessages');
+
+/* ================================================================
+   4. Worker bootstrap
+   ================================================================ */
+const workerBlob = new Blob([workerSource], { type: 'application/javascript' });
+const workerURL  = URL.createObjectURL(workerBlob);
+const worker     = new Worker(workerURL, { type: 'module' });
+
+worker.addEventListener('message', onWorkerMessage);
+worker.addEventListener('error', (err) => {
+  console.error('Worker error:', err);
+  setStatus('error', 'Worker error', err.message || 'Unknown worker error');
+});
+
+/* ================================================================
+   5. UI rendering
+   ================================================================ */
+function setStatus(stage, text, detail = '') {
+  state.status = stage;
+  statusDot.classList.remove('ready', 'busy', 'err');
+  if (stage === 'ready' || stage === 'idle') statusDot.classList.add('ready');
+  else if (stage === 'error') statusDot.classList.add('err');
+  else statusDot.classList.add('busy');
+  statusText.textContent = text;
+  statusDetail.textContent = detail || '';
+  infoStatus.textContent = stage;
+  updateSendButton();
+}
+
+function setProgress(pct, label) {
+  if (pct == null) {
+    progressTrack.classList.remove('active');
+    return;
+  }
+  progressTrack.classList.add('active');
+  progressFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  if (label) statusDetail.textContent = label;
+}
+
+function setDevice(dev) {
+  state.device = dev;
+  deviceBadge.classList.remove('webgpu', 'wasm');
+  if (dev === 'webgpu') {
+    deviceBadge.classList.add('webgpu');
+    deviceBadge.textContent = '⚡ WebGPU';
+  } else if (dev === 'wasm') {
+    deviceBadge.classList.add('wasm');
+    deviceBadge.textContent = '⚙ WASM / CPU';
+  } else {
+    deviceBadge.textContent = '— device —';
+  }
+  infoDevice.textContent = dev || '—';
+}
+
+function updateModelHeader() {
+  const id = state.modelLoaded || state.settings.model || '—';
+  topbarModelId.textContent = id;
+  infoModel.textContent = state.modelLoaded || '—';
+}
+
+function updateMessageCount() {
+  infoMessages.textContent = String(state.messages.length);
+}
+
+function escapeHtml(s) {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Minimal markdown-ish rendering: fenced code blocks + inline code.
+function renderContent(text) {
+  const parts = [];
+  const fence = /```([a-zA-Z0-9_+\-]*)\n([\s\S]*?)```/g;
+  let last = 0; let m;
+  while ((m = fence.exec(text)) !== null) {
+    if (m.index > last) parts.push({ kind: 'text', val: text.slice(last, m.index) });
+    parts.push({ kind: 'code', lang: m[1], val: m[2] });
+    last = m.index + m[0].length;
+  }
+  if (last < text.length) parts.push({ kind: 'text', val: text.slice(last) });
+
+  return parts.map(p => {
+    if (p.kind === 'code') {
+      return '<pre><code>' + escapeHtml(p.val) + '</code></pre>';
+    }
+    // inline `code`
+    const inline = escapeHtml(p.val).replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    return inline;
+  }).join('');
+}
+
+function renderMessage(msg, opts = {}) {
+  const div = document.createElement('div');
+  div.className = 'msg ' + msg.role;
+  div.dataset.id = msg.id;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'avatar';
+  avatar.textContent = msg.role === 'user' ? 'YOU' : 'FE';
+
+  const body = document.createElement('div');
+  body.className = 'msg-body';
+
+  const role = document.createElement('div');
+  role.className = 'msg-role';
+  role.textContent = msg.role === 'user' ? 'You' : 'Ferrous';
+
+  const content = document.createElement('div');
+  content.className = 'msg-content';
+  content.innerHTML = renderContent(msg.content || '');
+  if (opts.streaming) {
+    const cursor = document.createElement('span');
+    cursor.className = 'typing-cursor';
+    content.appendChild(cursor);
+  }
+
+  body.appendChild(role);
+  body.appendChild(content);
+  div.appendChild(avatar);
+  div.appendChild(body);
+  return div;
+}
+
+function renderEmptyState() {
+  chatCanvas.innerHTML = `
+    <div class="empty-state">
+      <h2>A private place to <em>think out loud</em></h2>
+      <p>Ferrous loads a language model into your browser and runs every token locally — through WebGPU when available, WASM otherwise. The conversation persists between visits; nothing is sent anywhere.</p>
+      <div class="hint">START BY LOADING A MODEL ↗ &nbsp;OR JUST TYPE BELOW</div>
+    </div>
+  `;
+}
+
+function renderAll() {
+  chatCanvas.innerHTML = '';
+  if (state.messages.length === 0) {
+    renderEmptyState();
+  } else {
+    for (const msg of state.messages) {
+      chatCanvas.appendChild(renderMessage(msg));
+    }
+  }
+  updateMessageCount();
+  scrollChatToBottom(false);
+}
+
+function scrollChatToBottom(smooth = true) {
+  chatScroll.scrollTo({
+    top: chatScroll.scrollHeight,
+    behavior: smooth ? 'smooth' : 'auto',
+  });
+}
+
+function updateSendButton() {
+  const hasText = composerInput.value.trim().length > 0;
+  const canSend = hasText && state.status === 'ready' && !state.generating;
+  sendBtn.disabled = !canSend;
+  // Show stop button when generating
+  if (state.generating) {
+    stopBtn.style.display = 'inline-flex';
+    sendBtn.style.display = 'none';
+  } else {
+    stopBtn.style.display = 'none';
+    sendBtn.style.display = 'inline-flex';
+  }
+}
+
+/* ================================================================
+   6. Context window management
+   ================================================================ */
+function buildPromptMessages() {
+  // Always include system prompt first
+  const sys = (state.settings.systemPrompt || '').trim();
+  const result = [];
+  if (sys) result.push({ role: 'system', content: sys });
+
+  const budget = Math.max(500, parseInt(state.settings.contextLimit, 10) || 8000);
+  // Walk history from newest to oldest, accumulating until budget exceeded.
+  const reversed = [];
+  let used = sys.length;
+  for (let i = state.messages.length - 1; i >= 0; i--) {
+    const m = state.messages[i];
+    const cost = (m.content || '').length + 16; // small overhead per turn
+    if (used + cost > budget && reversed.length > 0) break;
+    used += cost;
+    reversed.push({ role: m.role, content: m.content });
+  }
+  reversed.reverse();
+  return result.concat(reversed);
+}
+
+/* ================================================================
+   7. Worker message handling
+   ================================================================ */
+function onWorkerMessage(e) {
+  const { type, payload } = e.data || {};
+
+  if (type === 'WORKER_READY') {
+    setStatus('idle', 'Ready to load model', 'Open Settings to choose a model.');
+    return;
+  }
+
+  if (type === 'PROGRESS') {
+    // payload can be: { status: 'progress', file, progress, loaded, total } or { status: 'done', file } etc.
+    if (payload && payload.status === 'progress') {
+      const pct = typeof payload.progress === 'number' ? payload.progress : 0;
+      const file = payload.file ? payload.file.split('/').pop() : 'file';
+      const mb = payload.loaded ? (payload.loaded / (1024 * 1024)).toFixed(1) : '?';
+      const total = payload.total ? (payload.total / (1024 * 1024)).toFixed(1) : '?';
+      setProgress(pct, `Downloading ${file} · ${mb} / ${total} MB`);
+      setStatus('loading', 'Fetching model weights…', `${pct.toFixed(0)}% — ${file}`);
+    } else if (payload && payload.status === 'done') {
+      setProgress(100, 'Download complete.');
+    } else if (payload && payload.status === 'initiate') {
+      setStatus('loading', 'Initiating download…', payload.file || '');
+    } else if (payload && payload.status === 'ready') {
+      setProgress(null);
+    }
+    return;
+  }
+
+  if (type === 'STATUS') {
+    const { stage, detail, model, device, dtype } = payload;
+    if (device) setDevice(device);
+    if (stage === 'fetching') {
+      setStatus('loading', 'Fetching model weights…', detail || '');
+    } else if (stage === 'compiling') {
+      setStatus('loading', 'Compiling WebGPU shaders…', detail || '');
+      setProgress(null);
+    } else if (stage === 'ready') {
+      state.modelLoaded = model || state.settings.model;
+      updateModelHeader();
+      setStatus('ready', 'Ready / Idle', `${state.modelLoaded} · ${dtype || state.settings.dtype} · ${device || state.device || ''}`);
+      setProgress(null);
+      updateSendButton();
+    } else if (stage === 'warn') {
+      // Non-fatal warning (e.g. webgpu failed, falling back)
+      statusDetail.textContent = detail || '';
+    }
+    return;
+  }
+
+  if (type === 'STREAM_TOKEN') {
+    const text = payload.text || '';
+    if (!state.currentAssistantId) return;
+    const msg = state.messages.find(m => m.id === state.currentAssistantId);
+    if (!msg) return;
+    msg.content += text;
+    // Update only the streaming message DOM node for performance
+    const node = chatCanvas.querySelector(`[data-id="${msg.id}"] .msg-content`);
+    if (node) {
+      // re-render content + cursor
+      node.innerHTML = renderContent(msg.content);
+      const cursor = document.createElement('span');
+      cursor.className = 'typing-cursor';
+      node.appendChild(cursor);
+    }
+    // Throttled scroll
+    if (!onWorkerMessage._scrollScheduled) {
+      onWorkerMessage._scrollScheduled = true;
+      requestAnimationFrame(() => {
+        onWorkerMessage._scrollScheduled = false;
+        if (chatScroll.scrollTop + chatScroll.clientHeight > chatScroll.scrollHeight - 200) {
+          scrollChatToBottom(false);
+        }
+      });
+    }
+    return;
+  }
+
+  if (type === 'STREAM_DONE') {
+    state.generating = false;
+    setStatus('ready', 'Ready / Idle', `${payload.tokenCount} tokens in ${payload.elapsedSec}s — ${payload.tokensPerSec} tok/s`);
+    tokenStats.textContent = `${payload.tokenCount} tok · ${payload.tokensPerSec} tok/s`;
+    if (state.currentAssistantId) {
+      const msg = state.messages.find(m => m.id === state.currentAssistantId);
+      if (msg) {
+        // strip trailing whitespace, persist
+        msg.content = (msg.content || '').replace(/[\s\u200B]+$/, '');
+        persistMessages();
+        // remove cursor
+        const node = chatCanvas.querySelector(`[data-id="${msg.id}"] .msg-content`);
+        if (node) node.innerHTML = renderContent(msg.content);
+      }
+    }
+    state.currentAssistantId = null;
+    updateMessageCount();
+    updateSendButton();
+    return;
+  }
+
+  if (type === 'ERROR') {
+    state.generating = false;
+    const msg = (payload && payload.message) || 'Unknown error';
+    setStatus('error', 'Error', msg);
+    if (state.currentAssistantId) {
+      const m = state.messages.find(x => x.id === state.currentAssistantId);
+      if (m) {
+        if (!m.content) {
+          m.content = `_⚠ Generation failed: ${msg}_`;
+        }
+        persistMessages();
+        const node = chatCanvas.querySelector(`[data-id="${m.id}"] .msg-content`);
+        if (node) node.innerHTML = renderContent(m.content);
+      }
+      state.currentAssistantId = null;
+    }
+    updateSendButton();
+    return;
+  }
+}
+
+/* ================================================================
+   8. Actions
+   ================================================================ */
+function sendCurrentInput() {
+  const text = composerInput.value.trim();
+  if (!text) return;
+  if (state.status !== 'ready' || state.generating) return;
+
+  // Clear empty state if present
+  if (state.messages.length === 0) chatCanvas.innerHTML = '';
+
+  const userMsg = { id: uid(), role: 'user', content: text, ts: Date.now() };
+  state.messages.push(userMsg);
+  chatCanvas.appendChild(renderMessage(userMsg));
+  persistMessages();
+
+  composerInput.value = '';
+  autosizeComposer();
+
+  const assistantMsg = { id: uid(), role: 'assistant', content: '', ts: Date.now() };
+  state.messages.push(assistantMsg);
+  state.currentAssistantId = assistantMsg.id;
+  chatCanvas.appendChild(renderMessage(assistantMsg, { streaming: true }));
+  scrollChatToBottom(true);
+
+  state.generating = true;
+  setStatus('generating', 'Inference Active (Streaming…)', `→ ${state.modelLoaded || state.settings.model}`);
+  tokenStats.textContent = 'streaming…';
+  updateSendButton();
+
+  const promptMessages = buildPromptMessages();
+  worker.postMessage({
+    type: 'GENERATE',
+    payload: {
+      messages: promptMessages,
+      maxTokens: state.settings.maxTokens,
+      temperature: state.settings.temperature,
+    },
+  });
+}
+
+function stopGeneration() {
+  if (!state.generating) return;
+  worker.postMessage({ type: 'STOP' });
+  setStatus('ready', 'Stop requested', 'Finishing current step…');
+}
+
+function loadConfiguredModel() {
+  const model = (modelInput.value || '').trim() || state.settings.model;
+  const dtype = dtypeSelect.value;
+  const device = deviceSelect.value;
+  state.settings.model = model;
+  state.settings.dtype = dtype;
+  state.settings.device = device;
+  persistSettings();
+  updateModelHeader();
+  setStatus('loading', 'Fetching model weights…', `Preparing ${model}`);
+  setProgress(0, 'Starting…');
+  worker.postMessage({ type: 'LOAD_MODEL', payload: { model, dtype, device } });
+}
+
+function clearConversation() {
+  if (state.generating) stopGeneration();
+  state.messages = [];
+  state.currentAssistantId = null;
+  persistMessages();
+  renderAll();
+  tokenStats.textContent = '—';
+}
+
+/* ================================================================
+   9. Composer behavior
+   ================================================================ */
+function autosizeComposer() {
+  composerInput.style.height = 'auto';
+  composerInput.style.height = Math.min(200, composerInput.scrollHeight) + 'px';
+}
+
+composerInput.addEventListener('input', () => {
+  autosizeComposer();
+  updateSendButton();
+});
+
+composerInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+    e.preventDefault();
+    sendCurrentInput();
+  }
+});
+
+composer.addEventListener('submit', (e) => {
+  e.preventDefault();
+  sendCurrentInput();
+});
+
+stopBtn.addEventListener('click', stopGeneration);
+
+/* ================================================================
+   10. Drawer behavior
+   ================================================================ */
+function openDrawer() {
+  drawer.classList.add('open');
+  drawerOverlay.classList.add('open');
+  drawer.setAttribute('aria-hidden', 'false');
+}
+function closeDrawer() {
+  drawer.classList.remove('open');
+  drawerOverlay.classList.remove('open');
+  drawer.setAttribute('aria-hidden', 'true');
+}
+settingsBtn.addEventListener('click', openDrawer);
+settingsBtnTop.addEventListener('click', openDrawer);
+drawerCloseBtn.addEventListener('click', closeDrawer);
+drawerOverlay.addEventListener('click', closeDrawer);
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drawer.classList.contains('open')) closeDrawer();
+});
+
+presetSelect.addEventListener('change', () => {
+  const v = presetSelect.value;
+  if (v === '__custom__') {
+    modelInput.focus();
+    modelInput.select();
+  } else {
+    modelInput.value = v;
+  }
+});
+
+modelInput.addEventListener('input', () => {
+  // Sync preset dropdown
+  const v = modelInput.value.trim();
+  const opts = Array.from(presetSelect.options).map(o => o.value);
+  if (opts.includes(v)) presetSelect.value = v;
+  else presetSelect.value = '__custom__';
+});
+
+systemPrompt.addEventListener('input', () => {
+  state.settings.systemPrompt = systemPrompt.value;
+  persistSettings();
+});
+maxTokensIn.addEventListener('change', () => {
+  state.settings.maxTokens = Math.max(16, Math.min(4096, parseInt(maxTokensIn.value, 10) || 512));
+  maxTokensIn.value = state.settings.maxTokens;
+  persistSettings();
+});
+temperatureIn.addEventListener('change', () => {
+  state.settings.temperature = Math.max(0, Math.min(2, parseFloat(temperatureIn.value) || 0.7));
+  temperatureIn.value = state.settings.temperature;
+  persistSettings();
+});
+contextLimit.addEventListener('change', () => {
+  state.settings.contextLimit = Math.max(500, Math.min(60000, parseInt(contextLimit.value, 10) || 8000));
+  contextLimit.value = state.settings.contextLimit;
+  persistSettings();
+});
+
+loadModelBtn.addEventListener('click', () => {
+  loadConfiguredModel();
+});
+
+newChatBtn.addEventListener('click', () => {
+  if (state.messages.length === 0) return;
+  if (confirm('Clear the current conversation? This cannot be undone.')) clearConversation();
+});
+
+clearHistoryBtn.addEventListener('click', () => {
+  if (confirm('Erase all stored chat history from localStorage?')) clearConversation();
+});
+
+/* ================================================================
+   11. Init
+   ================================================================ */
+function syncSettingsToUI() {
+  modelInput.value     = state.settings.model;
+  const opts = Array.from(presetSelect.options).map(o => o.value);
+  presetSelect.value   = opts.includes(state.settings.model) ? state.settings.model : '__custom__';
+  dtypeSelect.value    = state.settings.dtype;
+  deviceSelect.value   = state.settings.device;
+  systemPrompt.value   = state.settings.systemPrompt;
+  maxTokensIn.value    = state.settings.maxTokens;
+  temperatureIn.value  = state.settings.temperature;
+  contextLimit.value   = state.settings.contextLimit;
+}
+
+function init() {
+  loadFromStorage();
+  syncSettingsToUI();
+  updateModelHeader();
+  renderAll();
+  setStatus('loading', 'Starting worker…', 'Spinning up isolated inference thread.');
+  setDevice(null);
+  updateSendButton();
+
+  // Surface WebGPU availability hint
+  const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
+  if (!hasWebGPU && state.settings.device === 'webgpu') {
+    statusDetail.textContent = 'WebGPU unavailable in this browser — will fall back to WASM.';
+  }
+}
+
+init();
+
+// Clean up the blob URL once worker has booted (URL.createObjectURL leaks otherwise).
+// We revoke it after a short delay to ensure the worker has loaded its source.
+setTimeout(() => {
+  try { URL.revokeObjectURL(workerURL); } catch (_) {}
+}, 5000);
+</script>
+</body>
+</html>
