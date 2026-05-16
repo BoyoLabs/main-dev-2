@@ -857,12 +857,12 @@
       <div class="field">
         <label class="field-label" for="dtypeSelect">Quantization (dtype)</label>
         <select id="dtypeSelect" class="field-select">
-          <option value="q4">q4 — lowest memory</option>
+          <option value="q8">q8 — recommended (stable + small)</option>
+          <option value="q4">q4 — smallest, may fail on some models</option>
           <option value="q4f16">q4f16 — q4 + fp16 activations</option>
-          <option value="q8">q8 — moderate memory</option>
           <option value="int8">int8</option>
-          <option value="fp16">fp16 — high quality</option>
-          <option value="fp32">fp32 — full precision</option>
+          <option value="fp16">fp16 — high quality (WebGPU)</option>
+          <option value="fp32">fp32 — full precision (large)</option>
         </select>
       </div>
       <div class="field">
@@ -932,11 +932,20 @@ const workerSource = `
 
   async function ensureTransformers() {
     if (TF) return TF;
-    TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
-    // Allow remote model fetching, no local model browsing.
+    // Pin to a stable v3 release. 3.0.0 has known memory leak / abort bugs;
+    // 3.5+ ships fixes plus better WASM heap management.
+    TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2');
     if (TF.env) {
       TF.env.allowLocalModels = false;
       TF.env.allowRemoteModels = true;
+      // Single-thread the WASM runtime. Multi-threading doubles memory cost
+      // and triggers known ORT bugs that abort the process under load.
+      try {
+        if (TF.env.backends && TF.env.backends.onnx && TF.env.backends.onnx.wasm) {
+          TF.env.backends.onnx.wasm.numThreads = 1;
+          TF.env.backends.onnx.wasm.proxy = false;
+        }
+      } catch (_) { /* env shape may vary across versions */ }
     }
     return TF;
   }
@@ -985,24 +994,38 @@ const workerSource = `
         }
       }
 
-      // Build a (device, dtype) fallback ladder. The chosen dtype is tried
-      // first, then known-good fallbacks for each device. This handles cases
-      // where a model wasn't published with the requested quantization, or
-      // where the WASM backend can't load q4's external data file.
+      // Build a SHORT (device, dtype) fallback list. The previous version
+      // tried 6 dtypes per device, which under WASM means six full model
+      // loads in series — each leaving memory behind because the WASM heap
+      // never shrinks. That cascade is what causes Chrome to kill the tab
+      // with "error code 4" (STATUS_OUT_OF_MEMORY).
+      //
+      // Strategy: try the requested dtype, then ONE safe fallback per
+      // device. If we hit anything that smells like an OOM, stop trying
+      // more in this device and move on — or give up entirely.
       const requested = dtype || 'q4';
-      const dtypeOrder = (dev) => {
-        const ladders = {
-          webgpu: ['fp16', 'q4f16', 'q8', 'q4', 'fp32', 'int8'],
-          wasm:   ['q8', 'int8', 'fp32', 'fp16', 'q4f16', 'q4'],
-        };
-        const ladder = ladders[dev] || ladders.wasm;
-        // Put the user's requested dtype first, then the rest, deduped.
-        return [requested, ...ladder.filter(d => d !== requested)];
+      const safeFallback = (dev) => {
+        // q8 is the smallest stable choice on WASM; fp16 is stable on WebGPU.
+        // We never auto-fall-back to fp32 — it would double or quadruple
+        // memory and almost certainly OOM on browser-class hardware.
+        if (dev === 'webgpu') return requested === 'fp16' ? 'q4f16' : 'fp16';
+        return requested === 'q8' ? 'q4f16' : 'q8';
+      };
+
+      const looksLikeOOM = (err) => {
+        const m = ((err && err.message) || String(err) || '').toLowerCase();
+        return m.includes('out of memory')
+            || m.includes('aborted')
+            || m.includes('allocation')
+            || m.includes('rangeerror');
       };
 
       let lastErr = null;
-      for (const dev of tryDevices) {
-        const dtypes = dtypeOrder(dev);
+      outer: for (const dev of tryDevices) {
+        const dtypes = [requested];
+        const fb = safeFallback(dev);
+        if (fb !== requested) dtypes.push(fb);
+
         for (let i = 0; i < dtypes.length; i++) {
           const dt = dtypes[i];
           try {
@@ -1027,7 +1050,16 @@ const workerSource = `
             lastErr = err;
             const msg = (err && err.message) ? err.message : String(err);
             postStatus('warn', '[' + dev + '/' + dt + '] ' + msg.slice(0, 140));
-            // Try next dtype, then next device.
+
+            // If this looks like an OOM, abort this device entirely — more
+            // attempts on the same backend will only make things worse, and
+            // could crash the tab. Give the runtime a moment to release
+            // anything it can before trying a different device.
+            if (looksLikeOOM(err)) {
+              postStatus('warn', 'Memory pressure detected — aborting ' + dev + ' attempts.');
+              await new Promise(r => setTimeout(r, 200));
+              continue outer;
+            }
           }
         }
       }
@@ -1128,11 +1160,15 @@ const workerSource = `
    2. State & persistence
    ================================================================ */
 const STORAGE_KEY = 'ferrous.chat.v1';
-const SETTINGS_KEY = 'ferrous.settings.v1';
+const SETTINGS_KEY = 'ferrous.settings.v2';   // v2: changed defaults, invalidate prior stale state
 
 const defaultSettings = {
   model: 'HuggingFaceTB/SmolLM2-360M-Instruct',
-  dtype: 'q4',
+  // q8 is the safest default for in-browser inference. It's the smallest
+  // dtype that loads reliably on the WASM backend (q4 needs external data
+  // files that ORT sometimes fails to mount), while still being light
+  // enough to run on consumer GPUs / CPUs.
+  dtype: 'q8',
   device: 'webgpu',
   systemPrompt:
     'You are Ferrous, a careful and concise local AI assistant running entirely in the user\'s browser. ' +
