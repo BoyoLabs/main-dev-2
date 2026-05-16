@@ -985,31 +985,53 @@ const workerSource = `
         }
       }
 
+      // Build a (device, dtype) fallback ladder. The chosen dtype is tried
+      // first, then known-good fallbacks for each device. This handles cases
+      // where a model wasn't published with the requested quantization, or
+      // where the WASM backend can't load q4's external data file.
+      const requested = dtype || 'q4';
+      const dtypeOrder = (dev) => {
+        const ladders = {
+          webgpu: ['fp16', 'q4f16', 'q8', 'q4', 'fp32', 'int8'],
+          wasm:   ['q8', 'int8', 'fp32', 'fp16', 'q4f16', 'q4'],
+        };
+        const ladder = ladders[dev] || ladders.wasm;
+        // Put the user's requested dtype first, then the rest, deduped.
+        return [requested, ...ladder.filter(d => d !== requested)];
+      };
+
       let lastErr = null;
       for (const dev of tryDevices) {
-        try {
-          postStatus(
-            dev === 'webgpu' ? 'compiling' : 'fetching',
-            dev === 'webgpu'
-              ? 'Initializing WebGPU and compiling shaders…'
-              : 'Initializing WASM runtime…',
-            { model, device: dev }
-          );
-          const generator = await pipeline('text-generation', model, {
-            device: dev,
-            dtype: dtype || 'q4',
-            progress_callback: progressCb,
-          });
-          generator.__device = dev;
-          postStatus('ready', 'Model ready.', { model, dtype, device: dev });
-          return generator;
-        } catch (err) {
-          lastErr = err;
-          postStatus('warn', '['+dev+'] failed: ' + (err && err.message ? err.message : String(err)));
-          // continue to next device
+        const dtypes = dtypeOrder(dev);
+        for (let i = 0; i < dtypes.length; i++) {
+          const dt = dtypes[i];
+          try {
+            const note = i === 0
+              ? (dev === 'webgpu' ? 'Initializing WebGPU and compiling shaders…' : 'Initializing WASM runtime…')
+              : 'Retrying with dtype=' + dt + ' on ' + dev + '…';
+            postStatus(
+              dev === 'webgpu' ? 'compiling' : 'fetching',
+              note,
+              { model, device: dev, dtype: dt }
+            );
+            const generator = await pipeline('text-generation', model, {
+              device: dev,
+              dtype: dt,
+              progress_callback: progressCb,
+            });
+            generator.__device = dev;
+            generator.__dtype = dt;
+            postStatus('ready', 'Model ready.', { model, dtype: dt, device: dev });
+            return generator;
+          } catch (err) {
+            lastErr = err;
+            const msg = (err && err.message) ? err.message : String(err);
+            postStatus('warn', '[' + dev + '/' + dt + '] ' + msg.slice(0, 140));
+            // Try next dtype, then next device.
+          }
         }
       }
-      throw lastErr || new Error('All device backends failed.');
+      throw lastErr || new Error('All device/dtype combinations failed.');
     })();
 
     try {
