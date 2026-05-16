@@ -228,6 +228,10 @@
     background: linear-gradient(90deg, var(--accent), var(--accent-2));
     transition: width 200ms ease;
   }
+  @keyframes indeterminate {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
 
   .device-badge {
     display: inline-flex;
@@ -961,7 +965,26 @@ const workerSource = `
         postProgress(p);
       };
 
-      const tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
+      // Pre-flight: probe WebGPU adapter availability so we can skip it
+      // cleanly (and silently) instead of letting the pipeline throw
+      // "No available adapters" to the console.
+      let tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
+      if (tryDevices[0] === 'webgpu') {
+        let webgpuOK = false;
+        try {
+          if (typeof navigator !== 'undefined' && navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
+            const adapter = await navigator.gpu.requestAdapter();
+            webgpuOK = !!adapter;
+          }
+        } catch (_) {
+          webgpuOK = false;
+        }
+        if (!webgpuOK) {
+          postStatus('warn', 'WebGPU adapter unavailable — using WASM.');
+          tryDevices = ['wasm'];
+        }
+      }
+
       let lastErr = null;
       for (const dev of tryDevices) {
         try {
@@ -1380,24 +1403,55 @@ function onWorkerMessage(e) {
   const { type, payload } = e.data || {};
 
   if (type === 'WORKER_READY') {
-    setStatus('idle', 'Ready to load model', 'Open Settings to choose a model.');
+    // If a model was successfully loaded in a previous session, restore it
+    // automatically — weights are HTTP-cached, so this is typically fast.
+    if (state.settings.lastLoaded) {
+      setStatus('loading', 'Restoring previous model…', state.settings.lastLoaded);
+      // Use the saved model id rather than whatever's in the input, in case
+      // the user had typed something but never clicked Load.
+      worker.postMessage({
+        type: 'LOAD_MODEL',
+        payload: {
+          model: state.settings.lastLoaded,
+          dtype: state.settings.dtype,
+          device: state.settings.device,
+        },
+      });
+    } else {
+      setStatus('idle', 'Ready to load model', 'Open Settings to choose a model.');
+    }
     return;
   }
 
   if (type === 'PROGRESS') {
     // payload can be: { status: 'progress', file, progress, loaded, total } or { status: 'done', file } etc.
     if (payload && payload.status === 'progress') {
-      const pct = typeof payload.progress === 'number' ? payload.progress : 0;
+      const hasTotal = typeof payload.total === 'number' && payload.total > 0;
+      const hasProgress = typeof payload.progress === 'number' && !isNaN(payload.progress);
+      const pct = hasProgress ? payload.progress : 0;
       const file = payload.file ? payload.file.split('/').pop() : 'file';
       const mb = payload.loaded ? (payload.loaded / (1024 * 1024)).toFixed(1) : '?';
-      const total = payload.total ? (payload.total / (1024 * 1024)).toFixed(1) : '?';
-      setProgress(pct, `Downloading ${file} · ${mb} / ${total} MB`);
-      setStatus('loading', 'Fetching model weights…', `${pct.toFixed(0)}% — ${file}`);
+
+      if (hasTotal && hasProgress) {
+        const total = (payload.total / (1024 * 1024)).toFixed(1);
+        setProgress(pct, `Downloading ${file} · ${mb} / ${total} MB`);
+        setStatus('loading', 'Fetching model weights…', `${pct.toFixed(0)}% — ${file}`);
+      } else {
+        // Server didn't send Content-Length — show indeterminate progress with bytes received
+        setProgress(null);
+        progressTrack.classList.add('active');
+        progressFill.style.width = '100%';
+        progressFill.style.animation = 'indeterminate 1.4s ease-in-out infinite';
+        statusDetail.textContent = `Downloading ${file} · ${mb} MB received`;
+        setStatus('loading', 'Fetching model weights…', `${file} · ${mb} MB`);
+      }
     } else if (payload && payload.status === 'done') {
+      progressFill.style.animation = '';
       setProgress(100, 'Download complete.');
     } else if (payload && payload.status === 'initiate') {
       setStatus('loading', 'Initiating download…', payload.file || '');
     } else if (payload && payload.status === 'ready') {
+      progressFill.style.animation = '';
       setProgress(null);
     }
     return;
@@ -1413,6 +1467,8 @@ function onWorkerMessage(e) {
       setProgress(null);
     } else if (stage === 'ready') {
       state.modelLoaded = model || state.settings.model;
+      state.settings.lastLoaded = state.modelLoaded;
+      persistSettings();
       updateModelHeader();
       setStatus('ready', 'Ready / Idle', `${state.modelLoaded} · ${dtype || state.settings.dtype} · ${device || state.device || ''}`);
       setProgress(null);
@@ -1477,6 +1533,12 @@ function onWorkerMessage(e) {
     state.generating = false;
     const msg = (payload && payload.message) || 'Unknown error';
     setStatus('error', 'Error', msg);
+    // If a load (not a generation) failed, forget lastLoaded so the next page
+    // visit doesn't auto-retry a known-broken model.
+    if (payload && payload.where === 'LOAD_MODEL') {
+      state.settings.lastLoaded = null;
+      persistSettings();
+    }
     if (state.currentAssistantId) {
       const m = state.messages.find(x => x.id === state.currentAssistantId);
       if (m) {
