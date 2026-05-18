@@ -228,10 +228,6 @@
     background: linear-gradient(90deg, var(--accent), var(--accent-2));
     transition: width 200ms ease;
   }
-  @keyframes indeterminate {
-    0%   { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
 
   .device-badge {
     display: inline-flex;
@@ -743,8 +739,8 @@
       <div class="brand-text">
         <span class="brand-name">Ferrous</span>
         <span class="brand-sub">Local · Private · v3</span>
-      </div>
-    </div>
+      </div
+    </div
 
     <div class="side-section">
       <button class="side-btn" id="newChatBtn" title="Clear the conversation">
@@ -755,13 +751,13 @@
         <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         Settings
       </button>
-    </div>
+    </div
 
     <div class="side-section">
       <div class="side-label">About</div>
       <div style="padding: 4px 6px; font-size: 12.5px; color: var(--ink-2); line-height: 1.55;">
         Inference runs <em style="font-family: var(--font-display); color: var(--ink-1);">entirely in your browser</em>. No data leaves this tab. Models are cached after first download.
-      </div>
+      </div
     </div>
 
     <div class="status-card" id="statusCard">
@@ -857,12 +853,12 @@
       <div class="field">
         <label class="field-label" for="dtypeSelect">Quantization (dtype)</label>
         <select id="dtypeSelect" class="field-select">
-          <option value="q8">q8 — recommended (stable + small)</option>
-          <option value="q4">q4 — smallest, may fail on some models</option>
+          <option value="q4">q4 — lowest memory</option>
           <option value="q4f16">q4f16 — q4 + fp16 activations</option>
+          <option value="q8">q8 — moderate memory</option>
           <option value="int8">int8</option>
-          <option value="fp16">fp16 — high quality (WebGPU)</option>
-          <option value="fp32">fp32 — full precision (large)</option>
+          <option value="fp16">fp16 — high quality</option>
+          <option value="fp32">fp32 — full precision</option>
         </select>
       </div>
       <div class="field">
@@ -932,22 +928,16 @@ const workerSource = `
 
   async function ensureTransformers() {
     if (TF) return TF;
-    // Pin to a stable v3 release. 3.0.0 has known memory leak / abort bugs;
-    // 3.5+ ships fixes plus better WASM heap management.
-    TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2');
-    if (TF.env) {
-      TF.env.allowLocalModels = false;
-      TF.env.allowRemoteModels = true;
-      // Single-thread the WASM runtime. Multi-threading doubles memory cost
-      // and triggers known ORT bugs that abort the process under load.
-      try {
-        if (TF.env.backends && TF.env.backends.onnx && TF.env.backends.onnx.wasm) {
-          TF.env.backends.onnx.wasm.numThreads = 1;
-          TF.env.backends.onnx.wasm.proxy = false;
-        }
-      } catch (_) { /* env shape may vary across versions */ }
+    try {
+      TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.0');
+      if (TF.env) {
+        TF.env.allowLocalModels = false;
+        TF.env.allowRemoteModels = true;
+      }
+      return TF;
+    } catch (e) {
+      throw new Error('Failed to load Transformers.js from CDN: ' + e.message);
     }
-    return TF;
   }
 
   function postProgress(payload) {
@@ -970,100 +960,45 @@ const workerSource = `
       postStatus('fetching', 'Fetching model weights…', { model });
 
       const progressCb = (p) => {
-        // p has fields like: status, name, file, progress, loaded, total
         postProgress(p);
       };
 
-      // Pre-flight: probe WebGPU adapter availability so we can skip it
-      // cleanly (and silently) instead of letting the pipeline throw
-      // "No available adapters" to the console.
-      let tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
-      if (tryDevices[0] === 'webgpu') {
-        let webgpuOK = false;
-        try {
-          if (typeof navigator !== 'undefined' && navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
-            const adapter = await navigator.gpu.requestAdapter();
-            webgpuOK = !!adapter;
-          }
-        } catch (_) {
-          webgpuOK = false;
-        }
-        if (!webgpuOK) {
-          postStatus('warn', 'WebGPU adapter unavailable — using WASM.');
-          tryDevices = ['wasm'];
-        }
-      }
-
-      // Build a SHORT (device, dtype) fallback list. The previous version
-      // tried 6 dtypes per device, which under WASM means six full model
-      // loads in series — each leaving memory behind because the WASM heap
-      // never shrinks. That cascade is what causes Chrome to kill the tab
-      // with "error code 4" (STATUS_OUT_OF_MEMORY).
-      //
-      // Strategy: try the requested dtype, then ONE safe fallback per
-      // device. If we hit anything that smells like an OOM, stop trying
-      // more in this device and move on — or give up entirely.
-      const requested = dtype || 'q4';
-      const safeFallback = (dev) => {
-        // q8 is the smallest stable choice on WASM; fp16 is stable on WebGPU.
-        // We never auto-fall-back to fp32 — it would double or quadruple
-        // memory and almost certainly OOM on browser-class hardware.
-        if (dev === 'webgpu') return requested === 'fp16' ? 'q4f16' : 'fp16';
-        return requested === 'q8' ? 'q4f16' : 'q8';
-      };
-
-      const looksLikeOOM = (err) => {
-        const m = ((err && err.message) || String(err) || '').toLowerCase();
-        return m.includes('out of memory')
-            || m.includes('aborted')
-            || m.includes('allocation')
-            || m.includes('rangeerror');
-      };
-
+      const tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
       let lastErr = null;
-      outer: for (const dev of tryDevices) {
-        const dtypes = [requested];
-        const fb = safeFallback(dev);
-        if (fb !== requested) dtypes.push(fb);
+      for (const dev of tryDevices) {
+        try {
+          postStatus(
+            dev === 'webgpu' ? 'compiling' : 'fetching',
+            dev === 'webgpu'
+              ? 'Initializing WebGPU and compiling shaders…'
+              : 'Initializing WASM runtime…',
+            { model, device: dev }
+          );
 
-        for (let i = 0; i < dtypes.length; i++) {
-          const dt = dtypes[i];
-          try {
-            const note = i === 0
-              ? (dev === 'webgpu' ? 'Initializing WebGPU and compiling shaders…' : 'Initializing WASM runtime…')
-              : 'Retrying with dtype=' + dt + ' on ' + dev + '…';
-            postStatus(
-              dev === 'webgpu' ? 'compiling' : 'fetching',
-              note,
-              { model, device: dev, dtype: dt }
-            );
-            const generator = await pipeline('text-generation', model, {
-              device: dev,
-              dtype: dt,
-              progress_callback: progressCb,
-            });
-            generator.__device = dev;
-            generator.__dtype = dt;
-            postStatus('ready', 'Model ready.', { model, dtype: dt, device: dev });
-            return generator;
-          } catch (err) {
-            lastErr = err;
-            const msg = (err && err.message) ? err.message : String(err);
-            postStatus('warn', '[' + dev + '/' + dt + '] ' + msg.slice(0, 140));
+          const dtypeMap = {
+            'q4': 'q4',
+            'q4f16': 'q4',
+            'q8': 'q8',
+            'int8': 'q8',
+            'fp16': 'fp16',
+            'fp32': 'fp32'
+          };
+          const validDtype = dtypeMap[dtype] || 'q4';
 
-            // If this looks like an OOM, abort this device entirely — more
-            // attempts on the same backend will only make things worse, and
-            // could crash the tab. Give the runtime a moment to release
-            // anything it can before trying a different device.
-            if (looksLikeOOM(err)) {
-              postStatus('warn', 'Memory pressure detected — aborting ' + dev + ' attempts.');
-              await new Promise(r => setTimeout(r, 200));
-              continue outer;
-            }
-          }
+          const generator = await pipeline('text-generation', model, {
+            device: dev,
+            dtype: validDtype,
+            progress_callback: progressCb,
+          });
+          generator.__device = dev;
+          postStatus('ready', 'Model ready.', { model, dtype: validDtype, device: dev });
+          return generator;
+        } catch (err) {
+          lastErr = err;
+          postStatus('warn', '['+dev+'] failed: ' + (err && err.message ? err.message : String(err)));
         }
       }
-      throw lastErr || new Error('All device/dtype combinations failed.');
+      throw lastErr || new Error('All device backends failed.');
     })();
 
     try {
@@ -1081,9 +1016,8 @@ const workerSource = `
       throw new Error('No model loaded.');
     }
     const generator = await pipelinePromise;
-
-    // Build a TextStreamer via the same transformers module
-    const { TextStreamer } = TF;
+    const transformers = await ensureTransformers();
+    const { TextStreamer } = transformers;
 
     let tokenCount = 0;
     const startTime = performance.now();
@@ -1098,10 +1032,6 @@ const workerSource = `
       },
     });
 
-    // Some Transformers.js versions support a stopping criterion via callback.
-    // We simulate stop by checking stopRequested in the streamer; the model
-    // will continue generating until it hits max_new_tokens or EOS, but the UI
-    // will ignore tokens after stop and we'll inform the user.
     try {
       const output = await generator(messages, {
         max_new_tokens: Math.max(16, Math.min(4096, parseInt(maxTokens, 10) || 512)),
@@ -1154,21 +1084,17 @@ const workerSource = `
   };
 
   self.postMessage({ type: 'WORKER_READY' });
-`;
+\`;
 
 /* ================================================================
    2. State & persistence
    ================================================================ */
 const STORAGE_KEY = 'ferrous.chat.v1';
-const SETTINGS_KEY = 'ferrous.settings.v2';   // v2: changed defaults, invalidate prior stale state
+const SETTINGS_KEY = 'ferrous.settings.v1';
 
 const defaultSettings = {
   model: 'HuggingFaceTB/SmolLM2-360M-Instruct',
-  // q8 is the safest default for in-browser inference. It's the smallest
-  // dtype that loads reliably on the WASM backend (q4 needs external data
-  // files that ORT sometimes fails to mount), while still being light
-  // enough to run on consumer GPUs / CPUs.
-  dtype: 'q8',
+  dtype: 'q4',
   device: 'webgpu',
   systemPrompt:
     'You are Ferrous, a careful and concise local AI assistant running entirely in the user\'s browser. ' +
@@ -1335,7 +1261,7 @@ function escapeHtml(s) {
 // Minimal markdown-ish rendering: fenced code blocks + inline code.
 function renderContent(text) {
   const parts = [];
-  const fence = /```([a-zA-Z0-9_+\-]*)\n([\s\S]*?)```/g;
+  const fence = /`{3}([a-zA-Z0-9_+\-]*)\n([\s\S]*?)`{3}/g;
   let last = 0; let m;
   while ((m = fence.exec(text)) !== null) {
     if (m.index > last) parts.push({ kind: 'text', val: text.slice(last, m.index) });
@@ -1346,9 +1272,8 @@ function renderContent(text) {
 
   return parts.map(p => {
     if (p.kind === 'code') {
-      return '<pre><code>' + escapeHtml(p.val) + '</code></pre>';
+      return '<pre><code >' + escapeHtml(p.val) + '</code></pre>';
     }
-    // inline `code`
     const inline = escapeHtml(p.val).replace(/`([^`\n]+)`/g, '<code>$1</code>');
     return inline;
   }).join('');
@@ -1420,7 +1345,6 @@ function updateSendButton() {
   const hasText = composerInput.value.trim().length > 0;
   const canSend = hasText && state.status === 'ready' && !state.generating;
   sendBtn.disabled = !canSend;
-  // Show stop button when generating
   if (state.generating) {
     stopBtn.style.display = 'inline-flex';
     sendBtn.style.display = 'none';
@@ -1434,18 +1358,16 @@ function updateSendButton() {
    6. Context window management
    ================================================================ */
 function buildPromptMessages() {
-  // Always include system prompt first
   const sys = (state.settings.systemPrompt || '').trim();
   const result = [];
   if (sys) result.push({ role: 'system', content: sys });
 
   const budget = Math.max(500, parseInt(state.settings.contextLimit, 10) || 8000);
-  // Walk history from newest to oldest, accumulating until budget exceeded.
   const reversed = [];
   let used = sys.length;
   for (let i = state.messages.length - 1; i >= 0; i--) {
     const m = state.messages[i];
-    const cost = (m.content || '').length + 16; // small overhead per turn
+    const cost = (m.content || '').length + 16;
     if (used + cost > budget && reversed.length > 0) break;
     used += cost;
     reversed.push({ role: m.role, content: m.content });
@@ -1461,55 +1383,23 @@ function onWorkerMessage(e) {
   const { type, payload } = e.data || {};
 
   if (type === 'WORKER_READY') {
-    // If a model was successfully loaded in a previous session, restore it
-    // automatically — weights are HTTP-cached, so this is typically fast.
-    if (state.settings.lastLoaded) {
-      setStatus('loading', 'Restoring previous model…', state.settings.lastLoaded);
-      // Use the saved model id rather than whatever's in the input, in case
-      // the user had typed something but never clicked Load.
-      worker.postMessage({
-        type: 'LOAD_MODEL',
-        payload: {
-          model: state.settings.lastLoaded,
-          dtype: state.settings.dtype,
-          device: state.settings.device,
-        },
-      });
-    } else {
-      setStatus('idle', 'Ready to load model', 'Open Settings to choose a model.');
-    }
+    setStatus('idle', 'Ready to load model', 'Open Settings to choose a model.');
     return;
   }
 
   if (type === 'PROGRESS') {
-    // payload can be: { status: 'progress', file, progress, loaded, total } or { status: 'done', file } etc.
     if (payload && payload.status === 'progress') {
-      const hasTotal = typeof payload.total === 'number' && payload.total > 0;
-      const hasProgress = typeof payload.progress === 'number' && !isNaN(payload.progress);
-      const pct = hasProgress ? payload.progress : 0;
+      const pct = typeof payload.progress === 'number' ? payload.progress : 0;
       const file = payload.file ? payload.file.split('/').pop() : 'file';
       const mb = payload.loaded ? (payload.loaded / (1024 * 1024)).toFixed(1) : '?';
-
-      if (hasTotal && hasProgress) {
-        const total = (payload.total / (1024 * 1024)).toFixed(1);
-        setProgress(pct, `Downloading ${file} · ${mb} / ${total} MB`);
-        setStatus('loading', 'Fetching model weights…', `${pct.toFixed(0)}% — ${file}`);
-      } else {
-        // Server didn't send Content-Length — show indeterminate progress with bytes received
-        setProgress(null);
-        progressTrack.classList.add('active');
-        progressFill.style.width = '100%';
-        progressFill.style.animation = 'indeterminate 1.4s ease-in-out infinite';
-        statusDetail.textContent = `Downloading ${file} · ${mb} MB received`;
-        setStatus('loading', 'Fetching model weights…', `${file} · ${mb} MB`);
-      }
+      const total = payload.total ? (payload.total / (1024 * 1024)).toFixed(1) : '?';
+      setProgress(pct, `Downloading ${file} · ${mb} / ${total} MB`);
+      setStatus('loading', 'Fetching model weights…', `${pct.toFixed(0)}% — ${file}`);
     } else if (payload && payload.status === 'done') {
-      progressFill.style.animation = '';
       setProgress(100, 'Download complete.');
     } else if (payload && payload.status === 'initiate') {
       setStatus('loading', 'Initiating download…', payload.file || '');
     } else if (payload && payload.status === 'ready') {
-      progressFill.style.animation = '';
       setProgress(null);
     }
     return;
@@ -1525,14 +1415,11 @@ function onWorkerMessage(e) {
       setProgress(null);
     } else if (stage === 'ready') {
       state.modelLoaded = model || state.settings.model;
-      state.settings.lastLoaded = state.modelLoaded;
-      persistSettings();
       updateModelHeader();
       setStatus('ready', 'Ready / Idle', `${state.modelLoaded} · ${dtype || state.settings.dtype} · ${device || state.device || ''}`);
       setProgress(null);
       updateSendButton();
     } else if (stage === 'warn') {
-      // Non-fatal warning (e.g. webgpu failed, falling back)
       statusDetail.textContent = detail || '';
     }
     return;
@@ -1544,16 +1431,13 @@ function onWorkerMessage(e) {
     const msg = state.messages.find(m => m.id === state.currentAssistantId);
     if (!msg) return;
     msg.content += text;
-    // Update only the streaming message DOM node for performance
     const node = chatCanvas.querySelector(`[data-id="${msg.id}"] .msg-content`);
     if (node) {
-      // re-render content + cursor
       node.innerHTML = renderContent(msg.content);
       const cursor = document.createElement('span');
       cursor.className = 'typing-cursor';
       node.appendChild(cursor);
     }
-    // Throttled scroll
     if (!onWorkerMessage._scrollScheduled) {
       onWorkerMessage._scrollScheduled = true;
       requestAnimationFrame(() => {
@@ -1573,10 +1457,8 @@ function onWorkerMessage(e) {
     if (state.currentAssistantId) {
       const msg = state.messages.find(m => m.id === state.currentAssistantId);
       if (msg) {
-        // strip trailing whitespace, persist
-        msg.content = (msg.content || '').replace(/[\s\u200B]+$/, '');
+        msg.content = (msg.content || '').replace(/[\s​]+$/, '');
         persistMessages();
-        // remove cursor
         const node = chatCanvas.querySelector(`[data-id="${msg.id}"] .msg-content`);
         if (node) node.innerHTML = renderContent(msg.content);
       }
@@ -1591,12 +1473,6 @@ function onWorkerMessage(e) {
     state.generating = false;
     const msg = (payload && payload.message) || 'Unknown error';
     setStatus('error', 'Error', msg);
-    // If a load (not a generation) failed, forget lastLoaded so the next page
-    // visit doesn't auto-retry a known-broken model.
-    if (payload && payload.where === 'LOAD_MODEL') {
-      state.settings.lastLoaded = null;
-      persistSettings();
-    }
     if (state.currentAssistantId) {
       const m = state.messages.find(x => x.id === state.currentAssistantId);
       if (m) {
@@ -1622,7 +1498,6 @@ function sendCurrentInput() {
   if (!text) return;
   if (state.status !== 'ready' || state.generating) return;
 
-  // Clear empty state if present
   if (state.messages.length === 0) chatCanvas.innerHTML = '';
 
   const userMsg = { id: uid(), role: 'user', content: text, ts: Date.now() };
@@ -1743,7 +1618,6 @@ presetSelect.addEventListener('change', () => {
 });
 
 modelInput.addEventListener('input', () => {
-  // Sync preset dropdown
   const v = modelInput.value.trim();
   const opts = Array.from(presetSelect.options).map(o => o.value);
   if (opts.includes(v)) presetSelect.value = v;
@@ -1807,7 +1681,6 @@ function init() {
   setDevice(null);
   updateSendButton();
 
-  // Surface WebGPU availability hint
   const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
   if (!hasWebGPU && state.settings.device === 'webgpu') {
     statusDetail.textContent = 'WebGPU unavailable in this browser — will fall back to WASM.';
@@ -1816,8 +1689,6 @@ function init() {
 
 init();
 
-// Clean up the blob URL once worker has booted (URL.createObjectURL leaks otherwise).
-// We revoke it after a short delay to ensure the worker has loaded its source.
 setTimeout(() => {
   try { URL.revokeObjectURL(workerURL); } catch (_) {}
 }, 5000);
