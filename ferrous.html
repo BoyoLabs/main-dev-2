@@ -4,16 +4,15 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta name="color-scheme" content="dark" />
-<title>ferrous · local LLM shell</title>
+<title>ferrous · cloud LLM shell</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================================
-     ferrous — a private, local-only LLM shell
-     Terminal-style SPA · Transformers.js v3 · WebGPU/WASM
+     ferrous — a terminal-style LLM shell
+     Cloud inference via Pollinations.ai — no key, no signup
      ============================================================ */
-
   :root {
     --bg:         #0a0a0c;
     --bg-soft:    #101013;
@@ -29,9 +28,7 @@
     --magenta:    #c489c4;
     --cursor:     #d4d0c8;
   }
-
   *, *::before, *::after { box-sizing: border-box; }
-
   html, body {
     margin: 0; padding: 0; height: 100%;
     background: var(--bg); color: var(--ink);
@@ -40,31 +37,23 @@
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
   }
-
   body {
     background:
-      repeating-linear-gradient(
-        180deg,
-        rgba(255,255,255,0.012) 0px,
-        rgba(255,255,255,0.012) 1px,
-        transparent 1px,
-        transparent 3px
-      ),
+      repeating-linear-gradient(180deg,
+        rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px,
+        transparent 1px, transparent 3px),
       radial-gradient(800px 500px at 50% -10%, rgba(127,176,105,0.04), transparent 60%),
       var(--bg);
   }
-
   button, input, textarea {
     font-family: inherit; font-size: inherit; color: inherit;
     background: none; border: none; outline: none; padding: 0;
   }
-
   .shell {
     height: 100vh;
     display: flex; flex-direction: column;
     max-width: 980px; margin: 0 auto; padding: 0 24px;
   }
-
   .titlebar {
     flex-shrink: 0; padding: 14px 0 10px;
     border-bottom: 1px solid var(--line);
@@ -72,7 +61,6 @@
   }
   .titlebar-left { display: flex; align-items: center; gap: 12px; min-width: 0; }
   .tb-prompt { color: var(--green); font-weight: 500; white-space: nowrap; }
-  .tb-title { color: var(--ink); font-weight: 500; }
   .tb-meta {
     color: var(--ink-faint); font-size: 12px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -141,6 +129,8 @@
     display: block; padding: 10px 12px; margin: 6px 0;
     overflow-x: auto; white-space: pre;
   }
+  .content a { color: var(--blue); text-decoration: underline; }
+  .content a:hover { color: var(--magenta); }
 
   .streaming-cursor {
     display: inline-block; width: 7px; height: 13px;
@@ -158,8 +148,6 @@
   .banner-sub {
     color: var(--ink-faint); font-size: 11.5px; margin: -8px 0 14px;
   }
-
-  .progress-bar { display: inline-block; color: var(--green); }
 
   .prompt-row {
     flex-shrink: 0;
@@ -197,9 +185,7 @@
     border-radius: 2px; padding: 0 4px;
     color: var(--ink-dim); font-size: 10px;
   }
-
   ::selection { background: rgba(127,176,105,0.25); color: var(--ink); }
-
   @media (max-width: 720px) {
     .shell { padding: 0 14px; }
     .tb-meta { display: none; }
@@ -213,7 +199,7 @@
   <header class="titlebar">
     <div class="titlebar-left">
       <span class="tb-prompt">~/ferrous</span>
-      <span class="tb-meta" id="tbMeta">no model loaded</span>
+      <span class="tb-meta" id="tbMeta">— model —</span>
     </div>
     <div class="titlebar-right">
       <span class="tb-status" id="tbStatus"><span class="dot"></span><span id="tbStatusText">starting</span></span>
@@ -240,7 +226,7 @@
     <span>
       <kbd>Enter</kbd> send · <kbd>Shift+Enter</kbd> newline · <kbd>↑</kbd>/<kbd>↓</kbd> history · <kbd>Ctrl+C</kbd> stop · type <kbd>/help</kbd>
     </span>
-    <span id="hintRight">private · local · no network</span>
+    <span id="hintRight">cloud · anonymous · no key</span>
   </div>
 </div>
 
@@ -248,286 +234,66 @@
 'use strict';
 
 /* ================================================================
-   1. Worker source (Blob URL, isolated thread)
+   1. Provider configuration
+   ----------------------------------------------------------------
+   Default: Pollinations.ai — anonymous, no key, no signup.
+   Per their FAQ: "You can use our API with Anonymous access — no
+   signup, account, or payment needed. You can call all free models,
+   subject to standard rate limits."
+   The endpoint is OpenAI-Chat-Completions compatible, so adding
+   other providers later is a one-field change.
    ================================================================ */
-const workerSource = `
-  let pipelinePromise = null;
-  let currentModelKey = null;
-  let stopRequested = false;
-  let TF = null;
-
-  async function ensureTransformers() {
-    if (TF) return TF;
-    TF = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.2');
-    if (TF.env) {
-      TF.env.allowLocalModels = false;
-      TF.env.allowRemoteModels = true;
-      try {
-        if (TF.env.backends && TF.env.backends.onnx && TF.env.backends.onnx.wasm) {
-          TF.env.backends.onnx.wasm.numThreads = 1;
-          TF.env.backends.onnx.wasm.proxy = false;
-        }
-      } catch (_) {}
-    }
-    return TF;
-  }
-
-  const postProgress = (payload) => self.postMessage({ type: 'PROGRESS', payload });
-  const postStatus = (stage, detail, extra = {}) =>
-    self.postMessage({ type: 'STATUS', payload: { stage, detail, ...extra } });
-  const postLog = (level, text) =>
-    self.postMessage({ type: 'LOG', payload: { level, text } });
-
-  async function loadModel({ model, dtype, device }) {
-    const key = model + '::' + dtype + '::' + device;
-    if (key === currentModelKey && pipelinePromise) {
-      const pipe = await pipelinePromise;
-      postStatus('ready', 'cached', { model, dtype, device: pipe.__device });
-      return pipe;
-    }
-    currentModelKey = key;
-
-    pipelinePromise = (async () => {
-      const { pipeline } = await ensureTransformers();
-
-      let tryDevices = device === 'wasm' ? ['wasm'] : ['webgpu', 'wasm'];
-      if (tryDevices[0] === 'webgpu') {
-        let webgpuOK = false;
-        try {
-          if (typeof navigator !== 'undefined' && navigator.gpu && typeof navigator.gpu.requestAdapter === 'function') {
-            const adapter = await navigator.gpu.requestAdapter();
-            webgpuOK = !!adapter;
-          }
-        } catch (_) {}
-        if (!webgpuOK) {
-          postLog('warn', 'WebGPU adapter unavailable — using WASM backend.');
-          tryDevices = ['wasm'];
-        }
-      }
-
-      const requested = dtype || 'q8';
-      const safeFallback = (dev) => {
-        if (dev === 'webgpu') return requested === 'fp16' ? 'q4f16' : 'fp16';
-        return requested === 'q8' ? 'q4' : 'q8';
-      };
-      const looksLikeOOM = (err) => {
-        const m = ((err && err.message) || String(err) || '').toLowerCase();
-        return m.includes('out of memory')
-            || m.includes('aborted')
-            || m.includes('allocation failed')
-            || m.includes('rangeerror');
-      };
-
-      let lastErr = null;
-      outer: for (const dev of tryDevices) {
-        const dtypes = [requested];
-        const fb = safeFallback(dev);
-        if (fb !== requested) dtypes.push(fb);
-
-        for (let i = 0; i < dtypes.length; i++) {
-          const dt = dtypes[i];
-          try {
-            const note = i === 0
-              ? (dev === 'webgpu' ? 'compiling webgpu shaders…' : 'initializing wasm runtime…')
-              : 'retrying with dtype=' + dt + ' on ' + dev;
-            postStatus(
-              dev === 'webgpu' ? 'compiling' : 'fetching',
-              note,
-              { model, device: dev, dtype: dt }
-            );
-            const generator = await pipeline('text-generation', model, {
-              device: dev,
-              dtype: dt,
-              progress_callback: postProgress,
-            });
-            generator.__device = dev;
-            generator.__dtype = dt;
-            postStatus('ready', 'model ready', { model, dtype: dt, device: dev });
-            return generator;
-          } catch (err) {
-            lastErr = err;
-            const msg = (err && err.message) ? err.message : String(err);
-            postLog('warn', '[' + dev + '/' + dt + '] ' + msg.slice(0, 180));
-            if (looksLikeOOM(err)) {
-              postLog('warn', 'memory pressure on ' + dev + ' — aborting this backend.');
-              await new Promise(r => setTimeout(r, 200));
-              continue outer;
-            }
-          }
-        }
-      }
-      throw lastErr || new Error('all device/dtype combinations failed.');
-    })();
-
-    try { return await pipelinePromise; }
-    catch (err) {
-      pipelinePromise = null;
-      currentModelKey = null;
-      throw err;
-    }
-  }
-
-  async function runGeneration({ messages, maxTokens, temperature, topP, repetitionPenalty }) {
-    stopRequested = false;
-    if (!pipelinePromise) throw new Error('no model loaded.');
-    const generator = await pipelinePromise;
-    const tokenizer = generator.tokenizer;
-
-    // Apply the model's own chat template so we emit the right special
-    // tokens (<|im_start|>, <|im_end|>, etc). Without this, small instruct
-    // models keep generating past their turn boundary and ramble.
-    let promptInput;
-    try {
-      promptInput = tokenizer.apply_chat_template(messages, {
-        tokenize: false,
-        add_generation_prompt: true,
-      });
-    } catch (e) {
-      // Fallback for models without a chat template.
-      promptInput = messages.map(m => {
-        if (m.role === 'system') return 'System: ' + m.content;
-        if (m.role === 'user')   return 'User: ' + m.content;
-        return 'Assistant: ' + m.content;
-      }).join('\\n') + '\\nAssistant:';
-    }
-
-    // Build EOS token id set. Many chat templates use <|im_end|> as the
-    // actual turn terminator, which is NOT the tokenizer's default eos_token.
-    const eosSet = new Set();
-    const addId = (id) => { if (typeof id === 'number' && id >= 0) eosSet.add(id); };
-    if (tokenizer.eos_token_id != null) {
-      if (Array.isArray(tokenizer.eos_token_id)) tokenizer.eos_token_id.forEach(addId);
-      else addId(tokenizer.eos_token_id);
-    }
-    const extra = ['<|im_end|>', '<|end_of_text|>', '<|eot_id|>', '<|endoftext|>'];
-    for (const tok of extra) {
-      try {
-        let id;
-        if (tokenizer.added_tokens_encoder && tokenizer.added_tokens_encoder[tok] != null) {
-          id = tokenizer.added_tokens_encoder[tok];
-        } else if (tokenizer.model && tokenizer.model.tokens_to_ids && typeof tokenizer.model.tokens_to_ids.get === 'function') {
-          id = tokenizer.model.tokens_to_ids.get(tok);
-        }
-        if (typeof id === 'number') addId(id);
-      } catch (_) {}
-    }
-    const eosArr = Array.from(eosSet);
-
-    const { TextStreamer } = TF;
-    let tokenCount = 0;
-    const startTime = performance.now();
-    let stoppedEarly = false;
-
-    const streamer = new TextStreamer(tokenizer, {
-      skip_prompt: true,
-      skip_special_tokens: true,
-      callback_function: (text) => {
-        if (stopRequested) { stoppedEarly = true; return; }
-        if (!text) return;
-        tokenCount += 1;
-        self.postMessage({ type: 'STREAM_TOKEN', payload: { text } });
-      },
-    });
-
-    try {
-      await generator(promptInput, {
-        max_new_tokens: Math.max(16, Math.min(2048, parseInt(maxTokens, 10) || 384)),
-        do_sample: (parseFloat(temperature) || 0) > 0,
-        temperature: parseFloat(temperature) || 0.7,
-        top_p: parseFloat(topP) || 0.9,
-        repetition_penalty: parseFloat(repetitionPenalty) || 1.15,
-        return_full_text: false,
-        eos_token_id: eosArr.length > 0 ? eosArr : undefined,
-        streamer,
-      });
-
-      const elapsed = (performance.now() - startTime) / 1000;
-      const tps = tokenCount > 0 ? (tokenCount / elapsed).toFixed(1) : '0';
-      self.postMessage({
-        type: 'STREAM_DONE',
-        payload: {
-          tokenCount,
-          elapsedSec: elapsed.toFixed(2),
-          tokensPerSec: tps,
-          stopped: stoppedEarly,
-        },
-      });
-    } catch (err) {
-      self.postMessage({
-        type: 'ERROR',
-        payload: { where: 'GENERATE', message: err && err.message ? err.message : String(err) },
-      });
-    }
-  }
-
-  self.onmessage = async (e) => {
-    const { type, payload } = e.data || {};
-    try {
-      if (type === 'LOAD_MODEL') await loadModel(payload);
-      else if (type === 'GENERATE') await runGeneration(payload);
-      else if (type === 'STOP') stopRequested = true;
-      else if (type === 'PING') self.postMessage({ type: 'PONG' });
-    } catch (err) {
-      self.postMessage({
-        type: 'ERROR',
-        payload: { where: type, message: err && err.message ? err.message : String(err) },
-      });
-    }
-  };
-
-  self.postMessage({ type: 'WORKER_READY' });
-`;
+const PROVIDERS = {
+  pollinations: {
+    label:       'Pollinations.ai (anonymous)',
+    endpoint:    'https://text.pollinations.ai/openai',
+    modelsUrl:   'https://text.pollinations.ai/models',
+    needsKey:    false,
+    defaultModel:'openai',
+    // Pollinations uses string IDs like 'openai', 'mistral', 'deepseek',
+    // 'qwen-coder', 'claude', 'gemini-fast' — see /models for the live list.
+  },
+};
 
 /* ================================================================
    2. State & persistence
    ================================================================ */
-const STORAGE_KEY  = 'ferrous.chat.v2';
-const SETTINGS_KEY = 'ferrous.settings.v3';
+const STORAGE_KEY  = 'ferrous.chat.v3';
+const SETTINGS_KEY = 'ferrous.settings.v4';
 const HISTORY_KEY  = 'ferrous.history.v1';
 
-const MODEL_PRESETS = [
-  { id: 'HuggingFaceTB/SmolLM2-360M-Instruct',  label: 'SmolLM2 · 360M (fast, recommended)' },
-  { id: 'HuggingFaceTB/SmolLM2-135M-Instruct',  label: 'SmolLM2 · 135M (tiny, very fast)' },
-  { id: 'onnx-community/Qwen2.5-0.5B-Instruct', label: 'Qwen2.5 · 0.5B Instruct' },
-  { id: 'HuggingFaceTB/SmolLM2-1.7B-Instruct',  label: 'SmolLM2 · 1.7B (slower, better)' },
-];
-
 const defaultSettings = {
-  model: 'HuggingFaceTB/SmolLM2-360M-Instruct',
-  dtype: 'q8',
-  device: 'webgpu',
+  provider:          'pollinations',
+  model:             'openai',
   systemPrompt:
-    'You are ferrous, a concise local AI assistant running entirely in the user\'s browser. ' +
+    'You are ferrous, a concise local-feeling AI assistant. ' +
     'Answer directly and accurately. Keep responses brief unless the user asks for depth. ' +
-    'Use code blocks for code. End your turn cleanly without rambling.',
-  maxTokens: 384,
-  temperature: 0.7,
-  topP: 0.9,
-  repetitionPenalty: 1.15,
-  contextLimit: 6000,
+    'Use code blocks for code.',
+  maxTokens:         1024,
+  temperature:       0.7,
+  topP:              0.9,
+  contextLimit:      12000,
+  seed:              null,    // null = random
 };
 
 const state = {
-  messages: [],
-  settings: { ...defaultSettings },
-  status: 'idle',
-  device: null,
-  modelLoaded: null,
-  generating: false,
+  messages:           [],
+  settings:           { ...defaultSettings },
+  status:             'idle',
+  generating:         false,
+  abortController:    null,
   currentAssistantId: null,
   currentAssistantNode: null,
-  history: [],
-  historyIdx: -1,
-  draft: '',
+  availableModels:    [],     // populated lazily on first /models call
+  history:            [],
+  historyIdx:         -1,
+  draft:              '',
 };
 
 function loadFromStorage() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) state.messages = parsed;
-    }
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) state.messages = p; }
   } catch (_) {}
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
@@ -535,10 +301,7 @@ function loadFromStorage() {
   } catch (_) {}
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) state.history = parsed.slice(-200);
-    }
+    if (raw) { const p = JSON.parse(raw); if (Array.isArray(p)) state.history = p.slice(-200); }
   } catch (_) {}
 }
 const persistMessages = () => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.messages)); } catch (_) {} };
@@ -547,7 +310,7 @@ const persistHistory  = () => { try { localStorage.setItem(HISTORY_KEY, JSON.str
 const uid = () => 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
 
 /* ================================================================
-   3. DOM references
+   3. DOM
    ================================================================ */
 const $ = (id) => document.getElementById(id);
 const term         = $('term');
@@ -618,9 +381,8 @@ function term_writeStreaming(roleLabel, roleClass) {
   term_forceScroll();
   return { block, content };
 }
-const term_writeSystem = (text, cls = '') => term_writeBlock('system   ', 'system', escapeHtml(text), cls);
-const term_writeInfo   = (text, cls = 'dim') => term_writeBlock('info     ', 'info', escapeHtml(text), cls);
-const term_writeError  = (text) => term_writeBlock('error    ', 'error', escapeHtml(text), 'red');
+const term_writeInfo  = (text, cls = 'dim') => term_writeBlock('info     ', 'info', escapeHtml(text), cls);
+const term_writeError = (text) => term_writeBlock('error    ', 'error', escapeHtml(text), 'red');
 function term_writeRaw(html, cls = '') {
   const block = document.createElement('div');
   block.className = 'block';
@@ -642,35 +404,29 @@ function printBanner() {
     '  / _/__ ___________  __ _____   ____   \n' +
     ' / _/ -_) __/ __/ _ \\/ // (_-<  /___/   \n' +
     '/_/ \\__/_/ /_/  \\___/\\_,_/___/         ';
-  const sub = 'private · local · transformers.js v3 · webgpu/wasm';
+  const sub = 'private · anonymous · cloud-backed · no key required';
   const block = document.createElement('div');
   block.className = 'block';
-  const b = document.createElement('div');
-  b.className = 'banner';
-  b.textContent = banner;
-  const s = document.createElement('div');
-  s.className = 'banner-sub';
-  s.textContent = sub;
-  block.appendChild(b);
-  block.appendChild(s);
+  const b = document.createElement('div'); b.className = 'banner'; b.textContent = banner;
+  const s = document.createElement('div'); s.className = 'banner-sub'; s.textContent = sub;
+  block.appendChild(b); block.appendChild(s);
   term.appendChild(block);
 }
 function printHelp() {
   const cmds = [
     ['/help',                    'show this help'],
-    ['/load [repo-id]',          'load a model (no arg = current selection)'],
-    ['/model <preset|repo-id>',  'set the active model (does not load)'],
-    ['/models',                  'list curated preset models'],
-    ['/dtype <q8|q4|fp16|...>',  'set quantization dtype'],
-    ['/device <webgpu|wasm>',    'set inference backend'],
+    ['/model [name]',            'show or set the model (run /models for the list)'],
+    ['/models',                  'list available models from the provider'],
     ['/system [text]',           'show or set the system prompt'],
-    ['/set <key> <value>',       'set a generation param (temperature, maxTokens, ...)'],
+    ['/set <key> <value>',       'set a generation param (temperature, maxTokens, topP, seed)'],
     ['/config',                  'show full current config'],
-    ['/clear',                   'clear the conversation history'],
-    ['/cls',                     'clear the terminal screen (keeps history)'],
-    ['/stop',                    'stop generation (or Ctrl+C)'],
+    ['/seed <n|random>',         'pin a seed for reproducible output (or "random")'],
+    ['/clear',                   'clear conversation history'],
+    ['/cls',                     'clear the screen (keeps history)'],
+    ['/stop',                    'abort the current request (or Ctrl+C)'],
     ['/export',                  'download chat history as JSON'],
     ['/reset',                   'reset all settings to defaults'],
+    ['/about',                   'where does inference happen?'],
   ];
   let html = '<table class="help-table">';
   for (const [c, d] of cmds) {
@@ -693,16 +449,11 @@ function setStatus(stage, text) {
   updatePromptUI();
 }
 function updateTbMeta() {
-  if (state.modelLoaded) {
-    const m = state.modelLoaded.split('/').pop();
-    const dev = state.device || state.settings.device;
-    tbMeta.innerHTML =
-      escapeHtml(m) +
-      '<span class="sep">·</span>' + escapeHtml(state.settings.dtype) +
-      '<span class="sep">·</span>' + escapeHtml(dev || '');
-  } else {
-    tbMeta.textContent = 'no model loaded — type /load';
-  }
+  const p = PROVIDERS[state.settings.provider];
+  tbMeta.innerHTML =
+    escapeHtml(state.settings.model) +
+    '<span class="sep">·</span>' +
+    escapeHtml(p ? p.label.split(' ')[0].toLowerCase() : state.settings.provider);
 }
 function updatePromptUI() {
   promptSigil.textContent = state.generating ? '… >' : 'user >';
@@ -713,173 +464,17 @@ function updatePromptUI() {
 }
 
 /* ================================================================
-   7. Worker bootstrap
-   ================================================================ */
-const workerBlob = new Blob([workerSource], { type: 'application/javascript' });
-const workerURL  = URL.createObjectURL(workerBlob);
-const worker     = new Worker(workerURL, { type: 'module' });
-
-worker.addEventListener('message', onWorkerMessage);
-worker.addEventListener('error', (err) => {
-  term_writeError('worker crashed: ' + (err.message || 'unknown'));
-  setStatus('error', 'worker error');
-});
-
-let progressBlock = null;
-function setProgress(pct, label) {
-  if (!progressBlock) {
-    progressBlock = document.createElement('div');
-    progressBlock.className = 'block';
-    term.appendChild(progressBlock);
-  }
-  const width = 28;
-  let bar;
-  if (pct == null) {
-    bar = '[' + '·'.repeat(width) + ']';
-  } else {
-    const filled = Math.round((pct / 100) * width);
-    bar = '[' + '█'.repeat(filled) + '·'.repeat(width - filled) + ']';
-  }
-  const pctStr = pct == null ? '  ?%' : (pct.toFixed(0).padStart(3, ' ') + '%');
-  progressBlock.innerHTML =
-    '<div class="line"><span class="role info">load     </span>' +
-    '<span class="content"><span class="progress-bar">' + bar + '</span> ' + pctStr +
-    '  <span class="content faint">' + escapeHtml(label || '') + '</span></span></div>';
-  term_scroll();
-}
-function clearProgress() {
-  if (progressBlock) { progressBlock.remove(); progressBlock = null; }
-}
-
-/* ================================================================
-   8. Worker message handler
-   ================================================================ */
-function onWorkerMessage(e) {
-  const { type, payload } = e.data || {};
-
-  if (type === 'WORKER_READY') {
-    setStatus('idle', 'idle');
-    bootGreeting();
-    return;
-  }
-
-  if (type === 'LOG') {
-    const cls = payload.level === 'warn' ? 'amber' : payload.level === 'error' ? 'red' : 'dim';
-    const role = payload.level === 'warn' ? 'system' : 'info';
-    term_writeBlock(payload.level.padEnd(9, ' '), role, escapeHtml(payload.text), cls);
-    return;
-  }
-
-  if (type === 'PROGRESS') {
-    if (payload && payload.status === 'progress') {
-      const hasTotal = typeof payload.total === 'number' && payload.total > 0;
-      const hasPct = typeof payload.progress === 'number' && !isNaN(payload.progress);
-      const file = payload.file ? payload.file.split('/').pop() : 'file';
-      const mb = payload.loaded ? (payload.loaded / (1024 * 1024)).toFixed(1) : '?';
-      if (hasTotal && hasPct) {
-        const total = (payload.total / (1024 * 1024)).toFixed(1);
-        setProgress(payload.progress, file + ' · ' + mb + ' / ' + total + ' MB');
-      } else {
-        setProgress(null, file + ' · ' + mb + ' MB');
-      }
-    } else if (payload && payload.status === 'ready') {
-      clearProgress();
-    }
-    return;
-  }
-
-  if (type === 'STATUS') {
-    const { stage, detail, model, device, dtype } = payload;
-    if (device) {
-      state.device = device;
-      hintRight.textContent = device === 'webgpu' ? '⚡ webgpu' : '⚙ wasm cpu';
-    }
-    if (stage === 'fetching')       setStatus('loading', 'fetching');
-    else if (stage === 'compiling') setStatus('loading', 'compiling');
-    else if (stage === 'ready') {
-      state.modelLoaded = model || state.settings.model;
-      if (dtype) state.settings.dtype = dtype;
-      state.settings.lastLoaded = state.modelLoaded;
-      persistSettings();
-      clearProgress();
-      updateTbMeta();
-      setStatus('ready', 'ready');
-      term_writeInfo('loaded ' + state.modelLoaded + ' (' + (dtype || state.settings.dtype) + ', ' + (device || state.device) + ')');
-    }
-    return;
-  }
-
-  if (type === 'STREAM_TOKEN') {
-    const text = payload.text || '';
-    if (!state.currentAssistantId) return;
-    const msg = state.messages.find(m => m.id === state.currentAssistantId);
-    if (!msg) return;
-    msg.content += text;
-    if (state.currentAssistantNode) {
-      state.currentAssistantNode.innerHTML =
-        renderContent(msg.content) + '<span class="streaming-cursor"></span>';
-    }
-    if (!onWorkerMessage._scroll) {
-      onWorkerMessage._scroll = true;
-      requestAnimationFrame(() => {
-        onWorkerMessage._scroll = false;
-        term_scroll();
-      });
-    }
-    return;
-  }
-
-  if (type === 'STREAM_DONE') {
-    state.generating = false;
-    const msg = state.messages.find(m => m.id === state.currentAssistantId);
-    if (msg) {
-      msg.content = (msg.content || '').replace(/\s+$/, '');
-      persistMessages();
-      if (state.currentAssistantNode) {
-        state.currentAssistantNode.innerHTML = renderContent(msg.content);
-      }
-    }
-    state.currentAssistantId = null;
-    state.currentAssistantNode = null;
-    const stoppedNote = payload.stopped ? ' (stopped)' : '';
-    setStatus('ready', payload.tokensPerSec + ' tok/s');
-    term_writeInfo(payload.tokenCount + ' tokens in ' + payload.elapsedSec + 's · ' + payload.tokensPerSec + ' tok/s' + stoppedNote, 'faint');
-    updatePromptUI();
-    return;
-  }
-
-  if (type === 'ERROR') {
-    state.generating = false;
-    const msg = (payload && payload.message) || 'unknown error';
-    if (payload && payload.where === 'LOAD_MODEL') {
-      state.settings.lastLoaded = null;
-      persistSettings();
-      clearProgress();
-    }
-    term_writeError(msg);
-    setStatus('error', 'error');
-    if (state.currentAssistantId) {
-      const m = state.messages.find(x => x.id === state.currentAssistantId);
-      if (m && !m.content) {
-        state.messages = state.messages.filter(x => x.id !== state.currentAssistantId);
-        persistMessages();
-      }
-      state.currentAssistantId = null;
-      state.currentAssistantNode = null;
-    }
-    updatePromptUI();
-    return;
-  }
-}
-
-/* ================================================================
-   9. Context window manager
+   7. Context window manager
+   ----------------------------------------------------------------
+   Trims older turns until the prompt fits within `contextLimit`
+   characters (rough proxy for tokens). System prompt is always
+   preserved.
    ================================================================ */
 function buildPromptMessages() {
   const sys = (state.settings.systemPrompt || '').trim();
   const result = [];
   if (sys) result.push({ role: 'system', content: sys });
-  const budget = Math.max(500, parseInt(state.settings.contextLimit, 10) || 6000);
+  const budget = Math.max(500, parseInt(state.settings.contextLimit, 10) || 12000);
   const reversed = [];
   let used = sys.length;
   for (let i = state.messages.length - 1; i >= 0; i--) {
@@ -894,92 +489,257 @@ function buildPromptMessages() {
 }
 
 /* ================================================================
-   10. Commands
+   8. Streaming chat completion
+   ----------------------------------------------------------------
+   Standard OpenAI-Chat-Completions over SSE. The wire format is:
+     data: {"choices":[{"delta":{"content":"Hello"}, ...}]}
+     data: {"choices":[{"delta":{"content":" world"}, ...}]}
+     data: [DONE]
+   We accumulate bytes from the ReadableStream, split on \n\n, and
+   parse each "data: " payload as JSON. Empty deltas and the [DONE]
+   sentinel are tolerated.
    ================================================================ */
-function resolveModelArg(arg) {
-  if (!arg) return null;
-  const lc = arg.toLowerCase();
-  for (const p of MODEL_PRESETS) {
-    if (p.id.toLowerCase() === lc) return p.id;
-    if (p.id.toLowerCase().includes(lc)) return p.id;
-    if (p.label.toLowerCase().includes(lc)) return p.id;
+async function streamChatCompletion({ provider, model, messages, params, onToken, signal }) {
+  const cfg = PROVIDERS[provider];
+  if (!cfg) throw new Error('unknown provider: ' + provider);
+
+  const body = {
+    model,
+    messages,
+    stream: true,
+    temperature: Number(params.temperature),
+    top_p: Number(params.topP),
+    max_tokens: Math.max(16, Math.min(4096, parseInt(params.maxTokens, 10) || 1024)),
+  };
+  if (params.seed != null && !isNaN(params.seed)) body.seed = parseInt(params.seed, 10);
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (cfg.needsKey && params.apiKey) headers['Authorization'] = 'Bearer ' + params.apiKey;
+
+  const startTime = performance.now();
+  const res = await fetch(cfg.endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    signal,
+  });
+
+  if (!res.ok) {
+    let detail = '';
+    try { detail = await res.text(); } catch (_) {}
+    throw new Error('HTTP ' + res.status + ' ' + res.statusText + (detail ? ' — ' + detail.slice(0, 280) : ''));
   }
-  if (/^[\w.\-]+\/[\w.\-]+$/.test(arg)) return arg;
-  return null;
+  if (!res.body) throw new Error('no response body — server returned an empty stream.');
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder('utf-8');
+  let buffer = '';
+  let tokenCount = 0;
+  let finishReason = null;
+
+  // Parse SSE: events are separated by blank lines (\n\n).
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let nl;
+    while ((nl = buffer.indexOf('\n\n')) !== -1) {
+      const event = buffer.slice(0, nl);
+      buffer = buffer.slice(nl + 2);
+      if (!event.trim()) continue;
+
+      // Each event may have multiple `data:` lines; OpenAI uses one.
+      for (const rawLine of event.split('\n')) {
+        const line = rawLine.trim();
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (!payload) continue;
+        if (payload === '[DONE]') { /* end-of-stream sentinel */ continue; }
+
+        try {
+          const obj = JSON.parse(payload);
+          const choice = obj.choices && obj.choices[0];
+          if (!choice) continue;
+          const delta = choice.delta || choice.message || {};
+          if (delta.content) {
+            tokenCount++;
+            onToken(delta.content);
+          }
+          if (choice.finish_reason) finishReason = choice.finish_reason;
+        } catch (e) {
+          // Some providers emit non-JSON keepalive lines; ignore.
+        }
+      }
+    }
+  }
+
+  const elapsed = (performance.now() - startTime) / 1000;
+  return {
+    tokenCount,
+    elapsedSec: elapsed.toFixed(2),
+    tokensPerSec: tokenCount > 0 ? (tokenCount / elapsed).toFixed(1) : '0',
+    finishReason,
+  };
 }
 
+/* ================================================================
+   9. Models endpoint
+   ================================================================ */
+async function fetchModels() {
+  const cfg = PROVIDERS[state.settings.provider];
+  if (!cfg.modelsUrl) return [];
+  const res = await fetch(cfg.modelsUrl);
+  if (!res.ok) throw new Error('models endpoint returned ' + res.status);
+  const data = await res.json();
+  // Pollinations returns an array of objects with { name, description, ... }
+  // OpenAI-compatible providers return { data: [{ id, ... }] }.
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.data)) return data.data;
+  return [];
+}
+
+/* ================================================================
+   10. Sending a chat message
+   ================================================================ */
+async function sendChatMessage(text) {
+  if (state.generating) {
+    term_writeError('still generating — /stop first.');
+    return;
+  }
+
+  const userMsg = { id: uid(), role: 'user', content: text, ts: Date.now() };
+  state.messages.push(userMsg);
+  persistMessages();
+  term_writeBlock('user >   ', 'user', renderContent(text), 'green');
+
+  const assistantMsg = { id: uid(), role: 'assistant', content: '', ts: Date.now() };
+  state.messages.push(assistantMsg);
+  state.currentAssistantId = assistantMsg.id;
+  const stream = term_writeStreaming('ferrous >', 'assistant');
+  state.currentAssistantNode = stream.content;
+
+  state.generating = true;
+  setStatus('generating', 'streaming…');
+  updatePromptUI();
+
+  state.abortController = new AbortController();
+  let scrollScheduled = false;
+
+  const onToken = (chunk) => {
+    const msg = state.messages.find(m => m.id === state.currentAssistantId);
+    if (!msg) return;
+    msg.content += chunk;
+    if (state.currentAssistantNode) {
+      state.currentAssistantNode.innerHTML =
+        renderContent(msg.content) + '<span class="streaming-cursor"></span>';
+    }
+    if (!scrollScheduled) {
+      scrollScheduled = true;
+      requestAnimationFrame(() => { scrollScheduled = false; term_scroll(); });
+    }
+  };
+
+  try {
+    const result = await streamChatCompletion({
+      provider: state.settings.provider,
+      model: state.settings.model,
+      messages: buildPromptMessages(),
+      params: {
+        temperature: state.settings.temperature,
+        topP: state.settings.topP,
+        maxTokens: state.settings.maxTokens,
+        seed: state.settings.seed,
+      },
+      onToken,
+      signal: state.abortController.signal,
+    });
+
+    const msg = state.messages.find(m => m.id === state.currentAssistantId);
+    if (msg) {
+      msg.content = (msg.content || '').replace(/\s+$/, '');
+      persistMessages();
+      if (state.currentAssistantNode) {
+        state.currentAssistantNode.innerHTML = renderContent(msg.content);
+      }
+    }
+    setStatus('ready', result.tokensPerSec + ' tok/s');
+    term_writeInfo(
+      result.tokenCount + ' chunks · ' + result.elapsedSec + 's · ' + result.tokensPerSec + ' /s' +
+      (result.finishReason ? ' · ' + result.finishReason : ''),
+      'faint'
+    );
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      term_writeInfo('aborted by user.', 'faint');
+      setStatus('ready', 'aborted');
+    } else {
+      term_writeError(err.message || String(err));
+      setStatus('error', 'error');
+    }
+    // Trim empty/incomplete assistant turn so it doesn't pollute history
+    const msg = state.messages.find(m => m.id === state.currentAssistantId);
+    if (msg) {
+      if (!msg.content) {
+        state.messages = state.messages.filter(x => x.id !== state.currentAssistantId);
+      } else {
+        // keep the partial reply but persist it
+      }
+      persistMessages();
+      if (state.currentAssistantNode && msg.content) {
+        state.currentAssistantNode.innerHTML = renderContent(msg.content);
+      }
+    }
+  } finally {
+    state.generating = false;
+    state.abortController = null;
+    state.currentAssistantId = null;
+    state.currentAssistantNode = null;
+    updatePromptUI();
+  }
+}
+
+/* ================================================================
+   11. Commands
+   ================================================================ */
 const commands = {
   help() { printHelp(); },
 
-  models() {
-    let html = '<table class="help-table">';
-    for (const p of MODEL_PRESETS) {
-      const cur = p.id === state.settings.model
-        ? ' <span class="content green">[current]</span>' : '';
-      html += '<tr><td class="cmd">' + escapeHtml(p.id) + cur +
-              '</td><td class="desc">' + escapeHtml(p.label) + '</td></tr>';
+  about() {
+    term_writeInfo('inference is handled by ' + (PROVIDERS[state.settings.provider]?.label || state.settings.provider) + '.');
+    term_writeInfo('your prompts travel from your browser directly to the provider — no server in between.', 'faint');
+    term_writeInfo('chat history and settings are stored only in this browser\'s localStorage.', 'faint');
+    term_writeInfo('pollinations.ai docs: https://github.com/pollinations/pollinations', 'faint');
+  },
+
+  async models() {
+    term_writeInfo('fetching available models…', 'faint');
+    try {
+      const list = await fetchModels();
+      state.availableModels = list;
+      if (!list.length) { term_writeInfo('no models returned.', 'faint'); return; }
+      let html = '<table class="help-table">';
+      for (const m of list) {
+        const id   = m.name || m.id || m.model || String(m);
+        const desc = m.description || m.type || m.alias || '';
+        const cur  = id === state.settings.model ? ' <span class="content green">[current]</span>' : '';
+        html += '<tr><td class="cmd">' + escapeHtml(id) + cur + '</td>' +
+                '<td class="desc">' + escapeHtml(desc) + '</td></tr>';
+      }
+      html += '</table>';
+      term_writeRaw(html);
+      term_writeInfo('use /model <name> to switch.', 'faint');
+    } catch (e) {
+      term_writeError('failed to fetch models: ' + e.message);
     }
-    html += '</table>';
-    term_writeRaw(html);
-    term_writeInfo('use /model <preset|repo-id> to switch, then /load to load.', 'faint');
   },
 
   model(arg) {
     if (!arg) { term_writeInfo('current model: ' + state.settings.model); return; }
-    const resolved = resolveModelArg(arg);
-    if (!resolved) {
-      term_writeError('not a known preset or valid repo-id: ' + arg);
-      term_writeInfo('expected format: org/model-name, or a preset substring. try /models', 'faint');
-      return;
-    }
-    state.settings.model = resolved;
-    persistSettings();
-    term_writeInfo('model set to ' + resolved + ' — run /load to load it.');
-  },
-
-  load(arg) {
-    if (arg) {
-      const r = resolveModelArg(arg);
-      if (!r) { term_writeError('invalid model: ' + arg); return; }
-      state.settings.model = r;
-      persistSettings();
-    }
-    if (state.generating) { term_writeError('busy generating — /stop first.'); return; }
-    setStatus('loading', 'loading…');
-    term_writeInfo('loading ' + state.settings.model + ' (' + state.settings.dtype + ', ' + state.settings.device + ')');
-    worker.postMessage({
-      type: 'LOAD_MODEL',
-      payload: {
-        model: state.settings.model,
-        dtype: state.settings.dtype,
-        device: state.settings.device,
-      },
-    });
-  },
-
-  dtype(arg) {
-    if (!arg) { term_writeInfo('current dtype: ' + state.settings.dtype); return; }
-    const valid = ['q4', 'q4f16', 'q8', 'int8', 'fp16', 'fp32'];
-    if (!valid.includes(arg)) {
-      term_writeError('invalid dtype. choose: ' + valid.join(', '));
-      return;
-    }
-    state.settings.dtype = arg;
+    state.settings.model = arg;
     persistSettings();
     updateTbMeta();
-    term_writeInfo('dtype set to ' + arg + ' — /load to apply.');
-  },
-
-  device(arg) {
-    if (!arg) { term_writeInfo('current device: ' + state.settings.device); return; }
-    if (arg !== 'webgpu' && arg !== 'wasm') {
-      term_writeError('invalid device. choose: webgpu, wasm');
-      return;
-    }
-    state.settings.device = arg;
-    persistSettings();
-    updateTbMeta();
-    term_writeInfo('device set to ' + arg + ' — /load to apply.');
+    term_writeInfo('model set to ' + arg);
   },
 
   system(arg) {
@@ -998,7 +758,7 @@ const commands = {
     const key = parts[0];
     const val = parts.slice(1).join(' ');
     if (!key || !val) { term_writeError('usage: /set <key> <value>'); return; }
-    const numericKeys = ['maxTokens', 'temperature', 'topP', 'repetitionPenalty', 'contextLimit'];
+    const numericKeys = ['maxTokens', 'temperature', 'topP', 'contextLimit'];
     if (numericKeys.includes(key)) {
       const n = parseFloat(val);
       if (isNaN(n)) { term_writeError('value must be numeric'); return; }
@@ -1007,26 +767,43 @@ const commands = {
       term_writeInfo(key + ' = ' + n);
       return;
     }
+    if (key === 'seed')   return commands.seed(val);
+    if (key === 'model')  return commands.model(val);
     if (key === 'systemPrompt') return commands.system(val);
-    if (key === 'model')        return commands.model(val);
-    if (key === 'dtype')        return commands.dtype(val);
-    if (key === 'device')       return commands.device(val);
     term_writeError('unknown key: ' + key);
+  },
+
+  seed(arg) {
+    if (!arg) {
+      term_writeInfo('current seed: ' + (state.settings.seed == null ? 'random' : state.settings.seed));
+      return;
+    }
+    if (arg === 'random' || arg === 'null' || arg === 'none') {
+      state.settings.seed = null;
+      persistSettings();
+      term_writeInfo('seed cleared (random each call).');
+      return;
+    }
+    const n = parseInt(arg, 10);
+    if (isNaN(n)) { term_writeError('seed must be an integer or "random"'); return; }
+    state.settings.seed = n;
+    persistSettings();
+    term_writeInfo('seed pinned to ' + n);
   },
 
   config() {
     const s = state.settings;
     const rows = [
-      ['model',             s.model],
-      ['dtype',             s.dtype],
-      ['device',            s.device + (state.device ? ' (actual: ' + state.device + ')' : '')],
-      ['maxTokens',         String(s.maxTokens)],
-      ['temperature',       String(s.temperature)],
-      ['topP',              String(s.topP)],
-      ['repetitionPenalty', String(s.repetitionPenalty)],
-      ['contextLimit',      String(s.contextLimit) + ' chars'],
-      ['messages stored',   String(state.messages.length)],
-      ['status',            state.status],
+      ['provider',      PROVIDERS[s.provider]?.label || s.provider],
+      ['endpoint',      PROVIDERS[s.provider]?.endpoint || ''],
+      ['model',         s.model],
+      ['maxTokens',     String(s.maxTokens)],
+      ['temperature',   String(s.temperature)],
+      ['topP',          String(s.topP)],
+      ['seed',          s.seed == null ? 'random' : String(s.seed)],
+      ['contextLimit',  String(s.contextLimit) + ' chars'],
+      ['messages',      String(state.messages.length)],
+      ['status',        state.status],
     ];
     let html = '<table class="help-table">';
     for (const [k, v] of rows) {
@@ -1037,7 +814,7 @@ const commands = {
   },
 
   clear() {
-    if (state.generating) { term_writeError('busy generating — /stop first.'); return; }
+    if (state.generating) { term_writeError('busy — /stop first.'); return; }
     state.messages = [];
     persistMessages();
     term_writeInfo('conversation history cleared.');
@@ -1051,8 +828,7 @@ const commands = {
 
   stop() {
     if (!state.generating) { term_writeInfo('nothing to stop.', 'faint'); return; }
-    worker.postMessage({ type: 'STOP' });
-    term_writeInfo('stop requested…', 'faint');
+    if (state.abortController) state.abortController.abort();
   },
 
   export() {
@@ -1082,53 +858,13 @@ function dispatchCommand(line) {
   const arg  = space === -1 ? '' : trimmed.slice(space + 1).trim();
   term_writeBlock('user >   ', 'user', escapeHtml(trimmed), 'green');
   if (commands[name]) {
-    try { commands[name](arg); }
-    catch (e) { term_writeError('command failed: ' + (e.message || e)); }
+    Promise.resolve(commands[name](arg)).catch(e =>
+      term_writeError('command failed: ' + (e.message || e))
+    );
   } else {
     term_writeError('unknown command: /' + name + ' — try /help');
   }
   return true;
-}
-
-/* ================================================================
-   11. Sending a chat message
-   ================================================================ */
-function sendChatMessage(text) {
-  if (state.status !== 'ready') {
-    term_writeBlock('user >   ', 'user', renderContent(text), 'green');
-    term_writeError('no model loaded. run /load (or /models to choose one).');
-    return;
-  }
-  if (state.generating) {
-    term_writeError('still generating — /stop first.');
-    return;
-  }
-
-  const userMsg = { id: uid(), role: 'user', content: text, ts: Date.now() };
-  state.messages.push(userMsg);
-  persistMessages();
-  term_writeBlock('user >   ', 'user', renderContent(text), 'green');
-
-  const assistantMsg = { id: uid(), role: 'assistant', content: '', ts: Date.now() };
-  state.messages.push(assistantMsg);
-  state.currentAssistantId = assistantMsg.id;
-  const stream = term_writeStreaming('ferrous >', 'assistant');
-  state.currentAssistantNode = stream.content;
-
-  state.generating = true;
-  setStatus('generating', 'thinking…');
-  updatePromptUI();
-
-  worker.postMessage({
-    type: 'GENERATE',
-    payload: {
-      messages: buildPromptMessages(),
-      maxTokens: state.settings.maxTokens,
-      temperature: state.settings.temperature,
-      topP: state.settings.topP,
-      repetitionPenalty: state.settings.repetitionPenalty,
-    },
-  });
 }
 
 /* ================================================================
@@ -1163,9 +899,7 @@ promptInput.addEventListener('keydown', (e) => {
     if (state.historyIdx === -1) {
       state.draft = promptInput.value;
       state.historyIdx = state.history.length - 1;
-    } else if (state.historyIdx > 0) {
-      state.historyIdx--;
-    }
+    } else if (state.historyIdx > 0) state.historyIdx--;
     promptInput.value = state.history[state.historyIdx];
     autosizePrompt();
     requestAnimationFrame(() => promptInput.setSelectionRange(promptInput.value.length, promptInput.value.length));
@@ -1217,7 +951,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ================================================================
-   13. Replay stored history
+   13. Replay
    ================================================================ */
 function replayHistory() {
   if (state.messages.length === 0) return;
@@ -1234,20 +968,6 @@ function replayHistory() {
 /* ================================================================
    14. Boot
    ================================================================ */
-function bootGreeting() {
-  const m = state.settings.lastLoaded;
-  if (m) {
-    term_writeInfo('restoring previous model: ' + m + ' (' + state.settings.dtype + ')');
-    setStatus('loading', 'restoring…');
-    worker.postMessage({
-      type: 'LOAD_MODEL',
-      payload: { model: m, dtype: state.settings.dtype, device: state.settings.device },
-    });
-  } else {
-    term_writeInfo('no model loaded yet. type /load to load ' + state.settings.model + ', or /models to choose.', 'amber');
-  }
-}
-
 function init() {
   loadFromStorage();
   printBanner();
@@ -1255,17 +975,18 @@ function init() {
   replayHistory();
   updateTbMeta();
   updatePromptUI();
-
-  if (typeof navigator !== 'undefined' && !('gpu' in navigator)) {
-    term_writeInfo('this browser has no WebGPU — falling back to WASM (slower but works everywhere).', 'amber');
-  }
-
+  setStatus('ready', 'ready');
+  hintRight.textContent = '☁ ' + (PROVIDERS[state.settings.provider]?.label || state.settings.provider);
+  term_writeInfo(
+    'ready. inference handled by ' + (PROVIDERS[state.settings.provider]?.label || state.settings.provider) +
+    ' — no key needed. type /models to see what\'s available, or just start typing.',
+    'faint'
+  );
   promptInput.focus();
   autosizePrompt();
 }
 
 init();
-setTimeout(() => { try { URL.revokeObjectURL(workerURL); } catch (_) {} }, 5000);
 </script>
 </body>
 </html>
