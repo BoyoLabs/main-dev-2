@@ -11,7 +11,7 @@ Note: just because something is in prod does not mean it is working necessarily,
 4. webcam for video monitoring
 5. a progress/status bar
 
-** link: https://github.com/BoyoLabs/prod-2/blob/main/gcode_sender.py
+* link: https://github.com/BoyoLabs/prod-2/blob/main/gcode_sender.py
 
 ## ferrous.html (WIP)
 * an AI browser shell
