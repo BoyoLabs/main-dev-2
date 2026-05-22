@@ -5,11 +5,11 @@ Note: just because something is in prod does not mean it is working necessarily,
 
 ## gcode_sender.py
 * a serial port (printer cable) gcode sender for 3d printing. Features:
-** auto detect baud rate
-** logs for whats been sent
-** auto detect printer
-** webcam for video monitoring
-** a progress/status bar
+1. auto detect baud rate
+2. logs for whats been sent
+3. auto detect printer
+4. webcam for video monitoring
+5. a progress/status bar
 
 ## ferrous.html (WIP)
 * an AI browser shell
