@@ -3,30 +3,142 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Void Editor</title>
+<title>Editor</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
   :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --surface2: #1a1a26;
-    --gutter: #1e1e2c;
-    --border: #2a2a3a;
-    --text: #c8c8d8;
-    --text-dim: #5a5a72;
-    --accent: #7b6ff0;
-    --accent-glow: #7b6ff033;
-    --line-num: #3a3a50;
-    --line-active: #7b6ff0;
-    --scrollbar: #2a2a3a;
-    --scrollbar-thumb: #3a3a50;
-    --danger: #f05a6a;
-    --success: #5af0a0;
+    /* default = VS Code Dark+ */
+    --bg: #1e1e1e;
+    --surface: #252526;
+    --surface2: #2d2d30;
+    --gutter: #1e1e1e;
+    --border: #3c3c3c;
+    --text: #d4d4d4;
+    --text-dim: #858585;
+    --accent: #007acc;
+    --accent-glow: #007acc33;
+    --line-num: #858585;
+    --line-active: #c6c6c6;
+    --scrollbar: #424242;
+    --scrollbar-thumb: #4f4f4f;
+    --danger: #f48771;
+    --success: #89d185;
+    --selection: #264f78;
     --toolbar-h: 54px;
     --status-h: 32px;
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  /* === THEMES === */
+
+  /* VS Code Dark+ (default, also explicit) */
+  [data-theme="dark-plus"] {
+    --bg: #1e1e1e;
+    --surface: #252526;
+    --surface2: #2d2d30;
+    --gutter: #1e1e1e;
+    --border: #3c3c3c;
+    --text: #d4d4d4;
+    --text-dim: #858585;
+    --accent: #007acc;
+    --accent-glow: #007acc33;
+    --line-num: #858585;
+    --line-active: #c6c6c6;
+    --scrollbar: #424242;
+    --scrollbar-thumb: #4f4f4f;
+    --selection: #264f78;
+  }
+
+  /* VS Code Light+ */
+  [data-theme="light-plus"] {
+    --bg: #ffffff;
+    --surface: #f3f3f3;
+    --surface2: #ececec;
+    --gutter: #ffffff;
+    --border: #e5e5e5;
+    --text: #000000;
+    --text-dim: #6c6c6c;
+    --accent: #0066b8;
+    --accent-glow: #0066b833;
+    --line-num: #6e7681;
+    --line-active: #0066b8;
+    --scrollbar: #c1c1c1;
+    --scrollbar-thumb: #a6a6a6;
+    --selection: #add6ff;
+  }
+
+  /* Monokai */
+  [data-theme="monokai"] {
+    --bg: #272822;
+    --surface: #1e1f1c;
+    --surface2: #34352f;
+    --gutter: #272822;
+    --border: #3e3d32;
+    --text: #f8f8f2;
+    --text-dim: #75715e;
+    --accent: #a6e22e;
+    --accent-glow: #a6e22e33;
+    --line-num: #90908a;
+    --line-active: #f8f8f2;
+    --scrollbar: #3e3d32;
+    --scrollbar-thumb: #75715e;
+    --selection: #49483e;
+  }
+
+  /* Solarized Dark */
+  [data-theme="solarized-dark"] {
+    --bg: #002b36;
+    --surface: #073642;
+    --surface2: #0a4655;
+    --gutter: #002b36;
+    --border: #094553;
+    --text: #93a1a1;
+    --text-dim: #586e75;
+    --accent: #268bd2;
+    --accent-glow: #268bd233;
+    --line-num: #586e75;
+    --line-active: #93a1a1;
+    --scrollbar: #073642;
+    --scrollbar-thumb: #586e75;
+    --selection: #073642;
+  }
+
+  /* GitHub Dark */
+  [data-theme="github-dark"] {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --surface2: #21262d;
+    --gutter: #0d1117;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --text-dim: #8b949e;
+    --accent: #58a6ff;
+    --accent-glow: #58a6ff33;
+    --line-num: #6e7681;
+    --line-active: #c9d1d9;
+    --scrollbar: #21262d;
+    --scrollbar-thumb: #30363d;
+    --selection: #1f6feb55;
+  }
+
+  /* Dracula */
+  [data-theme="dracula"] {
+    --bg: #282a36;
+    --surface: #21222c;
+    --surface2: #343746;
+    --gutter: #282a36;
+    --border: #44475a;
+    --text: #f8f8f2;
+    --text-dim: #6272a4;
+    --accent: #bd93f9;
+    --accent-glow: #bd93f933;
+    --line-num: #6272a4;
+    --line-active: #f8f8f2;
+    --scrollbar: #44475a;
+    --scrollbar-thumb: #6272a4;
+    --selection: #44475a;
   }
 
   html, body {
@@ -36,6 +148,7 @@
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     -webkit-tap-highlight-color: transparent;
+    transition: background-color 0.2s, color 0.2s;
   }
 
   /* ── TOOLBAR ── */
@@ -49,6 +162,7 @@
     z-index: 100;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
+    transition: background-color 0.2s, border-color 0.2s;
   }
 
   .toolbar .logo {
@@ -77,12 +191,17 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     color: var(--text-dim);
-    border-radius: 10px;
+    border-radius: 6px;
     width: 38px; height: 38px;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.15s;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  .toolbar button:hover {
+    color: var(--text);
+    border-color: var(--accent);
   }
 
   .toolbar button:active {
@@ -112,6 +231,7 @@
     padding: 12px 0;
     user-select: none;
     -webkit-user-select: none;
+    transition: background-color 0.2s, border-color 0.2s;
   }
 
   .line-numbers pre {
@@ -122,17 +242,21 @@
     text-align: right;
     padding-right: 10px;
     margin: 0;
+    transition: color 0.2s;
   }
 
   .editor-container {
     flex: 1;
     overflow: auto;
     -webkit-overflow-scrolling: touch;
+    background: var(--bg);
+    transition: background-color 0.2s;
   }
 
-  .editor-container::-webkit-scrollbar { width: 6px; height: 6px; }
+  .editor-container::-webkit-scrollbar { width: 10px; height: 10px; }
   .editor-container::-webkit-scrollbar-track { background: transparent; }
-  .editor-container::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 3px; }
+  .editor-container::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 0; }
+  .editor-container::-webkit-scrollbar-thumb:hover { background: var(--scrollbar); }
 
   textarea#editor {
     width: 100%;
@@ -151,40 +275,49 @@
     overflow-wrap: normal;
     overflow-x: auto;
     caret-color: var(--accent);
+    transition: color 0.2s;
   }
 
-  textarea#editor::selection { background: var(--accent-glow); }
-  textarea#editor::-moz-selection { background: var(--accent-glow); }
+  textarea#editor::selection { background: var(--selection); }
+  textarea#editor::-moz-selection { background: var(--selection); }
 
-  /* ── STATUS BAR ── */
+  /* ── STATUS BAR (VS Code style) ── */
   .status-bar {
     position: fixed; bottom: 0; left: 0; right: 0;
     height: var(--status-h);
     padding-bottom: var(--safe-bottom);
-    background: var(--surface);
+    background: var(--accent);
     border-top: 1px solid var(--border);
     display: flex; align-items: center;
     padding-left: 12px; padding-right: 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text-dim);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: #fff;
     gap: 14px;
     z-index: 100;
+    transition: background-color 0.2s;
   }
 
-  .status-bar .sep { color: var(--border); }
-  .status-bar .filename { color: var(--accent); font-weight: 500; margin-left: auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 40%; }
+  .status-bar .sep { opacity: 0.4; }
+  .status-bar .filename {
+    font-weight: 500;
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 40%;
+  }
 
   /* ── MODAL ── */
   .modal-overlay {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     display: flex; align-items: center; justify-content: center;
     z-index: 200;
     opacity: 0; pointer-events: none;
-    transition: opacity 0.25s;
+    transition: opacity 0.2s;
   }
 
   .modal-overlay.active { opacity: 1; pointer-events: auto; }
@@ -192,19 +325,20 @@
   .modal {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 16px;
+    border-radius: 6px;
     width: calc(100% - 40px);
-    max-width: 340px;
+    max-width: 360px;
     padding: 24px;
     transform: translateY(20px) scale(0.95);
-    transition: transform 0.25s;
+    transition: transform 0.2s;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
   }
 
   .modal-overlay.active .modal { transform: translateY(0) scale(1); }
 
   .modal h3 {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 14px; font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px; font-weight: 600;
     color: var(--text); margin-bottom: 6px;
   }
 
@@ -214,14 +348,14 @@
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 4px;
     color: var(--text);
     font-family: 'JetBrains Mono', monospace;
     font-size: 14px;
-    padding: 12px 14px;
+    padding: 10px 12px;
     outline: none;
     margin-bottom: 16px;
-    transition: border-color 0.2s;
+    transition: border-color 0.15s;
   }
 
   .modal input[type="text"]:focus { border-color: var(--accent); }
@@ -232,18 +366,81 @@
 
   .modal-actions button {
     flex: 1;
-    padding: 11px;
-    border-radius: 10px;
+    padding: 10px;
+    border-radius: 4px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
+    font-size: 13px; font-weight: 500;
     cursor: pointer;
     border: 1px solid var(--border);
-    transition: all 0.2s;
+    transition: all 0.15s;
   }
 
-  .modal-actions .cancel { background: var(--surface2); color: var(--text-dim); }
+  .modal-actions .cancel { background: var(--surface2); color: var(--text); }
+  .modal-actions .cancel:hover { background: var(--border); }
   .modal-actions .confirm { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .modal-actions button:active { transform: scale(0.95); }
+  .modal-actions .confirm:hover { filter: brightness(1.1); }
+  .modal-actions button:active { transform: scale(0.97); }
+
+  /* ── THEME PICKER ── */
+  .theme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .theme-option:hover { border-color: var(--accent); }
+
+  .theme-option.selected {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .theme-swatch {
+    width: 36px; height: 28px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    display: flex;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .theme-swatch span {
+    flex: 1;
+    height: 100%;
+  }
+
+  .theme-name {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    font-weight: 500;
+    flex: 1;
+  }
+
+  .theme-check {
+    color: var(--accent);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+
+  .theme-option.selected .theme-check { opacity: 1; }
+
+  .theme-check svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
 
   /* ── TOAST ── */
   .toast {
@@ -252,13 +449,13 @@
     left: 50%; transform: translateX(-50%) translateY(-20px);
     background: var(--surface2);
     border: 1px solid var(--border);
-    border-radius: 10px;
+    border-radius: 4px;
     padding: 8px 16px;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: 'DM Sans', sans-serif;
     font-size: 12px;
     color: var(--success);
     opacity: 0;
-    transition: all 0.3s;
+    transition: all 0.25s;
     z-index: 300;
     pointer-events: none;
   }
@@ -273,15 +470,18 @@
 
 <!-- Toolbar -->
 <div class="toolbar">
-  <div class="logo"><div class="logo-dot"></div>void</div>
-  <button id="btn-upload" aria-label="Upload file">
+  <div class="logo"><div class="logo-dot"></div>editor</div>
+  <button id="btn-upload" aria-label="Upload file" title="Open file">
     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
   </button>
-  <button id="btn-download" aria-label="Download file">
+  <button id="btn-download" aria-label="Download file" title="Save file">
     <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
   </button>
-  <button id="btn-new" aria-label="New file">
+  <button id="btn-new" aria-label="New file" title="New file">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button id="btn-theme" aria-label="Change theme" title="Color theme">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z"/></svg>
   </button>
 </div>
 
@@ -316,6 +516,18 @@
   </div>
 </div>
 
+<!-- Theme Modal -->
+<div class="modal-overlay" id="modal-theme">
+  <div class="modal">
+    <h3>Color theme</h3>
+    <p>Pick a theme — saved automatically</p>
+    <div class="theme-list" id="theme-list"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="theme-close">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -332,12 +544,77 @@ const statCol = document.getElementById('stat-col');
 const statChars = document.getElementById('stat-chars');
 const statFile = document.getElementById('stat-file');
 const modalOverlay = document.getElementById('modal-download');
+const modalTheme = document.getElementById('modal-theme');
 const downloadNameInput = document.getElementById('download-name');
 const fileInput = document.getElementById('file-input');
 const toastEl = document.getElementById('toast');
+const themeListEl = document.getElementById('theme-list');
 
 let currentFilename = 'untitled';
 
+// === THEMES ===
+const THEMES = [
+  { id: 'dark-plus',       name: 'Dark+ (VS Code)',  colors: ['#1e1e1e', '#252526', '#007acc', '#d4d4d4'] },
+  { id: 'light-plus',      name: 'Light+ (VS Code)', colors: ['#ffffff', '#f3f3f3', '#0066b8', '#000000'] },
+  { id: 'monokai',         name: 'Monokai',          colors: ['#272822', '#1e1f1c', '#a6e22e', '#f8f8f2'] },
+  { id: 'dracula',         name: 'Dracula',          colors: ['#282a36', '#21222c', '#bd93f9', '#f8f8f2'] },
+  { id: 'solarized-dark',  name: 'Solarized Dark',   colors: ['#002b36', '#073642', '#268bd2', '#93a1a1'] },
+  { id: 'github-dark',     name: 'GitHub Dark',      colors: ['#0d1117', '#161b22', '#58a6ff', '#c9d1d9'] }
+];
+
+const THEME_KEY = 'editor.theme';
+
+function applyTheme(themeId) {
+  const theme = THEMES.find(t => t.id === themeId) || THEMES[0];
+  document.documentElement.setAttribute('data-theme', theme.id);
+  try { localStorage.setItem(THEME_KEY, theme.id); } catch (e) { /* private mode */ }
+  renderThemeList(theme.id);
+}
+
+function getStoredTheme() {
+  try { return localStorage.getItem(THEME_KEY); } catch (e) { return null; }
+}
+
+function renderThemeList(activeId) {
+  themeListEl.innerHTML = '';
+  THEMES.forEach(theme => {
+    const opt = document.createElement('div');
+    opt.className = 'theme-option' + (theme.id === activeId ? ' selected' : '');
+    opt.dataset.themeId = theme.id;
+
+    const swatch = document.createElement('div');
+    swatch.className = 'theme-swatch';
+    theme.colors.forEach(c => {
+      const s = document.createElement('span');
+      s.style.background = c;
+      swatch.appendChild(s);
+    });
+
+    const name = document.createElement('div');
+    name.className = 'theme-name';
+    name.textContent = theme.name;
+
+    const check = document.createElement('div');
+    check.className = 'theme-check';
+    check.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>';
+
+    opt.appendChild(swatch);
+    opt.appendChild(name);
+    opt.appendChild(check);
+
+    opt.addEventListener('click', () => {
+      applyTheme(theme.id);
+      showToast('Theme: ' + theme.name);
+    });
+
+    themeListEl.appendChild(opt);
+  });
+}
+
+// Apply stored theme on load (default = dark-plus)
+applyTheme(getStoredTheme() || 'dark-plus');
+
+// === EDITOR LOGIC ===
 function updateLineNumbers() {
   const count = editor.value.split('\n').length;
   let html = '';
@@ -347,7 +624,6 @@ function updateLineNumbers() {
 
 function updateStatus() {
   const val = editor.value;
-  const lines = val.split('\n').length;
   const pos = editor.selectionStart;
   const before = val.substring(0, pos);
   const lineNum = before.split('\n').length;
@@ -361,7 +637,6 @@ function syncScroll() {
   lineNumbersDiv.scrollTop = editorScroll.scrollTop;
 }
 
-// Sync scroll between line numbers and editor
 editorScroll.addEventListener('scroll', syncScroll);
 
 editor.addEventListener('input', () => { updateLineNumbers(); updateStatus(); });
@@ -404,7 +679,7 @@ fileInput.addEventListener('change', (e) => {
 document.getElementById('btn-download').addEventListener('click', () => {
   downloadNameInput.value = currentFilename === 'untitled' ? '' : currentFilename;
   modalOverlay.classList.add('active');
-  setTimeout(() => downloadNameInput.focus(), 300);
+  setTimeout(() => downloadNameInput.focus(), 200);
 });
 
 document.getElementById('modal-cancel').addEventListener('click', () => modalOverlay.classList.remove('active'));
@@ -415,7 +690,11 @@ downloadNameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') do
 
 function doDownload() {
   const name = downloadNameInput.value.trim();
-  if (!name) { downloadNameInput.style.borderColor = 'var(--danger)'; setTimeout(() => downloadNameInput.style.borderColor = '', 1000); return; }
+  if (!name) {
+    downloadNameInput.style.borderColor = 'var(--danger)';
+    setTimeout(() => downloadNameInput.style.borderColor = '', 1000);
+    return;
+  }
   const blob = new Blob([editor.value], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -438,6 +717,13 @@ document.getElementById('btn-new').addEventListener('click', () => {
   editor.focus();
   showToast('New file');
 });
+
+// Theme modal
+document.getElementById('btn-theme').addEventListener('click', () => {
+  modalTheme.classList.add('active');
+});
+document.getElementById('theme-close').addEventListener('click', () => modalTheme.classList.remove('active'));
+modalTheme.addEventListener('click', (e) => { if (e.target === modalTheme) modalTheme.classList.remove('active'); });
 
 function showToast(msg) {
   toastEl.textContent = msg;
