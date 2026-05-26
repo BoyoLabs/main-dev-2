@@ -211,6 +211,12 @@
     transform: scale(0.92);
   }
 
+  .toolbar button.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+
   .toolbar button svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
   /* ── EDITOR AREA ── */
@@ -276,6 +282,13 @@
     overflow-x: auto;
     caret-color: var(--accent);
     transition: color 0.2s;
+  }
+
+  textarea#editor.wrap {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    overflow-x: hidden;
   }
 
   textarea#editor::selection { background: var(--selection); }
@@ -462,6 +475,23 @@
 
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
+  /* hidden mirror for measuring wrapped line heights */
+  .line-mirror {
+    position: absolute;
+    visibility: hidden;
+    pointer-events: none;
+    top: 0; left: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    padding: 0 14px;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    tab-size: 2;
+    -moz-tab-size: 2;
+  }
+
   /* hidden file input */
   #file-input { display: none; }
 </style>
@@ -479,6 +509,9 @@
   </button>
   <button id="btn-new" aria-label="New file" title="New file">
     <svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  </button>
+  <button id="btn-wrap" aria-label="Toggle word wrap" title="Toggle word wrap">
+    <svg viewBox="0 0 24 24"><polyline points="3 6 21 6"/><path d="M3 12h15a3 3 0 0 1 0 6h-4"/><polyline points="16 16 14 18 16 20"/><line x1="3" y1="18" x2="10" y2="18"/></svg>
   </button>
   <button id="btn-theme" aria-label="Change theme" title="Color theme">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20 5 5 0 0 1 0-10 5 5 0 0 0 0-10z"/></svg>
@@ -534,6 +567,9 @@
 <!-- Hidden upload input -->
 <input type="file" id="file-input" />
 
+<!-- Hidden mirror for measuring wrapped line heights -->
+<div class="line-mirror" id="line-mirror"></div>
+
 <script>
 const editor = document.getElementById('editor');
 const lineNums = document.getElementById('line-nums');
@@ -549,6 +585,7 @@ const downloadNameInput = document.getElementById('download-name');
 const fileInput = document.getElementById('file-input');
 const toastEl = document.getElementById('toast');
 const themeListEl = document.getElementById('theme-list');
+const lineMirror = document.getElementById('line-mirror');
 
 let currentFilename = 'untitled';
 
@@ -615,11 +652,40 @@ function renderThemeList(activeId) {
 applyTheme(getStoredTheme() || 'dark-plus');
 
 // === EDITOR LOGIC ===
+const LINE_HEIGHT = 13 * 1.7; // matches CSS: font-size 13px * line-height 1.7
+
 function updateLineNumbers() {
-  const count = editor.value.split('\n').length;
-  let html = '';
-  for (let i = 1; i <= count; i++) html += i + '\n';
-  lineNums.textContent = html;
+  const lines = editor.value.split('\n');
+  const wrapping = editor.classList.contains('wrap');
+
+  if (!wrapping) {
+    // simple case: one number per logical line
+    let out = '';
+    for (let i = 1; i <= lines.length; i++) out += i + '\n';
+    lineNums.textContent = out;
+    return;
+  }
+
+  // wrap mode: measure each logical line's visual height
+  // and pad with blank rows for continuation lines.
+  // Mirror width must match the textarea's content width.
+  const ta = editor;
+  const cs = window.getComputedStyle(ta);
+  const padL = parseFloat(cs.paddingLeft) || 0;
+  const padR = parseFloat(cs.paddingRight) || 0;
+  const contentWidth = ta.clientWidth - padL - padR;
+  lineMirror.style.width = contentWidth + 'px';
+
+  let out = '';
+  for (let i = 0; i < lines.length; i++) {
+    // empty lines still take one row; non-empty lines may take more.
+    // Use a trailing space sentinel so a line ending in spaces is measured correctly.
+    lineMirror.textContent = lines[i].length === 0 ? ' ' : lines[i];
+    const rows = Math.max(1, Math.round(lineMirror.offsetHeight / LINE_HEIGHT));
+    out += (i + 1) + '\n';
+    for (let r = 1; r < rows; r++) out += '\n'; // blank rows for continuations
+  }
+  lineNums.textContent = out;
 }
 
 function updateStatus() {
@@ -731,9 +797,43 @@ function showToast(msg) {
   setTimeout(() => toastEl.classList.remove('show'), 2000);
 }
 
+// === WORD WRAP ===
+const WRAP_KEY = 'editor.wrap';
+const btnWrap = document.getElementById('btn-wrap');
+
+function applyWrap(enabled) {
+  if (enabled) {
+    editor.classList.add('wrap');
+    btnWrap.classList.add('active');
+  } else {
+    editor.classList.remove('wrap');
+    btnWrap.classList.remove('active');
+  }
+  try { localStorage.setItem(WRAP_KEY, enabled ? '1' : '0'); } catch (e) { /* private mode */ }
+  updateLineNumbers();
+}
+
+function getStoredWrap() {
+  try { return localStorage.getItem(WRAP_KEY) === '1'; } catch (e) { return false; }
+}
+
+btnWrap.addEventListener('click', () => {
+  const nowOn = !editor.classList.contains('wrap');
+  applyWrap(nowOn);
+  showToast(nowOn ? 'Word wrap on' : 'Word wrap off');
+});
+
 // Init
+applyWrap(getStoredWrap());
 updateLineNumbers();
 updateStatus();
+
+// Recompute line numbers when the window resizes (wrap depends on width)
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(updateLineNumbers, 80);
+});
 </script>
 </body>
 </html>
